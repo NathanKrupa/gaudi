@@ -19,11 +19,10 @@ class CeleryNoRetry(Rule):
     def check(self, context: PythonContext) -> list[Finding]:
         findings = []
         for f in context.files:
-            if "celery" not in str(f.imports):
+            if not f.has_import("celery"):
                 continue
-            try:
-                source = f.path.read_text(encoding="utf-8", errors="replace")
-            except Exception:
+            source = f.source
+            if not source:
                 continue
             for i, line in enumerate(source.splitlines(), 1):
                 if "@" in line and (".task" in line or "shared_task" in line):
@@ -45,11 +44,10 @@ class CeleryNoTimeLimit(Rule):
     def check(self, context: PythonContext) -> list[Finding]:
         findings = []
         for f in context.files:
-            if "celery" not in str(f.imports):
+            if not f.has_import("celery"):
                 continue
-            try:
-                source = f.path.read_text(encoding="utf-8", errors="replace")
-            except Exception:
+            source = f.source
+            if not source:
                 continue
             for i, line in enumerate(source.splitlines(), 1):
                 if "@" in line and (".task" in line or "shared_task" in line):

@@ -19,11 +19,10 @@ class PandasInplaceAntiPattern(Rule):
     def check(self, context: PythonContext) -> list[Finding]:
         findings = []
         for f in context.files:
-            if "pandas" not in str(f.imports):
+            if not f.has_import("pandas"):
                 continue
-            try:
-                source = f.path.read_text(encoding="utf-8", errors="replace")
-            except Exception:
+            source = f.source
+            if not source:
                 continue
             for i, line in enumerate(source.splitlines(), 1):
                 if "inplace=True" in line:
@@ -44,9 +43,8 @@ class PandasIterrows(Rule):
     def check(self, context: PythonContext) -> list[Finding]:
         findings = []
         for f in context.files:
-            try:
-                source = f.path.read_text(encoding="utf-8", errors="replace")
-            except Exception:
+            source = f.source
+            if not source:
                 continue
             for i, line in enumerate(source.splitlines(), 1):
                 if ".iterrows()" in line:

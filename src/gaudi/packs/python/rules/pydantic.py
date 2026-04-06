@@ -21,11 +21,10 @@ class PydanticMutableDefault(Rule):
     def check(self, context: PythonContext) -> list[Finding]:
         findings = []
         for f in context.files:
-            if "pydantic" not in str(f.imports):
+            if not f.has_import("pydantic"):
                 continue
-            try:
-                source = f.path.read_text(encoding="utf-8", errors="replace")
-            except Exception:
+            source = f.source
+            if not source:
                 continue
             for i, line in enumerate(source.splitlines(), 1):
                 if re.search(r"=\s*\[\s*\]|=\s*\{\s*\}", line) and "Field(" not in line:

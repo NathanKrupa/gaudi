@@ -154,10 +154,12 @@ class RemovedIn314Import(Rule):
     def check(self, context: PythonContext) -> list[Finding]:
         findings = []
         for file_info in context.files:
+            source = file_info.source
+            if not source:
+                continue
             try:
-                source = file_info.path.read_text(encoding="utf-8", errors="replace")
                 tree = ast.parse(source)
-            except (SyntaxError, Exception):
+            except SyntaxError:
                 continue
 
             for node in ast.walk(tree):
@@ -193,10 +195,12 @@ class DeprecatedIn314Import(Rule):
     def check(self, context: PythonContext) -> list[Finding]:
         findings = []
         for file_info in context.files:
+            source = file_info.source
+            if not source:
+                continue
             try:
-                source = file_info.path.read_text(encoding="utf-8", errors="replace")
                 tree = ast.parse(source)
-            except (SyntaxError, Exception):
+            except SyntaxError:
                 continue
 
             for node in ast.walk(tree):
@@ -264,10 +268,12 @@ class DeferredAnnotationAccess(Rule):
     def check(self, context: PythonContext) -> list[Finding]:
         findings = []
         for file_info in context.files:
+            source = file_info.source
+            if not source:
+                continue
             try:
-                source = file_info.path.read_text(encoding="utf-8", errors="replace")
                 tree = ast.parse(source)
-            except (SyntaxError, Exception):
+            except SyntaxError:
                 continue
 
             for node in ast.walk(tree):
@@ -306,10 +312,12 @@ class FinallyControlFlow(Rule):
     def check(self, context: PythonContext) -> list[Finding]:
         findings = []
         for file_info in context.files:
+            source = file_info.source
+            if not source:
+                continue
             try:
-                source = file_info.path.read_text(encoding="utf-8", errors="replace")
                 tree = ast.parse(source)
-            except (SyntaxError, Exception):
+            except SyntaxError:
                 continue
 
             findings.extend(self._check_node(tree, file_info.relative_path))
@@ -370,10 +378,12 @@ class NotImplementedBoolContext(Rule):
     def check(self, context: PythonContext) -> list[Finding]:
         findings = []
         for file_info in context.files:
+            source = file_info.source
+            if not source:
+                continue
             try:
-                source = file_info.path.read_text(encoding="utf-8", errors="replace")
                 tree = ast.parse(source)
-            except (SyntaxError, Exception):
+            except SyntaxError:
                 continue
 
             for node in ast.walk(tree):
@@ -418,19 +428,14 @@ class TarfileNoFilter(Rule):
     def check(self, context: PythonContext) -> list[Finding]:
         findings = []
         for file_info in context.files:
-            if "tarfile" not in str(file_info.path):
-                # Quick check: only parse files that might use tarfile
-                try:
-                    source = file_info.path.read_text(encoding="utf-8", errors="replace")
-                    if "tarfile" not in source:
-                        continue
-                except Exception:
-                    continue
-
+            source = file_info.source
+            if not source:
+                continue
+            if "tarfile" not in source:
+                continue
             try:
-                source = file_info.path.read_text(encoding="utf-8", errors="replace")
                 tree = ast.parse(source)
-            except (SyntaxError, Exception):
+            except SyntaxError:
                 continue
 
             for node in ast.walk(tree):

@@ -21,11 +21,10 @@ class FlaskNoAppFactory(Rule):
     def check(self, context: PythonContext) -> list[Finding]:
         findings = []
         for f in context.files:
-            if "flask" not in str(f.imports):
+            if not f.has_import("flask"):
                 continue
-            try:
-                source = f.path.read_text(encoding="utf-8", errors="replace")
-            except Exception:
+            source = f.source
+            if not source:
                 continue
             for i, line in enumerate(source.splitlines(), 1):
                 stripped = line.strip()

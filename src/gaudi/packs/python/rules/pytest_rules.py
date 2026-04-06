@@ -21,9 +21,8 @@ class PytestAssertMessage(Rule):
         for f in context.files:
             if "test_" not in f.relative_path:
                 continue
-            try:
-                source = f.path.read_text(encoding="utf-8", errors="replace")
-            except Exception:
+            source = f.source
+            if not source:
                 continue
             for i, line in enumerate(source.splitlines(), 1):
                 stripped = line.strip()
@@ -55,9 +54,8 @@ class PytestFixtureScope(Rule):
         for f in context.files:
             if "conftest" not in f.relative_path:
                 continue
-            try:
-                source = f.path.read_text(encoding="utf-8", errors="replace")
-            except Exception:
+            source = f.source
+            if not source:
                 continue
             for i, line in enumerate(source.splitlines(), 1):
                 if "@pytest.fixture" in line and "scope=" not in line:

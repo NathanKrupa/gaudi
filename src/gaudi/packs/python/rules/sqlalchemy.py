@@ -19,11 +19,10 @@ class SQLAlchemySessionLeak(Rule):
     def check(self, context: PythonContext) -> list[Finding]:
         findings = []
         for f in context.files:
-            if "sqlalchemy" not in str(f.imports):
+            if not f.has_import("sqlalchemy"):
                 continue
-            try:
-                source = f.path.read_text(encoding="utf-8", errors="replace")
-            except Exception:
+            source = f.source
+            if not source:
                 continue
             for i, line in enumerate(source.splitlines(), 1):
                 if "Session()" in line and "with " not in line and "yield" not in line:
@@ -45,9 +44,8 @@ class SQLAlchemyLazyDefault(Rule):
     def check(self, context: PythonContext) -> list[Finding]:
         findings = []
         for f in context.files:
-            try:
-                source = f.path.read_text(encoding="utf-8", errors="replace")
-            except Exception:
+            source = f.source
+            if not source:
                 continue
             for i, line in enumerate(source.splitlines(), 1):
                 if "relationship(" in line and "lazy=" not in line:
