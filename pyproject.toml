@@ -3,7 +3,7 @@ requires = ["setuptools>=68.0", "setuptools-scm>=8.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "gaudi"
+name = "gaudi-linter"
 version = "0.1.0"
 description = "Not just structurally sound. Beautiful. A universal architecture linter for AI-assisted development."
 readme = "README.md"
