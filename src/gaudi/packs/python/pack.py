@@ -9,7 +9,6 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from gaudi.core import Finding
 from gaudi.pack import Pack
 from gaudi.packs.python.context import PythonContext
 from gaudi.packs.python.parser import parse_project
@@ -27,8 +26,10 @@ class PythonPack(Pack):
     """
 
     name = "python"
-    description = "Full Python stack: Django, FastAPI, SQLAlchemy, Flask, Celery, Pandas, DRF, and 3.14 compat"
-    extensions = [".py"]
+    description = (
+        "Full Python stack: Django, FastAPI, SQLAlchemy, Flask, Celery, Pandas, DRF, and 3.14 compat"
+    )
+    extensions = (".py",)
 
     def __init__(self) -> None:
         super().__init__()

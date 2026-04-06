@@ -26,7 +26,7 @@ class Pack:
 
     name: str = ""
     description: str = ""
-    extensions: list[str] = []  # File extensions this pack handles
+    extensions: tuple[str, ...] = ()  # File extensions this pack handles
 
     def __init__(self) -> None:
         self._rules: list[Rule] = []
@@ -45,11 +45,9 @@ class Pack:
         if path.is_file():
             return path.suffix in self.extensions
         if path.is_dir():
-            return any(
-                f.suffix in self.extensions
-                for f in path.rglob("*")
-                if f.is_file()
-            )
+            for ext in self.extensions:
+                if next(path.rglob(f"*{ext}"), None) is not None:
+                    return True
         return False
 
     def parse(self, path: Path) -> Any:

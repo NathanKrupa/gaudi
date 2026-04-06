@@ -133,7 +133,7 @@ JAVA_RULES = [CatchGenericException(), GodClass(), FieldInjection(), MissingTran
 class JavaPack(Pack):
     name = "java"
     description = "Spring Boot, Hibernate/JPA, and general Java architecture"
-    extensions = [".java"]
+    extensions = (".java",)
 
     def __init__(self) -> None:
         super().__init__()

@@ -18,6 +18,7 @@ import click
 from rich.console import Console
 from rich.text import Text
 
+from gaudi.config import load_config
 from gaudi.core import Severity
 from gaudi.engine import Engine
 
@@ -75,14 +76,17 @@ def check(
 ):
     """Check a project or file for architectural issues."""
     project_path = Path(path).resolve()
-    min_severity = Severity(severity)
+
+    # Load config from gaudi.toml, then let CLI flags override
+    config = load_config(project_path)
+    min_severity = Severity(severity or config.get("severity", "info"))
 
     # Initialize engine and discover packs
     engine = Engine()
     engine.discover_packs()
 
-    # Determine which packs to use
-    pack_names = list(pack) if pack else None
+    # CLI --pack flags override config; config packs override auto-detect
+    pack_names = list(pack) if pack else (config["packs"] or None)
 
     if pack_names:
         missing = [p for p in pack_names if p not in engine.packs]
@@ -96,8 +100,10 @@ def check(
 
     # Output results
     if output_format == "json":
+        from gaudi import __version__
+
         output = {
-            "version": "0.1.0",
+            "version": __version__,
             "path": str(project_path),
             "findings": [f.to_dict() for f in findings],
             "summary": engine.format_summary(findings),
@@ -134,7 +140,7 @@ def check(
 
                 # Recommendation
                 if finding.recommendation:
-                    console.print(f"  [dim]→ {finding.recommendation}[/dim]")
+                    console.print(f"  [dim]-> {finding.recommendation}[/dim]")
 
                 console.print()
 

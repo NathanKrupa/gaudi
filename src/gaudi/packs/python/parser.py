@@ -8,7 +8,6 @@ and general Python project layout using AST parsing.
 from __future__ import annotations
 
 import ast
-import re
 from pathlib import Path
 
 from gaudi.packs.python.context import (

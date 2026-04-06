@@ -113,7 +113,7 @@ CS_RULES = [AsyncVoidMethod(), DisposableNotDisposed(), EFNoAsNoTracking(), Catc
 class CSharpPack(Pack):
     name = "csharp"
     description = ".NET, Entity Framework, ASP.NET architecture"
-    extensions = [".cs"]
+    extensions = (".cs",)
     def __init__(self) -> None:
         super().__init__()
         for rule in CS_RULES:

@@ -10,7 +10,6 @@ Reference: https://docs.python.org/3.14/whatsnew/3.14.html
 from __future__ import annotations
 
 import ast
-from pathlib import Path
 
 from gaudi.core import Rule, Finding, Severity, Category
 from gaudi.packs.python.context import PythonContext

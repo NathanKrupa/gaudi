@@ -9,8 +9,6 @@ from __future__ import annotations
 import json
 import re
 from pathlib import Path
-from typing import Any
-
 from gaudi.core import Rule, Finding, Severity, Category
 from gaudi.pack import Pack
 
@@ -295,7 +293,7 @@ JS_RULES = [
 class JavaScriptPack(Pack):
     name = "javascript"
     description = "Express, Next.js, Prisma, React, and general JS/TS architecture"
-    extensions = [".js", ".ts", ".jsx", ".tsx", ".mjs", ".cjs"]
+    extensions = (".js", ".ts", ".jsx", ".tsx", ".mjs", ".cjs")
 
     def __init__(self) -> None:
         super().__init__()

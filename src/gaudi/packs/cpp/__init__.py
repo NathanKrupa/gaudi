@@ -122,7 +122,7 @@ CPP_RULES = [RawNewDelete(), MissingHeaderGuard(), UnsafeFunctions(), GodFile(),
 class CppPack(Pack):
     name = "cpp"
     description = "Memory management, header structure, safety patterns, and C/C++ idioms"
-    extensions = [".c", ".cpp", ".cc", ".cxx", ".h", ".hpp", ".hxx"]
+    extensions = (".c", ".cpp", ".cc", ".cxx", ".h", ".hpp", ".hxx")
     def __init__(self) -> None:
         super().__init__()
         for rule in CPP_RULES:

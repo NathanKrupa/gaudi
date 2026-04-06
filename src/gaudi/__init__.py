@@ -4,7 +4,9 @@ Gaudí — Not just structurally sound. Beautiful.
 A universal architecture linter for AI-assisted development.
 """
 
-__version__ = "0.1.0"
+from importlib.metadata import version as _version
+
+__version__ = _version("gaudi")
 
 from gaudi.core import Finding, Rule, Severity, Category
 from gaudi.engine import Engine
