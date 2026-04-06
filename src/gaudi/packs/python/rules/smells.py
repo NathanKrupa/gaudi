@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import ast
 import copy
+import itertools
 from typing import Any
 
 from gaudi.core import Rule, Finding, Severity, Category
@@ -437,15 +438,9 @@ class Loops(Rule):
 # SMELL-014  LazyElement
 # ---------------------------------------------------------------
 
-_DUNDER_METHODS = frozenset(
-    {
-        "__init__",
-        "__repr__",
-        "__str__",
-        "__eq__",
-        "__hash__",
-    }
-)
+# Dunder method sets used by multiple rules.
+# _BOILERPLATE_DUNDERS is the base; others extend it.
+_BOILERPLATE_DUNDERS = frozenset({"__init__", "__repr__", "__str__", "__eq__", "__hash__"})
 
 
 class LazyElement(Rule):
@@ -470,7 +465,7 @@ class LazyElement(Rule):
                 if not isinstance(node, ast.ClassDef):
                     continue
                 methods = [n for n in node.body if isinstance(n, ast.FunctionDef)]
-                real = [m for m in methods if m.name not in _DUNDER_METHODS]
+                real = [m for m in methods if m.name not in _BOILERPLATE_DUNDERS]
                 if len(real) != 1:
                     continue
                 body = real[0].body
@@ -601,19 +596,7 @@ class LargeClass(Rule):
 # SMELL-022  DataClassSmell
 # ---------------------------------------------------------------
 
-_DATA_DUNDERS = frozenset(
-    {
-        "__init__",
-        "__repr__",
-        "__str__",
-        "__eq__",
-        "__hash__",
-        "__lt__",
-        "__le__",
-        "__gt__",
-        "__ge__",
-    }
-)
+_DATA_DUNDERS = _BOILERPLATE_DUNDERS | {"__lt__", "__le__", "__gt__", "__ge__"}
 
 
 class DataClassSmell(Rule):
@@ -1101,24 +1084,21 @@ class DataClumps(Rule):
             for ps in param_sets:
                 all_params |= ps
             # Check all 3-combinations
-            param_list = sorted(all_params)
-            for i in range(len(param_list)):
-                for j in range(i + 1, len(param_list)):
-                    for k in range(j + 1, len(param_list)):
-                        group = frozenset({param_list[i], param_list[j], param_list[k]})
-                        if group in seen:
-                            continue
-                        count = sum(1 for ps in param_sets if group <= ps)
-                        if count >= 3:
-                            seen.add(group)
-                            findings.append(
-                                self.finding(
-                                    file=f.relative_path,
-                                    line=1,
-                                    params=", ".join(sorted(group)),
-                                    count=count,
-                                )
-                            )
+            for group_tuple in itertools.combinations(sorted(all_params), 3):
+                group = frozenset(group_tuple)
+                if group in seen:
+                    continue
+                count = sum(1 for ps in param_sets if group <= ps)
+                if count >= 3:
+                    seen.add(group)
+                    findings.append(
+                        self.finding(
+                            file=f.relative_path,
+                            line=1,
+                            params=", ".join(sorted(group)),
+                            count=count,
+                        )
+                    )
         return findings
 
 
@@ -1330,8 +1310,8 @@ class SpeculativeGenerality(Rule):
     code = "SMELL-015"
     severity = Severity.WARN
     category = Category.CODE_SMELL
-    message_template = ""  # Varies by sub-check
-    recommendation_template = ""
+    message_template = "{detail}"
+    recommendation_template = "{advice}"
 
     def check(self, context: PythonContext) -> list[Finding]:
         findings: list[Finding] = []
@@ -1372,20 +1352,13 @@ class SpeculativeGenerality(Rule):
             )
             if subs <= 1:
                 results.append(
-                    Finding(
-                        code=self.code,
-                        severity=self.severity,
-                        category=self.category,
-                        message=(f"Abstract class '{abc_name}' has only {subs} subclass"),
-                        recommendation=(
-                            "If there's only one implementation, the abstraction is premature."
-                        ),
+                    self.finding(
                         file=path,
                         line=1,
-                        context={
-                            "class_name": abc_name,
-                            "count": subs,
-                        },
+                        detail=f"Abstract class '{abc_name}' has only {subs} subclass",
+                        advice="If there's only one implementation, the abstraction is premature.",
+                        class_name=abc_name,
+                        count=subs,
                     )
                 )
         return results
@@ -1433,26 +1406,18 @@ class SpeculativeGenerality(Rule):
             unused = [p for p in none_params if p not in body_names]
             if len(unused) >= 2:
                 results.append(
-                    Finding(
-                        code=self.code,
-                        severity=self.severity,
-                        category=self.category,
-                        message=(
-                            f"Function '{node.name}' has "
-                            f"{len(unused)} unused "
-                            f"parameters: "
-                            f"{', '.join(unused)}"
-                        ),
-                        recommendation=(
-                            "Remove unused parameters. They add complexity without value."
-                        ),
+                    self.finding(
                         file=path,
                         line=node.lineno,
-                        context={
-                            "function": node.name,
-                            "count": len(unused),
-                            "params": ", ".join(unused),
-                        },
+                        detail=(
+                            f"Function '{node.name}' has "
+                            f"{len(unused)} unused parameters: "
+                            f"{', '.join(unused)}"
+                        ),
+                        advice="Remove unused parameters. They add complexity without value.",
+                        function=node.name,
+                        count=len(unused),
+                        params=", ".join(unused),
                     )
                 )
         return results
@@ -1529,20 +1494,7 @@ class TemporaryField(Rule):
 # SMELL-018  MiddleMan
 # ---------------------------------------------------------------
 
-_DUNDER_SKIP = frozenset(
-    {
-        "__init__",
-        "__repr__",
-        "__str__",
-        "__eq__",
-        "__hash__",
-        "__len__",
-        "__bool__",
-        "__enter__",
-        "__exit__",
-        "__del__",
-    }
-)
+_DUNDER_SKIP = _BOILERPLATE_DUNDERS | {"__len__", "__bool__", "__enter__", "__exit__", "__del__"}
 
 
 def _is_pure_delegation(method: ast.FunctionDef) -> bool:
