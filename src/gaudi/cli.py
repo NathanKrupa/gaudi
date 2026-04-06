@@ -38,7 +38,7 @@ SEVERITY_LABELS = {
 
 
 @click.group()
-@click.version_option(package_name="gaudi")
+@click.version_option(package_name="gaudi-linter")
 def main():
     """Gaudí — Not just structurally sound. Beautiful."""
     pass

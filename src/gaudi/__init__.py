@@ -6,7 +6,7 @@ A universal architecture linter for AI-assisted development.
 
 from importlib.metadata import version as _version
 
-__version__ = _version("gaudi")
+__version__ = _version("gaudi-linter")
 
 from gaudi.core import Finding, Rule, Severity, Category
 from gaudi.engine import Engine

@@ -35,7 +35,7 @@ Gaudí is the discipline layer. It encodes architectural best practices into str
 ## Installation
 
 ```bash
-NOT READY FOR PRIME TIME YET
+pip install gaudi-linter  # not yet published — coming soon
 ```
 
 ## Quick Start
