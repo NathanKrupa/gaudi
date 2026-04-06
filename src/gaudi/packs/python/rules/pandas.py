@@ -10,6 +10,7 @@ class PandasInplaceAntiPattern(Rule):
     code = "PD-ARCH-001"
     severity = Severity.WARN
     category = Category.ARCHITECTURE
+    requires_library = "pandas"
     message_template = "inplace=True used at line {line} — this is deprecated and error-prone"
     recommendation_template = (
         "Use df = df.method() instead of df.method(inplace=True). "
@@ -34,6 +35,7 @@ class PandasIterrows(Rule):
     code = "PD-SCALE-001"
     severity = Severity.WARN
     category = Category.SCALABILITY
+    requires_library = "pandas"
     message_template = "iterrows() at line {line} — use vectorized operations instead"
     recommendation_template = (
         "iterrows() is extremely slow. Use .apply(), vectorized operations, "
@@ -52,4 +54,4 @@ class PandasIterrows(Rule):
         return findings
 
 
-PANDAS_RULES = [PandasInplaceAntiPattern(), PandasIterrows()]
+PANDAS_RULES = (PandasInplaceAntiPattern(), PandasIterrows())

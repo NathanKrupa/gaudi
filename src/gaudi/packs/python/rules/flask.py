@@ -12,6 +12,7 @@ class FlaskNoAppFactory(Rule):
     code = "FLASK-STRUCT-001"
     severity = Severity.WARN
     category = Category.STRUCTURE
+    requires_library = "flask"
     message_template = "Flask app created at module level — use application factory pattern"
     recommendation_template = (
         "Use create_app() factory function instead of module-level Flask(). "
@@ -33,4 +34,4 @@ class FlaskNoAppFactory(Rule):
         return findings
 
 
-FLASK_RULES = [FlaskNoAppFactory()]
+FLASK_RULES = (FlaskNoAppFactory(),)

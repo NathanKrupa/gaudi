@@ -10,6 +10,7 @@ class DRFNoPermissionClass(Rule):
     code = "DRF-SEC-001"
     severity = Severity.WARN
     category = Category.SECURITY
+    requires_library = "drf"
     message_template = "ViewSet without explicit permission_classes in '{file}'"
     recommendation_template = (
         "Set permission_classes on every ViewSet. Relying on DEFAULT_PERMISSION_CLASSES "
@@ -33,6 +34,7 @@ class DRFNoThrottling(Rule):
     code = "DRF-SCALE-001"
     severity = Severity.INFO
     category = Category.SCALABILITY
+    requires_library = "drf"
     message_template = "API view without throttle_classes in '{file}'"
     recommendation_template = (
         "Add throttle_classes to prevent abuse. Public APIs without rate limiting "
@@ -52,4 +54,4 @@ class DRFNoThrottling(Rule):
         return findings
 
 
-DRF_RULES = [DRFNoPermissionClass(), DRFNoThrottling()]
+DRF_RULES = (DRFNoPermissionClass(), DRFNoThrottling())

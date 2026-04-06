@@ -12,6 +12,7 @@ class PydanticMutableDefault(Rule):
     code = "PYD-ARCH-001"
     severity = Severity.ERROR
     category = Category.ARCHITECTURE
+    requires_library = "pydantic"
     message_template = "Mutable default value in Pydantic model at line {line}"
     recommendation_template = (
         "Use Field(default_factory=list) instead of Field(default=[]) in Pydantic models. "
@@ -33,4 +34,4 @@ class PydanticMutableDefault(Rule):
         return findings
 
 
-PYDANTIC_RULES = [PydanticMutableDefault()]
+PYDANTIC_RULES = (PydanticMutableDefault(),)

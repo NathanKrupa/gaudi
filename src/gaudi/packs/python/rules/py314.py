@@ -465,11 +465,11 @@ class TarfileNoFilter(Rule):
 # Rule registry for Python 3.14
 # ---------------------------------------------------------------------------
 
-PY314_RULES = [
+PY314_RULES = (
     RemovedIn314Import(),
     DeprecatedIn314Import(),
     DeferredAnnotationAccess(),
     FinallyControlFlow(),
     NotImplementedBoolContext(),
     TarfileNoFilter(),
-]
+)

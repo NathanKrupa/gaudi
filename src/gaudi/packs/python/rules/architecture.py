@@ -433,7 +433,7 @@ class SingleFileModels(Rule):
 # Rule registry
 # ---------------------------------------------------------------------------
 
-ALL_RULES = [
+ALL_RULES = (
     NoTenantIsolation(),
     GodModel(),
     NullableForeignKeySprawl(),
@@ -444,4 +444,4 @@ ALL_RULES = [
     NoStringLengthLimit(),
     NoMetaPermissions(),
     SingleFileModels(),
-]
+)

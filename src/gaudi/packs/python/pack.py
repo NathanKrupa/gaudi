@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from gaudi.core import Finding
 from gaudi.pack import Pack
 from gaudi.packs.python.context import PythonContext
 from gaudi.packs.python.parser import parse_project
@@ -38,3 +39,15 @@ class PythonPack(Pack):
     def parse(self, path: Path) -> PythonContext:
         """Parse a Python project and return structural context."""
         return parse_project(path)
+
+    def check(self, path: Path) -> list[Finding]:
+        """Parse the project, then run only rules whose libraries are detected."""
+        context = self.parse(path)
+        findings: list[Finding] = []
+        for rule in self._rules:
+            if rule.requires_library and rule.requires_library not in context.detected_libraries:
+                continue
+            results = rule.check(context)
+            if results:
+                findings.extend(results)
+        return sorted(findings, key=lambda f: (f.severity.priority, f.code))

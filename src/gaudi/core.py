@@ -43,22 +43,32 @@ class Category(Enum):
     """Categories of architectural concerns."""
 
     ARCHITECTURE = "architecture"
+    CODE_SMELL = "code_smell"
+    ERROR_HANDLING = "error_handling"
     INDEXING = "indexing"
+    LOGGING = "logging"
+    OPERATIONS = "operations"
     RELATIONSHIPS = "relationships"
     SCHEMA = "schema"
     SECURITY = "security"
     SCALABILITY = "scalability"
+    STABILITY = "stability"
     STRUCTURE = "structure"
 
 
 # Map category to error code prefix
 CATEGORY_PREFIXES = {
     Category.ARCHITECTURE: "ARCH",
+    Category.CODE_SMELL: "SMELL",
+    Category.ERROR_HANDLING: "ERR",
     Category.INDEXING: "IDX",
+    Category.LOGGING: "LOG",
+    Category.OPERATIONS: "OPS",
     Category.RELATIONSHIPS: "REL",
     Category.SCHEMA: "SCHEMA",
     Category.SECURITY: "SEC",
     Category.SCALABILITY: "SCALE",
+    Category.STABILITY: "STAB",
     Category.STRUCTURE: "STRUCT",
 }
 
@@ -146,6 +156,7 @@ class Rule:
     category: Category = Category.ARCHITECTURE
     message_template: str = ""
     recommendation_template: str = ""
+    requires_library: str | None = None
 
     def check(self, context: Any) -> list[Finding]:
         """

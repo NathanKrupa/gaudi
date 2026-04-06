@@ -10,6 +10,7 @@ class CeleryNoRetry(Rule):
     code = "CELERY-ARCH-001"
     severity = Severity.WARN
     category = Category.ARCHITECTURE
+    requires_library = "celery"
     message_template = "Celery task without retry configuration at line {line}"
     recommendation_template = (
         "Add autoretry_for, max_retries, and retry_backoff to tasks that call external services. "
@@ -36,6 +37,7 @@ class CeleryNoTimeLimit(Rule):
     code = "CELERY-SCALE-001"
     severity = Severity.WARN
     category = Category.SCALABILITY
+    requires_library = "celery"
     message_template = "Celery task without time limit at line {line}"
     recommendation_template = (
         "Add time_limit and soft_time_limit to prevent runaway tasks from consuming workers."
@@ -57,4 +59,4 @@ class CeleryNoTimeLimit(Rule):
         return findings
 
 
-CELERY_RULES = [CeleryNoRetry(), CeleryNoTimeLimit()]
+CELERY_RULES = (CeleryNoRetry(), CeleryNoTimeLimit())

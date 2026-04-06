@@ -7,8 +7,10 @@ Django models, SQLAlchemy tables, project structure, etc.
 
 from __future__ import annotations
 
+import ast
 from dataclasses import dataclass, field
 from enum import Enum
+from functools import cached_property
 from pathlib import Path
 
 
@@ -89,6 +91,16 @@ class FileInfo:
         """Check if this file imports a module containing the given name."""
         return any(name in imp for imp in self.imports)
 
+    @cached_property
+    def ast_tree(self) -> ast.Module | None:
+        """Parsed AST, cached across all rules. Returns None on SyntaxError."""
+        if not self.source:
+            return None
+        try:
+            return ast.parse(self.source)
+        except SyntaxError:
+            return None
+
 
 @dataclass
 class PythonContext:
@@ -105,6 +117,7 @@ class PythonContext:
     has_settings: bool = False
     has_requirements: bool = False
     has_pyproject: bool = False
+    detected_libraries: set[str] = field(default_factory=set)
 
     @property
     def model_names(self) -> set[str]:
