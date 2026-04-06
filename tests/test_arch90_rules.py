@@ -134,3 +134,54 @@ class TestArch90Rules:
             findings = pack.check(tmppath)
             hits = [f for f in findings if f.code == "OPS-002"]
             assert len(hits) == 1
+
+    def test_ops_003_missing_pr_template(self):
+        """Project without PR template triggers OPS-003."""
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmppath = Path(tmpdir)
+            (tmppath / "app.py").write_text("x = 1\n")
+            pack = PythonPack()
+            findings = pack.check(tmppath)
+            hits = [f for f in findings if f.code == "OPS-003"]
+            assert len(hits) == 1
+
+    def test_ops_003_has_pr_template(self):
+        """Project with PR template does not trigger OPS-003."""
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmppath = Path(tmpdir)
+            (tmppath / "app.py").write_text("x = 1\n")
+            gh = tmppath / ".github"
+            gh.mkdir()
+            (gh / "PULL_REQUEST_TEMPLATE.md").write_text("## Summary\n")
+            pack = PythonPack()
+            findings = pack.check(tmppath)
+            hits = [f for f in findings if f.code == "OPS-003"]
+            assert len(hits) == 0
+
+    def test_ops_004_missing_codeowners(self):
+        """Project without CODEOWNERS triggers OPS-004."""
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmppath = Path(tmpdir)
+            (tmppath / "app.py").write_text("x = 1\n")
+            pack = PythonPack()
+            findings = pack.check(tmppath)
+            hits = [f for f in findings if f.code == "OPS-004"]
+            assert len(hits) == 1
+
+    def test_ops_005_missing_contrib_guide(self):
+        """Project without CONTRIBUTING.md triggers OPS-005."""
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmppath = Path(tmpdir)
+            (tmppath / "app.py").write_text("x = 1\n")
+            pack = PythonPack()
+            findings = pack.check(tmppath)
+            hits = [f for f in findings if f.code == "OPS-005"]
+            assert len(hits) == 1

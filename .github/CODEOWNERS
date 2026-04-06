@@ -1,0 +1,6 @@
+# Default owner for all files
+* @NathanKrupa
+
+# CI/CD and packaging require explicit review
+.github/ @NathanKrupa
+pyproject.toml @NathanKrupa
