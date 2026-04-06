@@ -440,9 +440,7 @@ class Loops(Rule):
 
 # Dunder method sets used by multiple rules.
 # _BOILERPLATE_DUNDERS is the base; others extend it.
-_BOILERPLATE_DUNDERS = frozenset(
-    {"__init__", "__repr__", "__str__", "__eq__", "__hash__"}
-)
+_BOILERPLATE_DUNDERS = frozenset({"__init__", "__repr__", "__str__", "__eq__", "__hash__"})
 
 
 class LazyElement(Rule):
