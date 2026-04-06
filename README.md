@@ -35,7 +35,7 @@ Gaudí is the discipline layer. It encodes architectural best practices into str
 ## Installation
 
 ```bash
-pip install gaudi
+NOT READY FOR PRIME TIME YET
 ```
 
 ## Quick Start
