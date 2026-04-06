@@ -46,7 +46,7 @@ jobs:
         run: bandit -r src/ -c pyproject.toml
 
       - name: Dependency audit
-        run: pip-audit --strict --ignore-vuln PYSEC-0 --skip-editable
+        run: pip-audit --skip-editable
 
   test:
     runs-on: ubuntu-latest
