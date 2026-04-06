@@ -61,7 +61,7 @@ target-version = "py310"
 line-length = 100
 
 [tool.ruff.lint.per-file-ignores]
-"tests/fixtures/*" = ["F401", "F841", "E402"]
+"tests/fixtures/*" = ["F401", "F841", "E402", "E722"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
