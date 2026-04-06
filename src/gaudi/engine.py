@@ -1,0 +1,109 @@
+"""
+The Gaudí engine — orchestrates pack discovery, loading, and execution.
+"""
+
+from __future__ import annotations
+
+import sys
+from importlib.metadata import entry_points
+from pathlib import Path
+
+from gaudi.core import Finding, Severity
+from gaudi.pack import Pack
+
+
+class Engine:
+    """
+    Main engine that discovers language packs and runs checks.
+    """
+
+    def __init__(self) -> None:
+        self._packs: dict[str, Pack] = {}
+        self._config: dict = {}
+
+    def discover_packs(self) -> None:
+        """Discover installed language packs via entry points."""
+        if sys.version_info >= (3, 12):
+            eps = entry_points(group="gaudi.packs")
+        else:
+            eps = entry_points().get("gaudi.packs", [])
+
+        for ep in eps:
+            try:
+                pack_class = ep.load()
+                pack = pack_class()
+                self._packs[ep.name] = pack
+            except Exception as e:
+                print(f"Warning: Failed to load pack '{ep.name}': {e}")
+
+    def register_pack(self, pack: Pack) -> None:
+        """Manually register a language pack."""
+        self._packs[pack.name] = pack
+
+    @property
+    def packs(self) -> dict[str, Pack]:
+        """All registered packs."""
+        return dict(self._packs)
+
+    def detect_packs(self, path: Path) -> list[Pack]:
+        """Auto-detect which packs are relevant for the given path."""
+        return [pack for pack in self._packs.values() if pack.can_handle(path)]
+
+    def check(
+        self,
+        path: Path,
+        pack_names: list[str] | None = None,
+        min_severity: Severity = Severity.INFO,
+    ) -> list[Finding]:
+        """
+        Run architectural checks on the given path.
+
+        Args:
+            path: File or directory to check.
+            pack_names: Specific packs to use. If None, auto-detect.
+            min_severity: Minimum severity level to include in results.
+
+        Returns:
+            List of findings sorted by severity then code.
+        """
+        if pack_names:
+            packs = [self._packs[name] for name in pack_names if name in self._packs]
+        else:
+            packs = self.detect_packs(path)
+
+        if not packs:
+            return []
+
+        findings: list[Finding] = []
+        for pack in packs:
+            pack_findings = pack.check(path)
+            findings.extend(pack_findings)
+
+        # Filter by minimum severity
+        findings = [f for f in findings if f.severity.priority <= min_severity.priority]
+
+        return sorted(findings, key=lambda f: (f.severity.priority, f.code))
+
+    def format_summary(self, findings: list[Finding]) -> str:
+        """Format a summary line for a set of findings."""
+        errors = sum(1 for f in findings if f.severity == Severity.ERROR)
+        warnings = sum(1 for f in findings if f.severity == Severity.WARN)
+        infos = sum(1 for f in findings if f.severity == Severity.INFO)
+
+        # Count unique files
+        files = {f.file for f in findings if f.file}
+
+        parts = []
+        if errors:
+            parts.append(f"{errors} error{'s' if errors != 1 else ''}")
+        if warnings:
+            parts.append(f"{warnings} warning{'s' if warnings != 1 else ''}")
+        if infos:
+            parts.append(f"{infos} info{'s' if infos != 1 else ''}")
+
+        if not parts:
+            return "No architectural issues found. Structurally sound."
+
+        count_str = ", ".join(parts)
+        file_str = f" across {len(files)} file{'s' if len(files) != 1 else ''}" if files else ""
+        return f"Found {count_str}{file_str}."
