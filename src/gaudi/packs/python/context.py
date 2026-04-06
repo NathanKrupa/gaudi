@@ -59,7 +59,9 @@ class ModelInfo:
 
     @property
     def unindexed_columns(self) -> list[ColumnInfo]:
-        return [c for c in self.columns if not c.has_index and not c.has_unique and not c.is_foreign_key]
+        return [
+            c for c in self.columns if not c.has_index and not c.has_unique and not c.is_foreign_key
+        ]
 
 
 @dataclass

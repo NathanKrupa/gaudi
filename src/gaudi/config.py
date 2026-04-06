@@ -44,9 +44,6 @@ def load_config(project_path: Path) -> dict[str, Any]:
     gaudi_config = raw.get("gaudi", {})
 
     config = dict(DEFAULT_CONFIG)
-    config.update({
-        k: v for k, v in gaudi_config.items()
-        if k in DEFAULT_CONFIG
-    })
+    config.update({k: v for k, v in gaudi_config.items() if k in DEFAULT_CONFIG})
 
     return config

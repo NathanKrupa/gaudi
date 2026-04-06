@@ -26,9 +26,7 @@ class PythonPack(Pack):
     """
 
     name = "python"
-    description = (
-        "Full Python stack: Django, FastAPI, SQLAlchemy, Flask, Celery, Pandas, DRF, and 3.14 compat"
-    )
+    description = "Full Python stack: Django, FastAPI, SQLAlchemy, Flask, Celery, Pandas, DRF, and 3.14 compat"
     extensions = (".py",)
 
     def __init__(self) -> None:

@@ -60,12 +60,20 @@ def bad_comparison(self, other):
 # PY314-006: tarfile extraction without filter
 import tarfile
 
+
 def extract_archive(path):
     with tarfile.open(path) as tf:
         tf.extractall("/tmp/output")  # No filter= parameter — default changed in 3.14
 
 
 # Helper stubs to make the file parseable
-def do_something(): pass
-def handle_error(): pass
-def process(i): pass
+def do_something():
+    pass
+
+
+def handle_error():
+    pass
+
+
+def process(i):
+    pass
