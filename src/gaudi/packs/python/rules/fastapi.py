@@ -21,11 +21,10 @@ class FastAPINoResponseModel(Rule):
     def check(self, context: PythonContext) -> list[Finding]:
         findings = []
         for f in context.files:
-            if "fastapi" not in str(f.imports):
+            if not f.has_import("fastapi"):
                 continue
-            try:
-                source = f.path.read_text(encoding="utf-8", errors="replace")
-            except Exception:
+            source = f.source
+            if not source:
                 continue
             pattern = re.compile(r"@\w+\.(get|post|put|patch|delete)\s*\(")
             for i, line in enumerate(source.splitlines(), 1):
@@ -50,11 +49,10 @@ class FastAPISyncEndpoint(Rule):
     def check(self, context: PythonContext) -> list[Finding]:
         findings = []
         for f in context.files:
-            if "fastapi" not in str(f.imports):
+            if not f.has_import("fastapi"):
                 continue
-            try:
-                source = f.path.read_text(encoding="utf-8", errors="replace")
-            except Exception:
+            source = f.source
+            if not source:
                 continue
             lines = source.splitlines()
             for i, line in enumerate(lines, 1):

@@ -6,6 +6,7 @@ from pathlib import Path
 
 import pytest
 
+from gaudi.packs.python.context import Framework
 from gaudi.packs.python.pack import PythonPack
 from gaudi.packs.python.parser import parse_project
 from gaudi.engine import Engine
@@ -20,7 +21,7 @@ class TestParser:
 
     def test_parse_sample_models(self):
         context = parse_project(SAMPLE_MODELS)
-        assert context.framework == "django"
+        assert context.framework == Framework.DJANGO
         assert len(context.models) == 9
 
     def test_model_names(self):

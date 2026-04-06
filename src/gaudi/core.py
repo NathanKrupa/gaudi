@@ -15,13 +15,25 @@ from typing import Any
 class Severity(Enum):
     """Severity levels for architectural findings."""
 
-    ERROR = "error"  # Must fix — this will break at scale or cause data loss
-    WARN = "warn"  # Should fix — this will cause pain eventually
-    INFO = "info"  # Consider — there may be a better approach
+    ERROR = "error"
+    WARN = "warn"
+    INFO = "info"
 
     @property
     def priority(self) -> int:
         return {Severity.ERROR: 0, Severity.WARN: 1, Severity.INFO: 2}[self]
+
+    @property
+    def label(self) -> str:
+        return self.value.upper()
+
+    @property
+    def style(self) -> str:
+        return {
+            Severity.ERROR: "bold red",
+            Severity.WARN: "bold yellow",
+            Severity.INFO: "bold blue",
+        }[self]
 
     def __lt__(self, other: Severity) -> bool:
         return self.priority < other.priority

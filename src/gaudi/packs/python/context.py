@@ -8,7 +8,18 @@ Django models, SQLAlchemy tables, project structure, etc.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from enum import Enum
 from pathlib import Path
+
+
+class Framework(Enum):
+    """Python web frameworks detected by the parser."""
+
+    DJANGO = "django"
+    SQLALCHEMY = "sqlalchemy"
+    FASTAPI = "fastapi"
+    FLASK = "flask"
+    UNKNOWN = "unknown"
 
 
 @dataclass
@@ -69,9 +80,14 @@ class FileInfo:
 
     path: Path
     relative_path: str
+    source: str = ""
     line_count: int = 0
     imports: list[str] = field(default_factory=list)
     has_models: bool = False
+
+    def has_import(self, name: str) -> bool:
+        """Check if this file imports a module containing the given name."""
+        return any(name in imp for imp in self.imports)
 
 
 @dataclass
@@ -85,7 +101,7 @@ class PythonContext:
     root: Path
     models: list[ModelInfo] = field(default_factory=list)
     files: list[FileInfo] = field(default_factory=list)
-    framework: str = ""  # "django", "sqlalchemy", "fastapi", "unknown"
+    framework: Framework = Framework.UNKNOWN
     has_settings: bool = False
     has_requirements: bool = False
     has_pyproject: bool = False

@@ -13,6 +13,7 @@ from pathlib import Path
 from gaudi.packs.python.context import (
     ColumnInfo,
     FileInfo,
+    Framework,
     ModelInfo,
     PythonContext,
 )
@@ -101,18 +102,16 @@ def parse_project(path: Path) -> PythonContext:
         # Detect framework from imports
         for imp in file_info.imports:
             if any(d in imp for d in DJANGO_IMPORTS):
-                context.framework = "django"
+                context.framework = Framework.DJANGO
             elif any(s in imp for s in SQLALCHEMY_IMPORTS):
-                if context.framework != "django":
-                    context.framework = "sqlalchemy"
+                if context.framework != Framework.DJANGO:
+                    context.framework = Framework.SQLALCHEMY
 
         # Extract models if this looks like a models file
         if file_info.has_models:
-            models = _extract_models(py_file, root, context.framework or "django")
+            fw = context.framework if context.framework != Framework.UNKNOWN else Framework.DJANGO
+            models = _extract_models(py_file, root, fw.value)
             context.models.extend(models)
-
-    if not context.framework:
-        context.framework = "unknown"
 
     return context
 
@@ -127,6 +126,7 @@ def _parse_file(filepath: Path, root: Path) -> FileInfo:
     file_info = FileInfo(
         path=filepath,
         relative_path=str(filepath.relative_to(root)),
+        source=source,
         line_count=source.count("\n") + 1,
     )
 

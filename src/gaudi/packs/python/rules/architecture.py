@@ -8,7 +8,7 @@ to be machine-readable by AI coding agents.
 from __future__ import annotations
 
 from gaudi.core import Rule, Finding, Severity, Category
-from gaudi.packs.python.context import PythonContext, ModelInfo
+from gaudi.packs.python.context import Framework, PythonContext, ModelInfo
 
 
 # ---------------------------------------------------------------------------
@@ -366,7 +366,7 @@ class NoMetaPermissions(Rule):
     )
 
     def check(self, context: PythonContext) -> list[Finding]:
-        if context.framework != "django":
+        if context.framework != Framework.DJANGO:
             return []
 
         findings = []

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from gaudi.core import Rule, Finding, Severity, Category
-from gaudi.packs.python.context import PythonContext
+from gaudi.packs.python.context import Framework, PythonContext
 
 
 class DjangoSecretKeyExposed(Rule):
@@ -21,9 +21,8 @@ class DjangoSecretKeyExposed(Rule):
         for f in context.files:
             if "settings" not in f.relative_path.lower():
                 continue
-            try:
-                source = f.path.read_text(encoding="utf-8", errors="replace")
-            except Exception:
+            source = f.source
+            if not source:
                 continue
             for i, line in enumerate(source.splitlines(), 1):
                 if (
@@ -51,9 +50,8 @@ class DjangoDebugTrue(Rule):
         for f in context.files:
             if "settings" not in f.relative_path.lower():
                 continue
-            try:
-                source = f.path.read_text(encoding="utf-8", errors="replace")
-            except Exception:
+            source = f.source
+            if not source:
                 continue
             for i, line in enumerate(source.splitlines(), 1):
                 stripped = line.strip()
@@ -73,7 +71,7 @@ class DjangoFatView(Rule):
     THRESHOLD = 300
 
     def check(self, context: PythonContext) -> list[Finding]:
-        if context.framework != "django":
+        if context.framework != Framework.DJANGO:
             return []
         findings = []
         for f in context.files:

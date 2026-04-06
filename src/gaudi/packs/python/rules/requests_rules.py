@@ -21,9 +21,8 @@ class RequestsNoTimeout(Rule):
     def check(self, context: PythonContext) -> list[Finding]:
         findings = []
         for f in context.files:
-            try:
-                source = f.path.read_text(encoding="utf-8", errors="replace")
-            except Exception:
+            source = f.source
+            if not source:
                 continue
             pattern = re.compile(r"requests\.(get|post|put|patch|delete|head|options)\s*\(")
             for i, line in enumerate(source.splitlines(), 1):
@@ -47,11 +46,10 @@ class RequestsNoRetry(Rule):
     def check(self, context: PythonContext) -> list[Finding]:
         findings = []
         for f in context.files:
-            if "requests" not in str(f.imports):
+            if not f.has_import("requests"):
                 continue
-            try:
-                source = f.path.read_text(encoding="utf-8", errors="replace")
-            except Exception:
+            source = f.source
+            if not source:
                 continue
             if "requests.get" in source or "requests.post" in source:
                 if "Retry" not in source and "retry" not in source and "tenacity" not in source:

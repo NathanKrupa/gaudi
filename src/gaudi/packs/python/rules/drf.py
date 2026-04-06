@@ -19,11 +19,10 @@ class DRFNoPermissionClass(Rule):
     def check(self, context: PythonContext) -> list[Finding]:
         findings = []
         for f in context.files:
-            if "rest_framework" not in str(f.imports):
+            if not f.has_import("rest_framework"):
                 continue
-            try:
-                source = f.path.read_text(encoding="utf-8", errors="replace")
-            except Exception:
+            source = f.source
+            if not source:
                 continue
             if ("ViewSet" in source or "APIView" in source) and "permission_classes" not in source:
                 findings.append(self.finding(file=f.relative_path))
@@ -43,11 +42,10 @@ class DRFNoThrottling(Rule):
     def check(self, context: PythonContext) -> list[Finding]:
         findings = []
         for f in context.files:
-            if "rest_framework" not in str(f.imports):
+            if not f.has_import("rest_framework"):
                 continue
-            try:
-                source = f.path.read_text(encoding="utf-8", errors="replace")
-            except Exception:
+            source = f.source
+            if not source:
                 continue
             if ("ViewSet" in source or "APIView" in source) and "throttle_classes" not in source:
                 findings.append(self.finding(file=f.relative_path))

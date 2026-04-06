@@ -24,18 +24,6 @@ from gaudi.engine import Engine
 
 console = Console()
 
-SEVERITY_STYLES = {
-    Severity.ERROR: "bold red",
-    Severity.WARN: "bold yellow",
-    Severity.INFO: "bold blue",
-}
-
-SEVERITY_LABELS = {
-    Severity.ERROR: "ERROR",
-    Severity.WARN: "WARN",
-    Severity.INFO: "INFO",
-}
-
 
 @click.group()
 @click.version_option(package_name="gaudi-linter")
@@ -117,8 +105,8 @@ def check(
         else:
             console.print()
             for finding in findings:
-                style = SEVERITY_STYLES[finding.severity]
-                label = SEVERITY_LABELS[finding.severity]
+                style = finding.severity.style
+                label = finding.severity.label
 
                 # Code and severity
                 header = Text()
