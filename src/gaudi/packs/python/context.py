@@ -33,7 +33,6 @@ class ModelInfo:
     """A database model/table extracted from a Django or SQLAlchemy file."""
 
     name: str
-    table_name: str | None = None
     source_file: str = ""
     source_line: int = 0
     columns: list[ColumnInfo] = field(default_factory=list)
@@ -90,11 +89,6 @@ class PythonContext:
     has_settings: bool = False
     has_requirements: bool = False
     has_pyproject: bool = False
-
-    @property
-    def tables(self) -> list[ModelInfo]:
-        """Alias for models — used in rule documentation."""
-        return self.models
 
     @property
     def model_names(self) -> set[str]:

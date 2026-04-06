@@ -13,8 +13,6 @@ from gaudi.pack import Pack
 from gaudi.packs.python.context import PythonContext
 from gaudi.packs.python.parser import parse_project
 from gaudi.packs.python.rules import ALL_RULES
-from gaudi.packs.python.rules_py314 import PY314_RULES
-from gaudi.packs.python.rules_libraries import LIBRARY_RULES
 
 
 class PythonPack(Pack):
@@ -26,16 +24,15 @@ class PythonPack(Pack):
     """
 
     name = "python"
-    description = "Full Python stack: Django, FastAPI, SQLAlchemy, Flask, Celery, Pandas, DRF, and 3.14 compat"
+    description = (
+        "Full Python stack: Django, FastAPI, SQLAlchemy, Flask, "
+        "Celery, Pandas, DRF, and 3.14 compat"
+    )
     extensions = (".py",)
 
     def __init__(self) -> None:
         super().__init__()
         for rule in ALL_RULES:
-            self.register_rule(rule)
-        for rule in PY314_RULES:
-            self.register_rule(rule)
-        for rule in LIBRARY_RULES:
             self.register_rule(rule)
 
     def parse(self, path: Path) -> PythonContext:

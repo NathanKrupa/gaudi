@@ -1,30 +1,65 @@
-# Session State — Gaudi
+# Session State -- Gaudi
 
 ## Last Updated
-2026-04-05
+2026-04-06
 
 ## Current Status
-Alpha (v0.1.0). Python pack has 42 rules across 3 modules. All other language packs are stubs.
-On branch `feat/pypi-rename` (renamed package from `gaudi` to `gaudi-linter` for PyPI).
+Alpha (v0.1.0). Python-only architecture linter. PyPI package name: `gaudi-linter`.
+All non-Python language packs removed. Rules split into per-library modules.
 
-## What Happened This Session
-- Added supply chain security hardening for open-source contributions:
-  - `.github/dependabot.yml` — weekly pip + GitHub Actions vulnerability scanning
-  - `.github/PULL_REQUEST_TEMPLATE.md` — security review checklist for all PRs
-  - `.pre-commit-config.yaml` — ruff, bandit, detect-secrets, large file blocker
-  - `.secrets.baseline` — clean baseline for detect-secrets hook
-  - `scripts/setup-branch-protection.sh` — one-shot `gh` CLI script for branch protection
-- Attempted to harden ci.yml (split into lint/security/test jobs, add bandit + pip-audit + coverage), update CONTRIBUTING.md (security policy), and add dev deps (bandit, pip-audit, pre-commit) to pyproject.toml — these were reverted by the user. The new standalone files above remain.
+## What Changed This Session
+1. Removed all 10 non-Python language packs (JS, Go, C++, Ruby, Rust, Java, C#, PHP, Kotlin, Swift)
+2. Split rules_libraries.py (574 lines, 18 rules) into 10 per-library modules under rules/
+3. Moved core architecture rules and py314 rules into rules/ package
+4. Removed dead code: Engine._config, PythonContext.tables, ModelInfo.table_name
+5. Fixed CI: ruff formatting, bandit skips (B110/B112), pip-audit --skip-editable, coverage threshold 60%
+6. Updated README for Python-only focus with full rule category/library tables
+7. Created 25 GitHub issues tracking Fowler's 24 code smells (19 refactoring + 5 detection rules + 1 tracker)
 
-## Known Blockers
-1. ci.yml, CONTRIBUTING.md, pyproject.toml still need security hardening applied (reverted changes need to be re-integrated on the user's terms)
-2. Branch protection script exists but hasn't been run yet
-3. No negative test cases
-4. Library rules use regex on raw text (false positive risk)
+## Project Structure
+```
+src/gaudi/
+  __init__.py          # Public API, version from metadata
+  cli.py               # Click CLI (gaudi check, gaudi list-packs)
+  config.py            # gaudi.toml loader (wired to CLI)
+  core.py              # Finding, Rule, Severity, Category
+  engine.py            # Pack discovery and orchestration
+  pack.py              # Base Pack class
+  packs/
+    __init__.py
+    python/
+      __init__.py
+      context.py       # PythonContext, ModelInfo, ColumnInfo, FileInfo
+      pack.py          # PythonPack (registers all rules)
+      parser.py        # AST-based parser
+      rules/
+        __init__.py    # Assembles ALL_RULES from all modules
+        architecture.py # Core arch rules (ARCH, IDX, SCHEMA, SEC, STRUCT)
+        py314.py       # Python 3.14 compatibility rules
+        django.py      # DJ-SEC-001, DJ-SEC-002, DJ-STRUCT-001
+        fastapi.py     # FAPI-ARCH-001, FAPI-SCALE-001
+        sqlalchemy.py  # SA-ARCH-001, SA-SCALE-001
+        flask.py       # FLASK-STRUCT-001
+        celery.py      # CELERY-ARCH-001, CELERY-SCALE-001
+        pandas.py      # PD-ARCH-001, PD-SCALE-001
+        requests_rules.py # HTTP-SCALE-001, HTTP-ARCH-001
+        pydantic.py    # PYD-ARCH-001
+        pytest_rules.py # TEST-STRUCT-001, TEST-SCALE-001
+        drf.py         # DRF-SEC-001, DRF-SCALE-001
+```
+
+## Open PRs
+- None pending
+
+## GitHub Issues
+- #3-#21: Fowler code smell refactoring issues (some resolved by this session's work)
+- #22: Tracker for SMELL rule category (detect all 24 Fowler smells)
+- #23-#27: Individual SMELL detection rule issues (Tier 3 hard detections)
 
 ## Next Steps
-- Re-apply CI hardening, CONTRIBUTING.md security policy, and dev deps when ready
-- Run `bash scripts/setup-branch-protection.sh` to activate branch protection
-- Merge feat/pypi-rename → main
-- Add negative test cases
-- Add per-rule documentation
+1. Phase 2: Enrich data classes with behavior (move repeated rule logic onto ModelInfo/Context)
+2. Phase 2: Framework enum, Severity display properties
+3. Phase 2: Auto-register rules (eliminate manual list management)
+4. Phase 3: Build SMELL detection rules (start with SMELL-004 Long Parameter List, SMELL-013 Loops)
+5. Increase test coverage (currently ~70%, rules/ modules need tests)
+6. PyPI publishing setup (trusted publisher on pypi.org)
