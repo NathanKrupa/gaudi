@@ -172,7 +172,15 @@ def _detect_libraries(root: Path, files: list[FileInfo]) -> set[str]:
                 if not line or line.startswith("#") or line.startswith("-"):
                     continue
                 # Strip version specifiers: "django>=4.2" -> "django"
-                pkg = line.split("==")[0].split(">=")[0].split("<=")[0].split("~=")[0].split("!=")[0].split("[")[0].strip()
+                pkg = (
+                    line.split("==")[0]
+                    .split(">=")[0]
+                    .split("<=")[0]
+                    .split("~=")[0]
+                    .split("!=")[0]
+                    .split("[")[0]
+                    .strip()
+                )
                 if pkg in _PACKAGE_TO_LIBRARY:
                     libraries.add(_PACKAGE_TO_LIBRARY[pkg])
         except Exception:

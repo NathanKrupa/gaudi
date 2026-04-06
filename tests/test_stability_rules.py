@@ -11,7 +11,6 @@ _PYPROJECT = "[project]" + chr(10) + "name = 'test'" + chr(10)
 
 
 class TestStabilityRules:
-
     @staticmethod
     def _findings_for(fixture_name, code):
         pack = PythonPack()

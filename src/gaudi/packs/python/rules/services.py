@@ -162,9 +162,7 @@ class NoAPIVersioning(Rule):
                 # Skip health/ready endpoints
                 if any(p in block for p in ["/health", "/ready", "/ping", "/docs", "/openapi"]):
                     continue
-                findings.append(
-                    self.finding(file=fi.relative_path, line=i)
-                )
+                findings.append(self.finding(file=fi.relative_path, line=i))
         return findings
 
 

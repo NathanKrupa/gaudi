@@ -96,13 +96,9 @@ class RetryWithoutBackoff(Rule):
                 if not isinstance(node, ast.Call):
                     continue
                 if self._is_tenacity_retry_without_backoff(node):
-                    findings.append(
-                        self.finding(file=fi.relative_path, line=node.lineno)
-                    )
+                    findings.append(self.finding(file=fi.relative_path, line=node.lineno))
                 if self._is_urllib3_retry_without_backoff(node):
-                    findings.append(
-                        self.finding(file=fi.relative_path, line=node.lineno)
-                    )
+                    findings.append(self.finding(file=fi.relative_path, line=node.lineno))
         return findings
 
     @staticmethod
@@ -167,9 +163,7 @@ class UnboundedCache(Rule):
                     continue
                 for dec in node.decorator_list:
                     if self._is_unbounded_cache(dec):
-                        findings.append(
-                            self.finding(file=fi.relative_path, line=dec.lineno)
-                        )
+                        findings.append(self.finding(file=fi.relative_path, line=dec.lineno))
         return findings
 
     @staticmethod
@@ -199,14 +193,16 @@ class UnboundedCache(Rule):
 # Nygard Ch. 4: "Blocked Threads" anti-pattern
 # ---------------------------------------------------------------
 
-_BLOCKING_CALLS = frozenset({
-    "sleep",
-    "get",
-    "post",
-    "put",
-    "patch",
-    "delete",
-})
+_BLOCKING_CALLS = frozenset(
+    {
+        "sleep",
+        "get",
+        "post",
+        "put",
+        "patch",
+        "delete",
+    }
+)
 
 _BLOCKING_MODULES = frozenset({"time", "requests"})
 
@@ -375,9 +371,7 @@ class UnboundedThreadPool(Rule):
                 kw_names = {kw.arg for kw in node.keywords}
                 has_positional_max = len(node.args) >= 1
                 if "max_workers" not in kw_names and not has_positional_max:
-                    findings.append(
-                        self.finding(file=fi.relative_path, line=node.lineno)
-                    )
+                    findings.append(self.finding(file=fi.relative_path, line=node.lineno))
         return findings
 
 

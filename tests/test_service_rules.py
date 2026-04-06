@@ -8,7 +8,6 @@ FIXTURES = Path(__file__).parent / "fixtures"
 
 
 class TestServiceRules:
-
     @staticmethod
     def _findings_for(fixture_name, code):
         pack = PythonPack()

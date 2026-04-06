@@ -8,12 +8,11 @@ from gaudi.packs.python.parser import parse_project
 
 
 class TestLibraryDetection:
-
     def test_detect_from_pyproject(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             root = Path(tmpdir)
             (root / "pyproject.toml").write_text(
-            '[project]\nname = "myapp"\ndependencies = ["django>=4.2", "pandas"]\n'
+                '[project]\nname = "myapp"\ndependencies = ["django>=4.2", "pandas"]\n'
             )
             (root / "app.py").write_text("x = 1\n")
             ctx = parse_project(root)
@@ -45,7 +44,6 @@ class TestLibraryDetection:
 
 
 class TestLibraryFiltering:
-
     def test_library_rules_skipped_when_not_detected(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             root = Path(tmpdir)
@@ -55,12 +53,19 @@ class TestLibraryFiltering:
             pack = PythonPack()
             findings = pack.check(root)
             lib_prefixes = [
-                "DJ-", "FAPI-", "SA-", "FLASK-", "CELERY-",
-                "PD-", "HTTP-", "PYD-", "TEST-", "DRF-",
+                "DJ-",
+                "FAPI-",
+                "SA-",
+                "FLASK-",
+                "CELERY-",
+                "PD-",
+                "HTTP-",
+                "PYD-",
+                "TEST-",
+                "DRF-",
             ]
             lib_codes = [
-                f.code for f in findings
-                if any(f.code.startswith(p) for p in lib_prefixes)
+                f.code for f in findings if any(f.code.startswith(p) for p in lib_prefixes)
             ]
             assert lib_codes == [], f"Library rules fired without library: {lib_codes}"
 
@@ -82,10 +87,7 @@ class TestLibraryFiltering:
             (root / "pyproject.toml").write_text('[project]\nname="t"\n')
             (root / "requirements-lock.txt").write_text("")
             source = (
-                "import requests\n"
-                "\n"
-                "def fetch():\n"
-                "    return requests.get('http://example.com')\n"
+                "import requests\n\ndef fetch():\n    return requests.get('http://example.com')\n"
             )
             (root / "app.py").write_text(source)
             pack = PythonPack()
