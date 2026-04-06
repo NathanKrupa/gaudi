@@ -23,8 +23,14 @@ from gaudi.packs.python.context import PythonContext
 REMOVED_IN_314 = {
     "argparse": [
         ("BooleanOptionalAction.type", "Remove the type parameter from BooleanOptionalAction"),
-        ("BooleanOptionalAction.choices", "Remove the choices parameter from BooleanOptionalAction"),
-        ("BooleanOptionalAction.metavar", "Remove the metavar parameter from BooleanOptionalAction"),
+        (
+            "BooleanOptionalAction.choices",
+            "Remove the choices parameter from BooleanOptionalAction",
+        ),
+        (
+            "BooleanOptionalAction.metavar",
+            "Remove the metavar parameter from BooleanOptionalAction",
+        ),
     ],
     "ast": [
         ("Num", "Use ast.Constant instead"),
@@ -60,8 +66,14 @@ REMOVED_IN_314 = {
         ("get_loader", "Use importlib.util.find_spec() instead"),
     ],
     "sqlite3": [
-        ("version", "sqlite3.version (module version string) has been removed; use sqlite3.sqlite_version for the SQLite library version"),
-        ("version_info", "sqlite3.version_info has been removed; use sqlite3.sqlite_version_info instead"),
+        (
+            "version",
+            "sqlite3.version (module version string) has been removed; use sqlite3.sqlite_version for the SQLite library version",
+        ),
+        (
+            "version_info",
+            "sqlite3.version_info has been removed; use sqlite3.sqlite_version_info instead",
+        ),
     ],
     "urllib.parse": [
         ("Quoter", "urllib.parse.Quoter was never a public API and has been removed"),
@@ -77,10 +89,22 @@ REMOVED_IMPORT_NAMES = {
     ("ast", "NameConstant"): "Use ast.Constant instead of ast.NameConstant",
     ("ast", "Ellipsis"): "Use ast.Constant instead of ast.Ellipsis",
     # asyncio child watchers
-    ("asyncio", "MultiLoopChildWatcher"): "Child watchers removed in 3.14; use the default child watcher",
-    ("asyncio", "FastChildWatcher"): "Child watchers removed in 3.14; use the default child watcher",
-    ("asyncio", "AbstractChildWatcher"): "Child watchers removed in 3.14; use the default child watcher",
-    ("asyncio", "SafeChildWatcher"): "Child watchers removed in 3.14; use the default child watcher",
+    (
+        "asyncio",
+        "MultiLoopChildWatcher",
+    ): "Child watchers removed in 3.14; use the default child watcher",
+    (
+        "asyncio",
+        "FastChildWatcher",
+    ): "Child watchers removed in 3.14; use the default child watcher",
+    (
+        "asyncio",
+        "AbstractChildWatcher",
+    ): "Child watchers removed in 3.14; use the default child watcher",
+    (
+        "asyncio",
+        "SafeChildWatcher",
+    ): "Child watchers removed in 3.14; use the default child watcher",
     ("asyncio", "set_child_watcher"): "Child watchers removed in 3.14",
     ("asyncio", "get_child_watcher"): "Child watchers removed in 3.14",
     # pkgutil
@@ -88,7 +112,10 @@ REMOVED_IMPORT_NAMES = {
     ("pkgutil", "get_loader"): "Use importlib.util.find_spec() instead",
     # sqlite3
     ("sqlite3", "version"): "sqlite3.version removed in 3.14; use sqlite3.sqlite_version",
-    ("sqlite3", "version_info"): "sqlite3.version_info removed in 3.14; use sqlite3.sqlite_version_info",
+    (
+        "sqlite3",
+        "version_info",
+    ): "sqlite3.version_info removed in 3.14; use sqlite3.sqlite_version_info",
 }
 
 # Deprecated modules (pty was deprecated, scheduled for future removal)
@@ -98,8 +125,14 @@ DEPRECATED_MODULES = {
 
 # Deprecated in 3.14, pending removal in 3.15+
 DEPRECATED_IN_314 = {
-    ("asyncio", "iscoroutinefunction"): "Deprecated in 3.14, removed in 3.16; use inspect.iscoroutinefunction() instead",
-    ("locale", "getdefaultlocale"): "Deprecated since 3.11, removal in 3.15; use getlocale(), setlocale(), and getencoding()",
+    (
+        "asyncio",
+        "iscoroutinefunction",
+    ): "Deprecated in 3.14, removed in 3.16; use inspect.iscoroutinefunction() instead",
+    (
+        "locale",
+        "getdefaultlocale",
+    ): "Deprecated since 3.11, removal in 3.15; use getlocale(), setlocale(), and getencoding()",
     ("pathlib", "PurePath.is_reserved"): "Deprecated in 3.13; use os.path.isreserved() instead",
 }
 
@@ -132,13 +165,15 @@ class RemovedIn314Import(Rule):
                     for alias in node.names:
                         key = (node.module, alias.name)
                         if key in REMOVED_IMPORT_NAMES:
-                            findings.append(self.finding(
-                                file=file_info.relative_path,
-                                line=node.lineno,
-                                name=alias.name,
-                                module=node.module,
-                                replacement=REMOVED_IMPORT_NAMES[key],
-                            ))
+                            findings.append(
+                                self.finding(
+                                    file=file_info.relative_path,
+                                    line=node.lineno,
+                                    name=alias.name,
+                                    module=node.module,
+                                    replacement=REMOVED_IMPORT_NAMES[key],
+                                )
+                            )
         return findings
 
 
@@ -169,33 +204,39 @@ class DeprecatedIn314Import(Rule):
                     for alias in node.names:
                         key = (node.module, alias.name)
                         if key in DEPRECATED_IN_314:
-                            findings.append(self.finding(
-                                file=file_info.relative_path,
-                                line=node.lineno,
-                                name=alias.name,
-                                module=node.module,
-                                replacement=DEPRECATED_IN_314[key],
-                            ))
+                            findings.append(
+                                self.finding(
+                                    file=file_info.relative_path,
+                                    line=node.lineno,
+                                    name=alias.name,
+                                    module=node.module,
+                                    replacement=DEPRECATED_IN_314[key],
+                                )
+                            )
 
                 # Check for deprecated module imports
                 if isinstance(node, ast.Import):
                     for alias in node.names:
                         if alias.name in DEPRECATED_MODULES:
-                            findings.append(self.finding(
-                                file=file_info.relative_path,
-                                line=node.lineno,
-                                name=alias.name,
-                                module=alias.name,
-                                replacement=DEPRECATED_MODULES[alias.name],
-                            ))
+                            findings.append(
+                                self.finding(
+                                    file=file_info.relative_path,
+                                    line=node.lineno,
+                                    name=alias.name,
+                                    module=alias.name,
+                                    replacement=DEPRECATED_MODULES[alias.name],
+                                )
+                            )
                 elif isinstance(node, ast.ImportFrom) and node.module in DEPRECATED_MODULES:
-                    findings.append(self.finding(
-                        file=file_info.relative_path,
-                        line=node.lineno,
-                        name=node.module,
-                        module=node.module,
-                        replacement=DEPRECATED_MODULES[node.module],
-                    ))
+                    findings.append(
+                        self.finding(
+                            file=file_info.relative_path,
+                            line=node.lineno,
+                            name=node.module,
+                            module=node.module,
+                            replacement=DEPRECATED_MODULES[node.module],
+                        )
+                    )
         return findings
 
 
@@ -231,14 +272,13 @@ class DeferredAnnotationAccess(Rule):
 
             for node in ast.walk(tree):
                 # Catch obj.__annotations__ attribute access
-                if (
-                    isinstance(node, ast.Attribute)
-                    and node.attr == "__annotations__"
-                ):
-                    findings.append(self.finding(
-                        file=file_info.relative_path,
-                        line=node.lineno,
-                    ))
+                if isinstance(node, ast.Attribute) and node.attr == "__annotations__":
+                    findings.append(
+                        self.finding(
+                            file=file_info.relative_path,
+                            line=node.lineno,
+                        )
+                    )
         return findings
 
 
@@ -281,23 +321,29 @@ class FinallyControlFlow(Rule):
             if isinstance(node, ast.Try) and node.finalbody:
                 for stmt in ast.walk(ast.Module(body=node.finalbody, type_ignores=[])):
                     if isinstance(stmt, ast.Return):
-                        findings.append(self.finding(
-                            file=filepath,
-                            line=stmt.lineno,
-                            statement="return",
-                        ))
+                        findings.append(
+                            self.finding(
+                                file=filepath,
+                                line=stmt.lineno,
+                                statement="return",
+                            )
+                        )
                     elif isinstance(stmt, ast.Break):
-                        findings.append(self.finding(
-                            file=filepath,
-                            line=stmt.lineno,
-                            statement="break",
-                        ))
+                        findings.append(
+                            self.finding(
+                                file=filepath,
+                                line=stmt.lineno,
+                                statement="break",
+                            )
+                        )
                     elif isinstance(stmt, ast.Continue):
-                        findings.append(self.finding(
-                            file=filepath,
-                            line=stmt.lineno,
-                            statement="continue",
-                        ))
+                        findings.append(
+                            self.finding(
+                                file=filepath,
+                                line=stmt.lineno,
+                                statement="continue",
+                            )
+                        )
         return findings
 
 
@@ -334,10 +380,12 @@ class NotImplementedBoolContext(Rule):
                 # Catch: if NotImplemented, while NotImplemented, bool(NotImplemented)
                 if isinstance(node, (ast.If, ast.While)):
                     if self._is_not_implemented(node.test):
-                        findings.append(self.finding(
-                            file=file_info.relative_path,
-                            line=node.lineno,
-                        ))
+                        findings.append(
+                            self.finding(
+                                file=file_info.relative_path,
+                                line=node.lineno,
+                            )
+                        )
         return findings
 
     def _is_not_implemented(self, node: ast.expr) -> bool:
@@ -392,10 +440,12 @@ class TarfileNoFilter(Rule):
                         # Check if 'filter' is in keyword arguments
                         has_filter = any(kw.arg == "filter" for kw in node.keywords)
                         if not has_filter:
-                            findings.append(self.finding(
-                                file=file_info.relative_path,
-                                line=node.lineno,
-                            ))
+                            findings.append(
+                                self.finding(
+                                    file=file_info.relative_path,
+                                    line=node.lineno,
+                                )
+                            )
         return findings
 
     def _get_call_name(self, node: ast.Call) -> str | None:

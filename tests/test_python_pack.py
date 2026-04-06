@@ -27,8 +27,15 @@ class TestParser:
         context = parse_project(SAMPLE_MODELS)
         names = {m.name for m in context.models}
         expected = {
-            "Donor", "Gift", "Campaign", "Fund",
-            "Appeal", "Event", "Volunteer", "Communication", "Relationship",
+            "Donor",
+            "Gift",
+            "Campaign",
+            "Fund",
+            "Appeal",
+            "Event",
+            "Volunteer",
+            "Communication",
+            "Relationship",
         }
         assert names == expected
 

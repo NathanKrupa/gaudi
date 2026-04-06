@@ -18,6 +18,7 @@ from gaudi.packs.python.context import PythonContext
 # DJANGO (extended beyond model rules)
 # ---------------------------------------------------------------------------
 
+
 class DjangoSecretKeyExposed(Rule):
     code = "DJ-SEC-001"
     severity = Severity.ERROR
@@ -38,7 +39,12 @@ class DjangoSecretKeyExposed(Rule):
             except Exception:
                 continue
             for i, line in enumerate(source.splitlines(), 1):
-                if "SECRET_KEY" in line and ("'" in line or '"' in line) and "os.environ" not in line and "env(" not in line:
+                if (
+                    "SECRET_KEY" in line
+                    and ("'" in line or '"' in line)
+                    and "os.environ" not in line
+                    and "env(" not in line
+                ):
                     if not line.strip().startswith("#"):
                         findings.append(self.finding(file=f.relative_path, line=i))
         return findings
@@ -49,7 +55,9 @@ class DjangoDebugTrue(Rule):
     severity = Severity.ERROR
     category = Category.SECURITY
     message_template = "DEBUG = True in production settings at line {line}"
-    recommendation_template = "Set DEBUG = False in production. Use environment variables to control debug mode."
+    recommendation_template = (
+        "Set DEBUG = False in production. Use environment variables to control debug mode."
+    )
 
     def check(self, context: PythonContext) -> list[Finding]:
         findings = []
@@ -72,7 +80,9 @@ class DjangoFatView(Rule):
     severity = Severity.WARN
     category = Category.STRUCTURE
     message_template = "View file '{file}' is {lines} lines — extract business logic to services"
-    recommendation_template = "Views should be thin. Move business logic to service functions or model methods."
+    recommendation_template = (
+        "Views should be thin. Move business logic to service functions or model methods."
+    )
     THRESHOLD = 300
 
     def check(self, context: PythonContext) -> list[Finding]:
@@ -88,6 +98,7 @@ class DjangoFatView(Rule):
 # ---------------------------------------------------------------------------
 # FASTAPI
 # ---------------------------------------------------------------------------
+
 
 class FastAPINoResponseModel(Rule):
     code = "FAPI-ARCH-001"
@@ -108,11 +119,11 @@ class FastAPINoResponseModel(Rule):
                 source = f.path.read_text(encoding="utf-8", errors="replace")
             except Exception:
                 continue
-            pattern = re.compile(r'@\w+\.(get|post|put|patch|delete)\s*\(')
+            pattern = re.compile(r"@\w+\.(get|post|put|patch|delete)\s*\(")
             for i, line in enumerate(source.splitlines(), 1):
                 if pattern.search(line) and "response_model" not in line:
                     # Check next few lines for response_model
-                    block = "\n".join(source.splitlines()[i-1:i+3])
+                    block = "\n".join(source.splitlines()[i - 1 : i + 3])
                     if "response_model" not in block:
                         findings.append(self.finding(file=f.relative_path, line=i))
         return findings
@@ -139,7 +150,7 @@ class FastAPISyncEndpoint(Rule):
                 continue
             lines = source.splitlines()
             for i, line in enumerate(lines, 1):
-                if re.search(r'@\w+\.(get|post|put|patch|delete)', line):
+                if re.search(r"@\w+\.(get|post|put|patch|delete)", line):
                     # Check if next def is sync
                     for j in range(i, min(i + 5, len(lines))):
                         if lines[j - 1].strip().startswith("def ") and "async" not in lines[j - 1]:
@@ -151,6 +162,7 @@ class FastAPISyncEndpoint(Rule):
 # ---------------------------------------------------------------------------
 # SQLALCHEMY
 # ---------------------------------------------------------------------------
+
 
 class SQLAlchemySessionLeak(Rule):
     code = "SA-ARCH-001"
@@ -205,6 +217,7 @@ class SQLAlchemyLazyDefault(Rule):
 # FLASK
 # ---------------------------------------------------------------------------
 
+
 class FlaskNoAppFactory(Rule):
     code = "FLASK-STRUCT-001"
     severity = Severity.WARN
@@ -226,7 +239,7 @@ class FlaskNoAppFactory(Rule):
                 continue
             for i, line in enumerate(source.splitlines(), 1):
                 stripped = line.strip()
-                if re.match(r'^app\s*=\s*Flask\s*\(', stripped):
+                if re.match(r"^app\s*=\s*Flask\s*\(", stripped):
                     findings.append(self.finding(file=f.relative_path, line=i))
         return findings
 
@@ -234,6 +247,7 @@ class FlaskNoAppFactory(Rule):
 # ---------------------------------------------------------------------------
 # CELERY
 # ---------------------------------------------------------------------------
+
 
 class CeleryNoRetry(Rule):
     code = "CELERY-ARCH-001"
@@ -256,7 +270,7 @@ class CeleryNoRetry(Rule):
                 continue
             for i, line in enumerate(source.splitlines(), 1):
                 if "@" in line and (".task" in line or "shared_task" in line):
-                    block = "\n".join(source.splitlines()[max(0, i-1):i+5])
+                    block = "\n".join(source.splitlines()[max(0, i - 1) : i + 5])
                     if "retry" not in block and "max_retries" not in block:
                         findings.append(self.finding(file=f.relative_path, line=i))
         return findings
@@ -282,7 +296,7 @@ class CeleryNoTimeLimit(Rule):
                 continue
             for i, line in enumerate(source.splitlines(), 1):
                 if "@" in line and (".task" in line or "shared_task" in line):
-                    block = "\n".join(source.splitlines()[max(0, i-1):i+5])
+                    block = "\n".join(source.splitlines()[max(0, i - 1) : i + 5])
                     if "time_limit" not in block:
                         findings.append(self.finding(file=f.relative_path, line=i))
         return findings
@@ -291,6 +305,7 @@ class CeleryNoTimeLimit(Rule):
 # ---------------------------------------------------------------------------
 # PANDAS
 # ---------------------------------------------------------------------------
+
 
 class PandasInplaceAntiPattern(Rule):
     code = "PD-ARCH-001"
@@ -344,6 +359,7 @@ class PandasIterrows(Rule):
 # REQUESTS / HTTPX
 # ---------------------------------------------------------------------------
 
+
 class RequestsNoTimeout(Rule):
     code = "HTTP-SCALE-001"
     severity = Severity.ERROR
@@ -361,11 +377,11 @@ class RequestsNoTimeout(Rule):
                 source = f.path.read_text(encoding="utf-8", errors="replace")
             except Exception:
                 continue
-            pattern = re.compile(r'requests\.(get|post|put|patch|delete|head|options)\s*\(')
+            pattern = re.compile(r"requests\.(get|post|put|patch|delete|head|options)\s*\(")
             for i, line in enumerate(source.splitlines(), 1):
                 if pattern.search(line) and "timeout" not in line:
                     # Check next few lines too
-                    block = "\n".join(source.splitlines()[i-1:i+3])
+                    block = "\n".join(source.splitlines()[i - 1 : i + 3])
                     if "timeout" not in block:
                         findings.append(self.finding(file=f.relative_path, line=i))
         return findings
@@ -399,6 +415,7 @@ class RequestsNoRetry(Rule):
 # PYDANTIC
 # ---------------------------------------------------------------------------
 
+
 class PydanticMutableDefault(Rule):
     code = "PYD-ARCH-001"
     severity = Severity.ERROR
@@ -419,7 +436,7 @@ class PydanticMutableDefault(Rule):
             except Exception:
                 continue
             for i, line in enumerate(source.splitlines(), 1):
-                if re.search(r'=\s*\[\s*\]|=\s*\{\s*\}', line) and "Field(" not in line:
+                if re.search(r"=\s*\[\s*\]|=\s*\{\s*\}", line) and "Field(" not in line:
                     if "BaseModel" in source or "BaseSettings" in source:
                         findings.append(self.finding(file=f.relative_path, line=i))
         return findings
@@ -428,6 +445,7 @@ class PydanticMutableDefault(Rule):
 # ---------------------------------------------------------------------------
 # PYTEST
 # ---------------------------------------------------------------------------
+
 
 class PytestAssertMessage(Rule):
     code = "TEST-STRUCT-001"
@@ -478,7 +496,7 @@ class PytestFixtureScope(Rule):
             for i, line in enumerate(source.splitlines(), 1):
                 if "@pytest.fixture" in line and "scope=" not in line:
                     # Check fixture name
-                    next_lines = source.splitlines()[i:i+3]
+                    next_lines = source.splitlines()[i : i + 3]
                     func_line = "\n".join(next_lines)
                     if any(p in func_line.lower() for p in expensive_patterns):
                         findings.append(self.finding(file=f.relative_path, line=i))
@@ -488,6 +506,7 @@ class PytestFixtureScope(Rule):
 # ---------------------------------------------------------------------------
 # DJANGO REST FRAMEWORK
 # ---------------------------------------------------------------------------
+
 
 class DRFNoPermissionClass(Rule):
     code = "DRF-SEC-001"

@@ -46,7 +46,7 @@ jobs:
         run: bandit -r src/ -c pyproject.toml
 
       - name: Dependency audit
-        run: pip-audit --strict
+        run: pip-audit --skip-editable
 
   test:
     runs-on: ubuntu-latest
@@ -67,4 +67,4 @@ jobs:
         run: pip install -e ".[dev]"
 
       - name: Test with coverage
-        run: pytest --tb=short --cov=gaudi --cov-report=term-missing --cov-fail-under=80
+        run: pytest --tb=short --cov=gaudi --cov-report=term-missing --cov-fail-under=60

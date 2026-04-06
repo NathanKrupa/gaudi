@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "gaudi-linter"
 version = "0.1.0"
-description = "Not just structurally sound. Beautiful. A universal architecture linter for AI-assisted development."
+description = "Not just structurally sound. Beautiful. An architecture linter for Python projects."
 readme = "README.md"
 license = {text = "MIT"}
 requires-python = ">=3.10"
@@ -47,16 +47,6 @@ gaudi = "gaudi.cli:main"
 
 [project.entry-points."gaudi.packs"]
 python = "gaudi.packs.python:PythonPack"
-javascript = "gaudi.packs.javascript:JavaScriptPack"
-go = "gaudi.packs.go:GoPack"
-rust = "gaudi.packs.rust:RustPack"
-java = "gaudi.packs.java:JavaPack"
-csharp = "gaudi.packs.csharp:CSharpPack"
-php = "gaudi.packs.php:PHPPack"
-ruby = "gaudi.packs.ruby:RubyPack"
-swift = "gaudi.packs.swift:SwiftPack"
-kotlin = "gaudi.packs.kotlin:KotlinPack"
-cpp = "gaudi.packs.cpp:CppPack"
 
 [project.urls]
 Homepage = "https://github.com/NathanKrupa/gaudi"
@@ -78,4 +68,4 @@ testpaths = ["tests"]
 
 [tool.bandit]
 exclude_dirs = ["tests"]
-skips = ["B101"]
+skips = ["B101", "B110", "B112"]

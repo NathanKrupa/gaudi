@@ -28,7 +28,9 @@ class NoTenantIsolation(Rule):
     code = "ARCH-001"
     severity = Severity.WARN
     category = Category.ARCHITECTURE
-    message_template = "Project has {model_count} related models but no tenant isolation column detected"
+    message_template = (
+        "Project has {model_count} related models but no tenant isolation column detected"
+    )
     recommendation_template = (
         "Consider adding a tenant_id, organization_id, or account_id ForeignKey "
         "to models that store user data. Enforce filtering in all queries."
@@ -78,13 +80,15 @@ class GodModel(Rule):
         findings = []
         for model in context.models:
             if len(model.columns) > self.THRESHOLD:
-                findings.append(self.finding(
-                    file=model.source_file,
-                    line=model.source_line,
-                    model=model.name,
-                    count=len(model.columns),
-                    threshold=self.THRESHOLD,
-                ))
+                findings.append(
+                    self.finding(
+                        file=model.source_file,
+                        line=model.source_line,
+                        model=model.name,
+                        count=len(model.columns),
+                        threshold=self.THRESHOLD,
+                    )
+                )
         return findings
 
 
@@ -111,12 +115,14 @@ class NullableForeignKeySprawl(Rule):
         for model in context.models:
             nullable_fks = model.nullable_foreign_keys
             if len(nullable_fks) >= 2:
-                findings.append(self.finding(
-                    file=model.source_file,
-                    line=model.source_line,
-                    model=model.name,
-                    count=len(nullable_fks),
-                ))
+                findings.append(
+                    self.finding(
+                        file=model.source_file,
+                        line=model.source_line,
+                        model=model.name,
+                        count=len(nullable_fks),
+                    )
+                )
         return findings
 
 
@@ -140,8 +146,17 @@ class MissingStringIndex(Rule):
     recommendation_template = "Add db_index=True to '{column}' or include it in a composite index."
 
     LOOKUP_PATTERNS = {
-        "email", "slug", "username", "code", "sku", "reference",
-        "external_id", "api_key", "token", "uuid", "status",
+        "email",
+        "slug",
+        "username",
+        "code",
+        "sku",
+        "reference",
+        "external_id",
+        "api_key",
+        "token",
+        "uuid",
+        "status",
     }
 
     def check(self, context: PythonContext) -> list[Finding]:
@@ -154,12 +169,14 @@ class MissingStringIndex(Rule):
                     and not col.has_unique
                     and any(p in col.name.lower() for p in self.LOOKUP_PATTERNS)
                 ):
-                    findings.append(self.finding(
-                        file=model.source_file,
-                        line=col.source_line,
-                        column=col.name,
-                        model=model.name,
-                    ))
+                    findings.append(
+                        self.finding(
+                            file=model.source_file,
+                            line=col.source_line,
+                            column=col.name,
+                            model=model.name,
+                        )
+                    )
         return findings
 
 
@@ -171,7 +188,9 @@ class NoIndexOnFilterableField(Rule):
     code = "IDX-002"
     severity = Severity.INFO
     category = Category.INDEXING
-    message_template = "DateTimeField '{column}' on '{model}' has no index — these are commonly filtered/sorted"
+    message_template = (
+        "DateTimeField '{column}' on '{model}' has no index — these are commonly filtered/sorted"
+    )
     recommendation_template = (
         "If you query or sort by '{column}', add db_index=True. "
         "Date fields are among the most commonly filtered columns."
@@ -186,12 +205,14 @@ class NoIndexOnFilterableField(Rule):
                     and not col.has_index
                     and col.name not in {"created_at", "updated_at", "modified_at"}  # auto fields
                 ):
-                    findings.append(self.finding(
-                        file=model.source_file,
-                        line=col.source_line,
-                        column=col.name,
-                        model=model.name,
-                    ))
+                    findings.append(
+                        self.finding(
+                            file=model.source_file,
+                            line=col.source_line,
+                            column=col.name,
+                            model=model.name,
+                        )
+                    )
         return findings
 
 
@@ -215,8 +236,15 @@ class MissingTimestamps(Rule):
     )
 
     TIMESTAMP_PATTERNS = {
-        "created_at", "created", "date_created", "created_date",
-        "updated_at", "updated", "modified_at", "date_modified", "modified_date",
+        "created_at",
+        "created",
+        "date_created",
+        "created_date",
+        "updated_at",
+        "updated",
+        "modified_at",
+        "date_modified",
+        "modified_date",
         "timestamp",
     }
 
@@ -228,16 +256,17 @@ class MissingTimestamps(Rule):
                 continue
 
             has_timestamps = any(
-                col.name.lower() in self.TIMESTAMP_PATTERNS
-                for col in model.columns
+                col.name.lower() in self.TIMESTAMP_PATTERNS for col in model.columns
             )
 
             if not has_timestamps:
-                findings.append(self.finding(
-                    file=model.source_file,
-                    line=model.source_line,
-                    model=model.name,
-                ))
+                findings.append(
+                    self.finding(
+                        file=model.source_file,
+                        line=model.source_line,
+                        model=model.name,
+                    )
+                )
         return findings
 
 
@@ -271,13 +300,15 @@ class ColumnSprawl(Rule):
             ratio = nullable_count / len(model.columns) if model.columns else 0
 
             if ratio >= self.NULLABLE_RATIO_THRESHOLD and nullable_count >= 4:
-                findings.append(self.finding(
-                    file=model.source_file,
-                    line=model.source_line,
-                    model=model.name,
-                    nullable_count=nullable_count,
-                    total_count=len(model.columns),
-                ))
+                findings.append(
+                    self.finding(
+                        file=model.source_file,
+                        line=model.source_line,
+                        model=model.name,
+                        nullable_count=nullable_count,
+                        total_count=len(model.columns),
+                    )
+                )
         return findings
 
 
@@ -304,12 +335,14 @@ class NoStringLengthLimit(Rule):
                 if col.field_type == "TextField" and any(
                     p in col.name.lower() for p in self.SHORT_NAME_PATTERNS
                 ):
-                    findings.append(self.finding(
-                        file=model.source_file,
-                        line=col.source_line,
-                        column=col.name,
-                        model=model.name,
-                    ))
+                    findings.append(
+                        self.finding(
+                            file=model.source_file,
+                            line=col.source_line,
+                            column=col.name,
+                            model=model.name,
+                        )
+                    )
         return findings
 
 
@@ -339,11 +372,13 @@ class NoMetaPermissions(Rule):
         findings = []
         for model in context.models:
             if model.has_meta and "permissions" not in model.meta_options:
-                findings.append(self.finding(
-                    file=model.source_file,
-                    line=model.source_line,
-                    model=model.name,
-                ))
+                findings.append(
+                    self.finding(
+                        file=model.source_file,
+                        line=model.source_line,
+                        model=model.name,
+                    )
+                )
         return findings
 
 
@@ -384,11 +419,13 @@ class SingleFileModels(Rule):
             lines = file_info.line_count if file_info else 0
 
             if len(models) >= self.MAX_MODELS_PER_FILE or lines >= self.MAX_LINES:
-                findings.append(self.finding(
-                    file=filepath,
-                    count=len(models),
-                    lines=lines,
-                ))
+                findings.append(
+                    self.finding(
+                        file=filepath,
+                        count=len(models),
+                        lines=lines,
+                    )
+                )
         return findings
 
 

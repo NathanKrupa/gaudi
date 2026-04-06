@@ -19,20 +19,39 @@ from gaudi.packs.python.context import (
 
 # Django field types that map to database columns
 DJANGO_FIELD_TYPES = {
-    "AutoField", "BigAutoField", "SmallAutoField",
-    "BooleanField", "NullBooleanField",
-    "CharField", "SlugField", "URLField", "EmailField", "FilePathField",
+    "AutoField",
+    "BigAutoField",
+    "SmallAutoField",
+    "BooleanField",
+    "NullBooleanField",
+    "CharField",
+    "SlugField",
+    "URLField",
+    "EmailField",
+    "FilePathField",
     "TextField",
-    "IntegerField", "SmallIntegerField", "BigIntegerField",
-    "PositiveIntegerField", "PositiveSmallIntegerField", "PositiveBigIntegerField",
-    "FloatField", "DecimalField",
-    "DateField", "DateTimeField", "TimeField", "DurationField",
-    "FileField", "ImageField",
+    "IntegerField",
+    "SmallIntegerField",
+    "BigIntegerField",
+    "PositiveIntegerField",
+    "PositiveSmallIntegerField",
+    "PositiveBigIntegerField",
+    "FloatField",
+    "DecimalField",
+    "DateField",
+    "DateTimeField",
+    "TimeField",
+    "DurationField",
+    "FileField",
+    "ImageField",
     "BinaryField",
     "UUIDField",
-    "GenericIPAddressField", "IPAddressField",
+    "GenericIPAddressField",
+    "IPAddressField",
     "JSONField",
-    "ForeignKey", "OneToOneField", "ManyToManyField",
+    "ForeignKey",
+    "OneToOneField",
+    "ManyToManyField",
 }
 
 # Patterns for detecting frameworks
@@ -54,11 +73,17 @@ def parse_project(path: Path) -> PythonContext:
     else:
         py_files = sorted(path.rglob("*.py"))
         # Filter out common non-project directories
-        exclude_dirs = {"venv", ".venv", "env", ".env", "node_modules", "__pycache__", ".git", "migrations"}
-        py_files = [
-            f for f in py_files
-            if not any(part in exclude_dirs for part in f.parts)
-        ]
+        exclude_dirs = {
+            "venv",
+            ".venv",
+            "env",
+            ".env",
+            "node_modules",
+            "__pycache__",
+            ".git",
+            "migrations",
+        }
+        py_files = [f for f in py_files if not any(part in exclude_dirs for part in f.parts)]
 
     # Detect project-level files
     if path.is_dir():
@@ -130,8 +155,7 @@ def _parse_file(filepath: Path, root: Path) -> FileInfo:
                 for base in node.bases:
                     base_name = _get_name(base)
                     if base_name and any(
-                        keyword in base_name
-                        for keyword in ["Model", "Base", "DeclarativeBase"]
+                        keyword in base_name for keyword in ["Model", "Base", "DeclarativeBase"]
                     ):
                         file_info.has_models = True
                         break
@@ -181,13 +205,17 @@ def _extract_models(filepath: Path, root: Path, framework: str) -> list[ModelInf
             if isinstance(item, ast.Assign):
                 for target in item.targets:
                     if isinstance(target, ast.Name):
-                        col = _parse_field_assignment(target.id, item.value, item.lineno, source_lines)
+                        col = _parse_field_assignment(
+                            target.id, item.value, item.lineno, source_lines
+                        )
                         if col:
                             model.columns.append(col)
 
             elif isinstance(item, ast.AnnAssign) and item.target:
                 if isinstance(item.target, ast.Name) and item.value:
-                    col = _parse_field_assignment(item.target.id, item.value, item.lineno, source_lines)
+                    col = _parse_field_assignment(
+                        item.target.id, item.value, item.lineno, source_lines
+                    )
                     if col:
                         model.columns.append(col)
 
