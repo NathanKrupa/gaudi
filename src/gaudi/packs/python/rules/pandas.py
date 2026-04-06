@@ -52,4 +52,4 @@ class PandasIterrows(Rule):
         return findings
 
 
-PANDAS_RULES = [PandasInplaceAntiPattern(), PandasIterrows()]
+PANDAS_RULES = (PandasInplaceAntiPattern(), PandasIterrows())

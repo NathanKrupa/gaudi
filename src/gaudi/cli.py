@@ -100,7 +100,7 @@ def check(
     else:
         if not findings:
             console.print()
-            console.print("[green]✓ No architectural issues found. Structurally sound.[/green]")
+            console.print("[green]No architectural issues found. Structurally sound.[/green]")
             console.print()
         else:
             console.print()

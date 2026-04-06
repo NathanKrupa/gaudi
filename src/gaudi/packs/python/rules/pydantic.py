@@ -33,4 +33,4 @@ class PydanticMutableDefault(Rule):
         return findings
 
 
-PYDANTIC_RULES = [PydanticMutableDefault()]
+PYDANTIC_RULES = (PydanticMutableDefault(),)

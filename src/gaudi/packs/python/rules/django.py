@@ -80,4 +80,4 @@ class DjangoFatView(Rule):
         return findings
 
 
-DJANGO_LIB_RULES = [DjangoSecretKeyExposed(), DjangoDebugTrue(), DjangoFatView()]
+DJANGO_LIB_RULES = (DjangoSecretKeyExposed(), DjangoDebugTrue(), DjangoFatView())

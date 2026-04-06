@@ -65,4 +65,4 @@ class FastAPISyncEndpoint(Rule):
         return findings
 
 
-FASTAPI_RULES = [FastAPINoResponseModel(), FastAPISyncEndpoint()]
+FASTAPI_RULES = (FastAPINoResponseModel(), FastAPISyncEndpoint())

@@ -57,4 +57,4 @@ class RequestsNoRetry(Rule):
         return findings
 
 
-REQUESTS_RULES = [RequestsNoTimeout(), RequestsNoRetry()]
+REQUESTS_RULES = (RequestsNoTimeout(), RequestsNoRetry())

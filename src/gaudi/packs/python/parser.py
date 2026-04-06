@@ -19,45 +19,47 @@ from gaudi.packs.python.context import (
 )
 
 # Django field types that map to database columns
-DJANGO_FIELD_TYPES = {
-    "AutoField",
-    "BigAutoField",
-    "SmallAutoField",
-    "BooleanField",
-    "NullBooleanField",
-    "CharField",
-    "SlugField",
-    "URLField",
-    "EmailField",
-    "FilePathField",
-    "TextField",
-    "IntegerField",
-    "SmallIntegerField",
-    "BigIntegerField",
-    "PositiveIntegerField",
-    "PositiveSmallIntegerField",
-    "PositiveBigIntegerField",
-    "FloatField",
-    "DecimalField",
-    "DateField",
-    "DateTimeField",
-    "TimeField",
-    "DurationField",
-    "FileField",
-    "ImageField",
-    "BinaryField",
-    "UUIDField",
-    "GenericIPAddressField",
-    "IPAddressField",
-    "JSONField",
-    "ForeignKey",
-    "OneToOneField",
-    "ManyToManyField",
-}
+DJANGO_FIELD_TYPES = frozenset(
+    {
+        "AutoField",
+        "BigAutoField",
+        "SmallAutoField",
+        "BooleanField",
+        "NullBooleanField",
+        "CharField",
+        "SlugField",
+        "URLField",
+        "EmailField",
+        "FilePathField",
+        "TextField",
+        "IntegerField",
+        "SmallIntegerField",
+        "BigIntegerField",
+        "PositiveIntegerField",
+        "PositiveSmallIntegerField",
+        "PositiveBigIntegerField",
+        "FloatField",
+        "DecimalField",
+        "DateField",
+        "DateTimeField",
+        "TimeField",
+        "DurationField",
+        "FileField",
+        "ImageField",
+        "BinaryField",
+        "UUIDField",
+        "GenericIPAddressField",
+        "IPAddressField",
+        "JSONField",
+        "ForeignKey",
+        "OneToOneField",
+        "ManyToManyField",
+    }
+)
 
 # Patterns for detecting frameworks
-DJANGO_IMPORTS = {"django.db", "django.db.models", "models.Model"}
-SQLALCHEMY_IMPORTS = {"sqlalchemy", "sqlalchemy.orm"}
+DJANGO_IMPORTS = frozenset({"django.db", "django.db.models", "models.Model"})
+SQLALCHEMY_IMPORTS = frozenset({"sqlalchemy", "sqlalchemy.orm"})
 
 
 def parse_project(path: Path) -> PythonContext:
