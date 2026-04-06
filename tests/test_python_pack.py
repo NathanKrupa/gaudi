@@ -6,7 +6,6 @@ from pathlib import Path
 
 import pytest
 
-from gaudi.core import Severity, Category
 from gaudi.packs.python.pack import PythonPack
 from gaudi.packs.python.parser import parse_project
 from gaudi.engine import Engine
@@ -146,4 +145,4 @@ class TestFindingOutput:
         for f in findings:
             text = f.format_human()
             assert f.code in text
-            assert "→" in text
+            assert "->" in text

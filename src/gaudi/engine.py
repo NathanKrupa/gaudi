@@ -4,12 +4,15 @@ The Gaudí engine — orchestrates pack discovery, loading, and execution.
 
 from __future__ import annotations
 
+import logging
 import sys
 from importlib.metadata import entry_points
 from pathlib import Path
 
 from gaudi.core import Finding, Severity
 from gaudi.pack import Pack
+
+logger = logging.getLogger(__name__)
 
 
 class Engine:
@@ -34,7 +37,7 @@ class Engine:
                 pack = pack_class()
                 self._packs[ep.name] = pack
             except Exception as e:
-                print(f"Warning: Failed to load pack '{ep.name}': {e}")
+                logger.warning("Failed to load pack '%s': %s", ep.name, e)
 
     def register_pack(self, pack: Pack) -> None:
         """Manually register a language pack."""

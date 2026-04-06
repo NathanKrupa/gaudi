@@ -101,7 +101,7 @@ PHP_RULES = [SQLInjection(), EloquentNPlusOne(), GodController(), EnvInCode()]
 class PHPPack(Pack):
     name = "php"
     description = "Laravel, Eloquent, and general PHP architecture"
-    extensions = [".php"]
+    extensions = (".php",)
     def __init__(self) -> None:
         super().__init__()
         for rule in PHP_RULES:

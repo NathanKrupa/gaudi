@@ -9,8 +9,6 @@ from __future__ import annotations
 
 import re
 from pathlib import Path
-from typing import Any
-
 from gaudi.core import Rule, Finding, Severity, Category
 from gaudi.pack import Pack
 
@@ -211,7 +209,7 @@ GO_RULES = [IgnoredError(), PanicInLibrary(), InitFunctionAbuse(), GodStruct(), 
 class GoPack(Pack):
     name = "go"
     description = "Error handling, interface design, package structure, and Go idioms"
-    extensions = [".go"]
+    extensions = (".go",)
 
     def __init__(self) -> None:
         super().__init__()

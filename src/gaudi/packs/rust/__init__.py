@@ -170,7 +170,7 @@ RS_RULES = [UnsafeWithoutComment(), UnwrapInLibrary(), CloneOveruse(), StringErr
 class RustPack(Pack):
     name = "rust"
     description = "Module organization, error handling, unsafe usage, and Rust idioms"
-    extensions = [".rs"]
+    extensions = (".rs",)
 
     def __init__(self) -> None:
         super().__init__()

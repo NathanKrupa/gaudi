@@ -92,7 +92,7 @@ KT_RULES = [ForceNonNull(), GodActivity(), MutableStateExposed(), BlockingOnMain
 class KotlinPack(Pack):
     name = "kotlin"
     description = "Android, Spring, and Kotlin idioms"
-    extensions = [".kt", ".kts"]
+    extensions = (".kt", ".kts")
     def __init__(self) -> None:
         super().__init__()
         for rule in KT_RULES:

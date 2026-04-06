@@ -8,7 +8,6 @@ Pandas, Requests/HTTPX, Pydantic, pytest, Django REST Framework.
 
 from __future__ import annotations
 
-import ast
 import re
 
 from gaudi.core import Rule, Finding, Severity, Category

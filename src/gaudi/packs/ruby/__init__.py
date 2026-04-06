@@ -100,7 +100,7 @@ RB_RULES = [RailsNPlusOne(), FatModel(), CallbackHell(), UnscopedFind()]
 class RubyPack(Pack):
     name = "ruby"
     description = "Rails, ActiveRecord, and general Ruby architecture"
-    extensions = [".rb"]
+    extensions = (".rb",)
     def __init__(self) -> None:
         super().__init__()
         for rule in RB_RULES:

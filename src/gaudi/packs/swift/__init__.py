@@ -81,7 +81,7 @@ SWIFT_RULES = [ForceUnwrap(), MassiveViewController(), RetainCycle()]
 class SwiftPack(Pack):
     name = "swift"
     description = "iOS architecture, SwiftUI, Core Data, and Swift idioms"
-    extensions = [".swift"]
+    extensions = (".swift",)
     def __init__(self) -> None:
         super().__init__()
         for rule in SWIFT_RULES:
