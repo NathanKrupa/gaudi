@@ -1828,7 +1828,6 @@ class AlternativeInterfaces(Rule):
                     sorted(len([a for a in m.args.args if a.arg != "self"]) for m in methods)
                 )
                 sig = (len(methods), param_counts)
-                method_names = frozenset(m.name for m in methods)
                 sigs.setdefault(sig, [])
                 # Only add if method names differ
                 # from existing entries

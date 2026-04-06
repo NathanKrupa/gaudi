@@ -2,8 +2,6 @@
 
 from pathlib import Path
 
-import pytest
-
 from gaudi.packs.python.pack import PythonPack
 
 FIXTURES = Path(__file__).parent / "fixtures"
