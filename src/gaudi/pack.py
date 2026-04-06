@@ -31,13 +31,8 @@ class Pack:
     def __init__(self) -> None:
         self._rules: list[Rule] = []
 
-    def register_rule(self, rule: Rule) -> None:
-        """Register a rule with this pack."""
-        self._rules.append(rule)
-
     @property
     def rules(self) -> list[Rule]:
-        """All registered rules."""
         return list(self._rules)
 
     def can_handle(self, path: Path) -> bool:
