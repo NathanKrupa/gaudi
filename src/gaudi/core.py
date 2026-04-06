@@ -43,7 +43,11 @@ class Category(Enum):
     """Categories of architectural concerns."""
 
     ARCHITECTURE = "architecture"
+    CODE_SMELL = "code_smell"
+    ERROR_HANDLING = "error_handling"
     INDEXING = "indexing"
+    LOGGING = "logging"
+    OPERATIONS = "operations"
     RELATIONSHIPS = "relationships"
     SCHEMA = "schema"
     SECURITY = "security"
@@ -54,7 +58,11 @@ class Category(Enum):
 # Map category to error code prefix
 CATEGORY_PREFIXES = {
     Category.ARCHITECTURE: "ARCH",
+    Category.CODE_SMELL: "SMELL",
+    Category.ERROR_HANDLING: "ERR",
     Category.INDEXING: "IDX",
+    Category.LOGGING: "LOG",
+    Category.OPERATIONS: "OPS",
     Category.RELATIONSHIPS: "REL",
     Category.SCHEMA: "SCHEMA",
     Category.SECURITY: "SEC",
