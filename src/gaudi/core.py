@@ -120,7 +120,7 @@ class Rule:
             message_template = "Multi-tenant table '{table}' has no tenant isolation column"
 
             def check(self, context):
-                for table in context.tables:
+                for table in context.models:
                     if table.is_multi_tenant and not table.has_column("tenant_id"):
                         yield self.finding(
                             table=table.name,

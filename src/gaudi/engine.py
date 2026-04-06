@@ -22,7 +22,6 @@ class Engine:
 
     def __init__(self) -> None:
         self._packs: dict[str, Pack] = {}
-        self._config: dict = {}
 
     def discover_packs(self) -> None:
         """Discover installed language packs via entry points."""

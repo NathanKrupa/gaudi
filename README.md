@@ -1,10 +1,10 @@
-# Gaudí
+# Gaudi
 
 **Not just structurally sound. Beautiful.**
 
-Gaudí is a universal architecture linter that inspects your project's structural design and produces machine-readable error codes that AI coding agents (Claude, Copilot, etc.) can understand and act on.
+Gaudi is an architecture linter for Python projects. It inspects your project's structural design and produces machine-readable error codes that AI coding agents (Claude, Copilot, etc.) can understand and act on.
 
-Style linters catch syntax. Security scanners catch vulnerabilities. **Gaudí catches architecture mistakes** — the kind that cost you six months of refactoring when you hit 10,000 users.
+Style linters catch syntax. Security scanners catch vulnerabilities. **Gaudi catches architecture mistakes** — the kind that cost you six months of refactoring when you hit 10,000 users.
 
 ## What It Does
 
@@ -12,22 +12,22 @@ Style linters catch syntax. Security scanners catch vulnerabilities. **Gaudí ca
 $ gaudi check .
 
 ARCH-001 [ERROR] models.py:14 - Multi-tenant table 'donors' has no tenant isolation column
-  → Add a `tenant_id` ForeignKey and enforce row-level filtering on all queries.
+  -> Add a `tenant_id` ForeignKey and enforce row-level filtering on all queries.
 
 IDX-001 [WARN] models.py:28 - Column 'email' is used in filter queries but has no db_index
-  → Add db_index=True or create a composite index.
+  -> Add db_index=True or create a composite index.
 
-REL-002 [INFO] models.py:45 - Nullable ForeignKey 'organization' may indicate optional relationship that should be a separate table
-  → Consider whether this represents a true optional relationship or a missing join table.
+SCHEMA-001 [INFO] models.py:45 - Model 'Donor' has no timestamp fields (created_at, updated_at)
+  -> Add created_at and updated_at DateTimeField columns for debugging and auditing.
 
 Found 1 error, 1 warning, 1 info across 3 files.
 ```
 
-## Why Gaudí Exists
+## Why Gaudi Exists
 
 AI coding agents are writing more and more of our code. They're great at implementing features. They're terrible at asking, *"Should this be built this way?"*
 
-Gaudí is the discipline layer. It encodes architectural best practices into structured error codes that any AI agent can parse, understand, and resolve — without ambiguity, without hallucination.
+Gaudi is the discipline layer. It encodes architectural best practices into structured error codes that any AI agent can parse, understand, and resolve — without ambiguity, without hallucination.
 
 **For humans:** Catch design mistakes before they become technical debt.
 **For AI agents:** Get structured, actionable architecture guidance instead of vague "best practices" prompts.
@@ -44,30 +44,50 @@ pip install gaudi-linter  # not yet published — coming soon
 # Check a project directory
 gaudi check .
 
-# Check with a specific language pack
-gaudi check . --pack python
-
 # Output as JSON (for AI agent consumption)
 gaudi check . --format json
+
+# Only errors
+gaudi check . --severity error --exit-code
 
 # Check a specific file
 gaudi check models.py
 ```
 
-## Language Packs
+## What It Checks
 
-Gaudí is language-agnostic at its core. Language packs teach it the architectural patterns and anti-patterns for specific stacks.
+Gaudi uses deep AST analysis to inspect Django models, SQLAlchemy tables, FastAPI endpoints, Flask apps, Celery tasks, Pandas operations, Pydantic models, pytest fixtures, and DRF views.
 
-| Pack | Status | Covers |
-|------|--------|--------|
-| `python` | ✅ v0.1 | Django models, SQLAlchemy, FastAPI, general Python project structure |
-| `javascript` | 🔜 Planned | Prisma, Express, Next.js, general Node project structure |
-| `go` | 🔜 Planned | Interface design, error handling, package structure |
-| `rust` | 🔜 Planned | Module organization, trait design, error types |
+### Rule Categories
+
+| Prefix | Category | Examples |
+|--------|----------|----------|
+| `ARCH` | Architecture | Tenant isolation, god models, nullable FK sprawl |
+| `IDX` | Indexing | Missing indexes on lookup/filter fields |
+| `SCHEMA` | Schema Design | Missing timestamps, column sprawl, type choices |
+| `SEC` | Security | Hardcoded secrets, missing permissions, unsafe defaults |
+| `SCALE` | Scalability | N+1 queries, missing timeouts, iterrows() |
+| `STRUCT` | Structure | Fat files, missing app factories |
+
+### Library-Specific Rules
+
+| Prefix | Library | Rules |
+|--------|---------|-------|
+| `DJ` | Django | Secret key exposure, DEBUG=True, fat views |
+| `FAPI` | FastAPI | Missing response_model, sync endpoints |
+| `SA` | SQLAlchemy | Session leaks, default lazy loading |
+| `FLASK` | Flask | Module-level app creation |
+| `CELERY` | Celery | Missing retries, missing time limits |
+| `PD` | Pandas | inplace=True, iterrows() |
+| `HTTP` | Requests/HTTPX | Missing timeouts, no retry logic |
+| `PYD` | Pydantic | Mutable default values |
+| `TEST` | pytest | Complex assertions, expensive fixtures |
+| `DRF` | Django REST Framework | Missing permissions, no throttling |
+| `PY314` | Python 3.14 | Removed APIs, deprecated modules |
 
 ## Error Code Format
 
-Every Gaudí finding follows a consistent schema:
+Every finding follows a consistent schema:
 
 ```json
 {
@@ -77,55 +97,38 @@ Every Gaudí finding follows a consistent schema:
   "file": "models.py",
   "line": 14,
   "message": "Multi-tenant table 'donors' has no tenant isolation column",
-  "recommendation": "Add a `tenant_id` ForeignKey and enforce row-level filtering on all queries.",
-  "context": {
-    "table_name": "donors",
-    "pattern": "multi-tenant-isolation"
-  }
+  "recommendation": "Add a `tenant_id` ForeignKey and enforce row-level filtering."
 }
 ```
-
-### Error Code Prefixes
-
-| Prefix | Category | Examples |
-|--------|----------|----------|
-| `ARCH` | Architecture | Tenant isolation, separation of concerns, layering violations |
-| `IDX` | Indexing | Missing indexes, redundant indexes, index strategy |
-| `REL` | Relationships | Foreign key design, join tables, circular references |
-| `SCHEMA` | Schema Design | Column sprawl, naming conventions, type choices |
-| `SEC` | Security | Exposed secrets, missing auth boundaries, unsafe defaults |
-| `SCALE` | Scalability | N+1 query patterns, unbounded queries, missing pagination |
-| `STRUCT` | Project Structure | File organization, module boundaries, dependency direction |
 
 ## Writing Custom Rules
 
 ```python
-from gaudi import Rule, Severity
+from gaudi import Rule, Severity, Category
 
 class CheckTenantIsolation(Rule):
     code = "ARCH-001"
     severity = Severity.ERROR
-    category = "architecture"
-    message = "Multi-tenant table '{table}' has no tenant isolation column"
+    category = Category.ARCHITECTURE
+    message_template = "Multi-tenant table '{table}' has no tenant isolation column"
 
     def check(self, context):
-        for table in context.tables:
-            if table.is_multi_tenant and not table.has_column("tenant_id"):
+        for model in context.models:
+            if not model.has_column("tenant_id"):
                 yield self.finding(
-                    file=table.source_file,
-                    line=table.source_line,
-                    table=table.name,
-                    recommendation=f"Add a `tenant_id` column to `{table.name}` and enforce row-level filtering."
+                    file=model.source_file,
+                    line=model.source_line,
+                    table=model.name,
                 )
 ```
 
 ## AI Agent Integration
 
-Gaudí's JSON output is designed to be consumed by AI coding agents. Add it to your Claude Code workflow, your CI pipeline, or your custom agent loop.
+Gaudi's JSON output is designed to be consumed by AI coding agents. Add it to your Claude Code workflow, your CI pipeline, or your custom agent loop.
 
 ```bash
-# Pipe findings to Claude Code
-gaudi check . --format json | claude-code fix
+# Use in CI
+gaudi check . --format json --severity error --exit-code
 
 # Use in a pre-commit hook
 gaudi check . --severity error --exit-code
@@ -147,21 +150,17 @@ Create a `gaudi.toml` in your project root:
 
 ```toml
 [gaudi]
-packs = ["python"]
 severity = "warn"          # minimum severity to report
 exclude = ["migrations/"]  # paths to skip
 
 [gaudi.rules]
 "ARCH-001" = "error"       # override severity
 "IDX-003" = "off"          # disable specific rule
-
-[gaudi.python]
-framework = "django"       # framework-specific checks
 ```
 
 ## Philosophy
 
-Gaudí is named after Antoni Gaudí, the architect of La Sagrada Família. He built hanging chain models — inverted catenary arches — to test structural integrity *before* laying a single stone. Construction on his masterwork began in 1882 and continues today, still following his structural principles.
+Gaudi is named after Antoni Gaudi, the architect of La Sagrada Familia. He built hanging chain models — inverted catenary arches — to test structural integrity *before* laying a single stone. Construction on his masterwork began in 1882 and continues today, still following his structural principles.
 
 This tool embodies that philosophy: **validate the architecture before you build.** The earlier you catch a structural flaw, the less it costs to fix. And with AI agents writing increasingly large portions of our codebases, we need automated architectural discipline more than ever.
 
@@ -169,10 +168,9 @@ This tool embodies that philosophy: **validate the architecture before you build
 
 Contributions welcome. The highest-impact contributions right now:
 
-1. **New rules for the Python pack** — especially Django and FastAPI patterns
-2. **New language packs** — JavaScript/TypeScript is the most requested
+1. **New rules** — especially Django, FastAPI, and SQLAlchemy patterns
+2. **Code smell detection** — implementing Fowler's 24 code smells programmatically
 3. **CI/CD integration examples** — GitHub Actions, GitLab CI, etc.
-4. **Documentation** — usage guides, rule explanations, architectural pattern guides
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for details.
 
