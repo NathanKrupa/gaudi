@@ -52,6 +52,7 @@ class Category(Enum):
     SCHEMA = "schema"
     SECURITY = "security"
     SCALABILITY = "scalability"
+    STABILITY = "stability"
     STRUCTURE = "structure"
 
 
@@ -67,6 +68,7 @@ CATEGORY_PREFIXES = {
     Category.SCHEMA: "SCHEMA",
     Category.SECURITY: "SEC",
     Category.SCALABILITY: "SCALE",
+    Category.STABILITY: "STAB",
     Category.STRUCTURE: "STRUCT",
 }
 
@@ -154,6 +156,7 @@ class Rule:
     category: Category = Category.ARCHITECTURE
     message_template: str = ""
     recommendation_template: str = ""
+    requires_library: str | None = None
 
     def check(self, context: Any) -> list[Finding]:
         """

@@ -117,6 +117,7 @@ class PythonContext:
     has_settings: bool = False
     has_requirements: bool = False
     has_pyproject: bool = False
+    detected_libraries: set[str] = field(default_factory=set)
 
     @property
     def model_names(self) -> set[str]:

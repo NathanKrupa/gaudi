@@ -1,0 +1,204 @@
+# Gaudi Rule Source Registry
+
+Every rule in Gaudi traces back to a canonical source: a published text,
+a named pattern, or (where original) the project's own design principles.
+This registry provides citable provenance for each rule code and serves as
+a mining queue for planned rules.
+
+---
+
+## Source Texts
+
+| Key        | Full Title                                                    | Author(s)              | Edition |
+|------------|---------------------------------------------------------------|------------------------|---------|
+| **FOWLER** | *Refactoring: Improving the Design of Existing Code*          | Martin Fowler          | 2nd     |
+| **NYGARD** | *Release It! Design and Deploy Production-Ready Software*     | Michael T. Nygard      | 2nd     |
+| **ARCH90** | Architecture 90 (internal curriculum)                         | Nathan Krupa           | --      |
+| **PY314**  | CPython 3.14 changelog / PEPs                                 | Python core devs       | --      |
+| **FWDOCS** | Framework official documentation (Django, FastAPI, Flask, etc.)| Various                | --      |
+
+Future source keys (not yet mined):
+
+| Key          | Full Title                                                  | Author(s)              |
+|--------------|-------------------------------------------------------------|------------------------|
+| **NEWMAN**   | *Building Microservices*                                    | Sam Newman (2nd ed.)   |
+| **OUSTRHOUT**| *A Philosophy of Software Design*                           | John Ousterhout        |
+| **PEAA**     | *Patterns of Enterprise Application Architecture*           | Martin Fowler          |
+
+---
+
+## Implemented Rules
+
+### Code Smell Rules (SMELL) -- Source: FOWLER
+
+All 24 rules map directly to Fowler's smell catalog in *Refactoring* (2nd ed.), Chapter 3.
+
+| Code      | Class Name           | Fowler Smell                           | Chapter/Section |
+|-----------|----------------------|----------------------------------------|-----------------|
+| SMELL-001 | MysteriousName       | Mysterious Name                        | Ch. 3           |
+| SMELL-002 | DuplicatedCode       | Duplicated Code                        | Ch. 3           |
+| SMELL-003 | LongFunction         | Long Function                          | Ch. 3           |
+| SMELL-004 | LongParameterList    | Long Parameter List                    | Ch. 3           |
+| SMELL-005 | GlobalData           | Global Data                            | Ch. 3           |
+| SMELL-006 | MutableData          | Mutable Data                           | Ch. 3           |
+| SMELL-007 | DivergentChange      | Divergent Change                       | Ch. 3           |
+| SMELL-008 | ShotgunSurgery       | Shotgun Surgery                        | Ch. 3           |
+| SMELL-009 | FeatureEnvy          | Feature Envy                           | Ch. 3           |
+| SMELL-010 | DataClumps           | Data Clumps                            | Ch. 3           |
+| SMELL-011 | PrimitiveObsession   | Primitive Obsession                    | Ch. 3           |
+| SMELL-012 | RepeatedSwitches     | Repeated Switches                      | Ch. 3           |
+| SMELL-013 | Loops                | Loops                                  | Ch. 3           |
+| SMELL-014 | LazyElement          | Lazy Element                           | Ch. 3           |
+| SMELL-015 | SpeculativeGenerality| Speculative Generality                 | Ch. 3           |
+| SMELL-016 | TemporaryField       | Temporary Field                        | Ch. 3           |
+| SMELL-017 | MessageChains        | Message Chains                         | Ch. 3           |
+| SMELL-018 | MiddleMan            | Middle Man                             | Ch. 3           |
+| SMELL-019 | InsiderTrading       | Insider Trading                        | Ch. 3           |
+| SMELL-020 | LargeClass           | Large Class                            | Ch. 3           |
+| SMELL-021 | AlternativeInterfaces| Alternative Classes w/ Different Interfaces | Ch. 3    |
+| SMELL-022 | DataClassSmell       | Data Class                             | Ch. 3           |
+| SMELL-023 | RefusedBequest       | Refused Bequest                        | Ch. 3           |
+| SMELL-024 | Comments             | Comments                               | Ch. 3           |
+
+### Architecture 90 Rules -- Source: ARCH90
+
+| Code       | Class Name              | Principle                                   | A90 Day |
+|------------|-------------------------|---------------------------------------------|---------|
+| STRUCT-010 | PathHacks               | Proper packaging over sys.path hacks        | Day 1   |
+| STRUCT-011 | MissingPyproject        | Modern packaging requires pyproject.toml    | Day 1   |
+| STRUCT-012 | NoEntryPoint            | CLI scripts need entry points               | Day 1   |
+| STRUCT-013 | NoLockFile              | Pin dependencies for reproducibility        | Day 1   |
+| STRUCT-020 | MissingReturnTypes      | Type annotations on public APIs             | Day 2   |
+| STRUCT-021 | MagicStrings            | Extract repeated literals to constants      | Day 2   |
+| ARCH-010   | ImportDirectionViolation| Arrows point inward only                    | Day 3   |
+| ARCH-011   | ConnectorLogicLeak      | Data layer has no business logic            | Day 3   |
+| ARCH-013   | FatScript               | Thin entry points, fat services             | Day 3   |
+| ARCH-020   | EnvLeakage              | Config injection, not direct env reads      | Day 4   |
+| ARCH-022   | ScatteredConfig         | Centralize configuration                    | Day 4   |
+| ERR-001    | BareExcept              | Catch specific exceptions                   | Day 5   |
+| ERR-003    | ErrorSwallowing         | Don't log-and-forget errors                 | Day 5   |
+| LOG-001    | UnstructuredLogging     | Lazy %-formatting in logger calls           | Day 5   |
+| OPS-002    | MissingPrecommit        | Pre-commit hooks for quality gates          | Day 6   |
+
+### Django/ORM Architecture Rules -- Source: FWDOCS + ARCH90
+
+| Code       | Class Name                | Source Pattern                            |
+|------------|---------------------------|-------------------------------------------|
+| ARCH-001   | NoTenantIsolation         | FWDOCS: Django multi-tenancy patterns     |
+| ARCH-002   | GodModel                  | FOWLER: Large Class (applied to models)   |
+| ARCH-003   | NullableForeignKeySprawl  | FWDOCS: Django relationship patterns      |
+| IDX-001    | MissingStringIndex        | FWDOCS: Django query optimization         |
+| IDX-002    | NoIndexOnFilterableField  | FWDOCS: Django query optimization         |
+| SCHEMA-001 | MissingTimestamps         | FWDOCS: Django audit trail conventions    |
+| SCHEMA-002 | ColumnSprawl              | FOWLER: Large Class (applied to schema)   |
+| SCHEMA-003 | NoStringLengthLimit       | FWDOCS: Django field best practices       |
+| SEC-001    | NoMetaPermissions         | FWDOCS: Django auth framework             |
+| STRUCT-001 | SingleFileModels          | ARCH90: One concern per module            |
+
+### Library-Specific Rules -- Source: FWDOCS
+
+| Code            | Class Name               | Library     | Source Pattern                          |
+|-----------------|--------------------------|-------------|-----------------------------------------|
+| DJ-SEC-001      | DjangoSecretKeyExposed   | Django      | FWDOCS: Django deployment checklist     |
+| DJ-SEC-002      | DjangoDebugTrue          | Django      | FWDOCS: Django deployment checklist     |
+| DJ-STRUCT-001   | DjangoFatView            | Django      | ARCH90: Thin entry points               |
+| FAPI-ARCH-001   | FastAPINoResponseModel   | FastAPI     | FWDOCS: FastAPI response models         |
+| FAPI-SCALE-001  | FastAPISyncEndpoint      | FastAPI     | FWDOCS: FastAPI async patterns          |
+| SA-SCALE-001    | SQLAlchemyLazyDefault    | SQLAlchemy  | FWDOCS: SQLAlchemy N+1 prevention       |
+
+*SA-ARCH-001 (SQLAlchemySessionLeak) removed -- consolidated into STAB-006 (UnmanagedResource).*
+*HTTP-ARCH-001 (RequestsNoRetry) removed -- subsumed by STAB-003 (RetryWithoutBackoff).*
+| FLASK-STRUCT-001| FlaskNoAppFactory        | Flask       | FWDOCS: Flask application factory       |
+| CELERY-ARCH-001 | CeleryNoRetry            | Celery      | FWDOCS + NYGARD: retry configuration    |
+| CELERY-SCALE-001| CeleryNoTimeLimit        | Celery      | FWDOCS + NYGARD: task timeouts          |
+| PD-ARCH-001     | PandasInplaceAntiPattern | Pandas      | FWDOCS: Pandas deprecation guidance     |
+| PD-SCALE-001    | PandasIterrows           | Pandas      | FWDOCS: Pandas vectorization            |
+| HTTP-SCALE-001  | RequestsNoTimeout        | Requests    | NYGARD: Timeouts (Ch. 5)               |
+| PYD-ARCH-001    | PydanticMutableDefault   | Pydantic    | FWDOCS: Pydantic validators             |
+| TEST-STRUCT-001 | PytestAssertMessage      | pytest      | FWDOCS: pytest assertion introspection  |
+| TEST-SCALE-001  | PytestFixtureScope       | pytest      | FWDOCS: pytest fixture optimization     |
+| DRF-SEC-001     | DRFNoPermissionClass     | DRF         | FWDOCS: DRF permissions                 |
+| DRF-SCALE-001   | DRFNoThrottling          | DRF         | FWDOCS: DRF throttling                  |
+
+### Python 3.14 Compatibility -- Source: PY314
+
+| Code       | Class Name               | PEP / Changelog Reference                |
+|------------|--------------------------|------------------------------------------|
+| PY314-001  | RemovedIn314Import       | CPython 3.14 What's New: Removals        |
+| PY314-002  | DeprecatedIn314Import    | CPython 3.14 What's New: Deprecations    |
+| PY314-003  | DeferredAnnotationAccess | PEP 649: Deferred Evaluation             |
+| PY314-004  | FinallyControlFlow       | CPython 3.14: SyntaxWarning              |
+| PY314-005  | NotImplementedBoolContext| CPython 3.14: TypeError change            |
+| PY314-006  | TarfileNoFilter          | CPython 3.14: tarfile security            |
+
+### Stability Rules (STAB) -- Source: NYGARD
+
+Rules mined from *Release It!* (2nd ed.). Nygard's anti-patterns describe
+detectable failure states -- exactly the grammar Gaudi needs.
+
+| Code      | Class Name            | Nygard Pattern / Anti-Pattern               | Chapter   |
+|-----------|-----------------------|----------------------------------------------|-----------|
+| STAB-001  | UnboundedResultSet    | Unbounded Result Sets (anti-pattern)         | Ch. 4     |
+| STAB-003  | RetryWithoutBackoff   | Retry + Timeouts (incorrect implementation)  | Ch. 5     |
+| STAB-004  | UnboundedCache        | Steady State (unbounded resource growth)     | Ch. 5     |
+| STAB-005  | BlockingInAsync       | Blocked Threads (anti-pattern)               | Ch. 4     |
+| STAB-006  | UnmanagedResource     | Steady State (resource leak, incl. sessions) | Ch. 5     |
+| STAB-007  | UnboundedThreadPool   | Unbalanced Capacities (anti-pattern)         | Ch. 4     |
+
+*STAB-002 (NoCircuitBreaker) removed -- detection too weak (project-level heuristic). Moved to mining queue.*
+
+---
+
+## Nygard Mining Queue (planned, not yet implemented)
+
+| Planned Code | Nygard Pattern / Anti-Pattern             | Chapter | Detectability | Notes                                    |
+|--------------|-------------------------------------------|---------|---------------|------------------------------------------|
+| STAB-???     | Circuit Breaker (missing pattern)         | Ch. 5   | Low           | Needs call-site wrapping detection, not just import check |
+| STAB-???     | Integration Points (no fallback)          | Ch. 4   | Medium        | External call without except/default     |
+| STAB-???     | Cascading Failures (sync chain depth)     | Ch. 4   | Medium        | 3+ sequential external calls             |
+| STAB-???     | Self-Denial Attacks (cache stampede)      | Ch. 4   | Low           | Cache invalidation without staggering    |
+| STAB-???     | Slow Responses (no deadline propagation)  | Ch. 4   | Low           | Timeout not passed to downstream calls   |
+| STAB-???     | SLA Inversion                             | Ch. 4   | Low           | Requires runtime config, hard to lint    |
+| STAB-???     | Fail Fast (late validation)               | Ch. 5   | Medium        | Validation deep in call chain            |
+| STAB-???     | Bulkhead (shared pool)                    | Ch. 5   | Medium        | Single pool serving multiple concerns    |
+| STAB-???     | Handshaking (no health check)             | Ch. 5   | Medium        | Service without health/ready endpoint    |
+
+---
+
+## Future Mining Queues
+
+### Service Boundary Rules (SVC) -- Source: NEWMAN
+
+Rules mined from *Building Microservices* (2nd ed.). Focused on coupling
+anti-patterns detectable within a single Python project.
+
+| Code      | Class Name            | Newman Pattern                               | Chapter   |
+|-----------|-----------------------|----------------------------------------------|-----------|
+| SVC-001   | HardcodedServiceURL   | Service discovery (hardcoded endpoints)      | Ch. 5     |
+| SVC-002   | ChattyIntegration     | Chatty service boundary (N+1 API calls)      | Ch. 4     |
+| SVC-003   | NoAPIVersioning       | API versioning absence                       | Ch. 7     |
+
+### Newman Mining Queue (planned, not yet implemented)
+
+| Planned Code | Newman Pattern                            | Chapter | Detectability | Notes                                    |
+|--------------|-------------------------------------------|---------|---------------|------------------------------------------|
+| SVC-???      | Shared database across services           | Ch. 4   | Low           | Requires multi-repo or monorepo analysis |
+| SVC-???      | Synchronous coupling chains               | Ch. 4   | Medium        | Service-to-service sync HTTP calls       |
+| SVC-???      | Missing contract tests                    | Ch. 7   | Medium        | API routes without corresponding tests   |
+
+### Ousterhout -- *A Philosophy of Software Design*
+
+| Planned Prefix | Topic Area                        | Detectability | Notes                                    |
+|----------------|-----------------------------------|---------------|------------------------------------------|
+| CPLX-???       | Shallow modules                   | High          | Public API surface >> implementation     |
+| CPLX-???       | Information leakage               | Medium        | Implementation detail in public types    |
+| CPLX-???       | Pass-through variables            | High          | Parameter threaded through 3+ layers     |
+| CPLX-???       | Conjoined methods                 | Medium        | Methods that must be called in sequence  |
+
+### Fowler -- *Patterns of Enterprise Application Architecture*
+
+| Planned Prefix | Topic Area                        | Detectability | Notes                                    |
+|----------------|-----------------------------------|---------------|------------------------------------------|
+| DOM-???        | Anemic Domain Model               | High          | Models with no methods (pure data)       |
+| DOM-???        | Wrong layer placement              | Medium        | Business logic in view/template layer    |
+| DOM-???        | Active Record misuse               | Medium        | AR pattern with complex business rules   |

@@ -1,15 +1,16 @@
-# ABOUTME: Django-specific architectural rules for Gaudí Python pack.
-# ABOUTME: Covers SECRET_KEY exposure, DEBUG mode, and fat views.
+# ABOUTME: Django-specific architectural rules for Gaudi Python pack.
+# ABOUTME: Covers SECRET_KEY exposure and DEBUG mode.
 from __future__ import annotations
 
 from gaudi.core import Rule, Finding, Severity, Category
-from gaudi.packs.python.context import Framework, PythonContext
+from gaudi.packs.python.context import PythonContext
 
 
 class DjangoSecretKeyExposed(Rule):
     code = "DJ-SEC-001"
     severity = Severity.ERROR
     category = Category.SECURITY
+    requires_library = "django"
     message_template = "SECRET_KEY appears hardcoded in settings at line {line}"
     recommendation_template = (
         "Load SECRET_KEY from environment variables: SECRET_KEY = os.environ['SECRET_KEY']. "
@@ -40,6 +41,7 @@ class DjangoDebugTrue(Rule):
     code = "DJ-SEC-002"
     severity = Severity.ERROR
     category = Category.SECURITY
+    requires_library = "django"
     message_template = "DEBUG = True in production settings at line {line}"
     recommendation_template = (
         "Set DEBUG = False in production. Use environment variables to control debug mode."
@@ -60,24 +62,4 @@ class DjangoDebugTrue(Rule):
         return findings
 
 
-class DjangoFatView(Rule):
-    code = "DJ-STRUCT-001"
-    severity = Severity.WARN
-    category = Category.STRUCTURE
-    message_template = "View file '{file}' is {lines} lines — extract business logic to services"
-    recommendation_template = (
-        "Views should be thin. Move business logic to service functions or model methods."
-    )
-    THRESHOLD = 300
-
-    def check(self, context: PythonContext) -> list[Finding]:
-        if context.framework != Framework.DJANGO:
-            return []
-        findings = []
-        for f in context.files:
-            if "views" in f.relative_path.lower() and f.line_count > self.THRESHOLD:
-                findings.append(self.finding(file=f.relative_path, lines=f.line_count))
-        return findings
-
-
-DJANGO_LIB_RULES = (DjangoSecretKeyExposed(), DjangoDebugTrue(), DjangoFatView())
+DJANGO_LIB_RULES = (DjangoSecretKeyExposed(), DjangoDebugTrue())

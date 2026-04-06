@@ -16,6 +16,8 @@ from gaudi.packs.python.rules.pytest_rules import PYTEST_RULES
 from gaudi.packs.python.rules.drf import DRF_RULES
 from gaudi.packs.python.rules.smells import SMELL_RULES
 from gaudi.packs.python.rules.arch90 import ARCH90_RULES
+from gaudi.packs.python.rules.stability import STABILITY_RULES
+from gaudi.packs.python.rules.services import SERVICE_RULES
 
 ALL_RULES = (
     *ARCHITECTURE_RULES,
@@ -32,4 +34,6 @@ ALL_RULES = (
     *DRF_RULES,
     *SMELL_RULES,
     *ARCH90_RULES,
+    *STABILITY_RULES,
+    *SERVICE_RULES,
 )

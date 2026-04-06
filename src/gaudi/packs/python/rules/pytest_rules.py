@@ -10,6 +10,7 @@ class PytestAssertMessage(Rule):
     code = "TEST-STRUCT-001"
     severity = Severity.INFO
     category = Category.STRUCTURE
+    requires_library = "pytest"
     message_template = "Complex assertion without message at line {line}"
     recommendation_template = (
         "Add a failure message to complex assertions: assert condition, 'description'. "
@@ -35,6 +36,7 @@ class PytestFixtureScope(Rule):
     code = "TEST-SCALE-001"
     severity = Severity.INFO
     category = Category.SCALABILITY
+    requires_library = "pytest"
     message_template = "Expensive fixture without scope at line {line}"
     recommendation_template = (
         "Add scope='session' or scope='module' to fixtures that create expensive resources "

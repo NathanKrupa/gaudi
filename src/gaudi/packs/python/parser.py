@@ -18,6 +18,36 @@ from gaudi.packs.python.context import (
     PythonContext,
 )
 
+# Maps import prefixes to library activation keys
+_IMPORT_TO_LIBRARY: dict[str, str] = {
+    "django": "django",
+    "rest_framework": "drf",
+    "fastapi": "fastapi",
+    "sqlalchemy": "sqlalchemy",
+    "flask": "flask",
+    "celery": "celery",
+    "pandas": "pandas",
+    "requests": "requests",
+    "httpx": "requests",
+    "pydantic": "pydantic",
+    "pytest": "pytest",
+}
+
+# Maps PyPI package names to library activation keys
+_PACKAGE_TO_LIBRARY: dict[str, str] = {
+    "django": "django",
+    "djangorestframework": "drf",
+    "fastapi": "fastapi",
+    "sqlalchemy": "sqlalchemy",
+    "flask": "flask",
+    "celery": "celery",
+    "pandas": "pandas",
+    "requests": "requests",
+    "httpx": "requests",
+    "pydantic": "pydantic",
+    "pytest": "pytest",
+}
+
 # Django field types that map to database columns
 DJANGO_FIELD_TYPES = frozenset(
     {
@@ -115,7 +145,47 @@ def parse_project(path: Path) -> PythonContext:
             models = _extract_models(py_file, root, fw.value)
             context.models.extend(models)
 
+    context.detected_libraries = _detect_libraries(root, context.files)
     return context
+
+
+def _detect_libraries(root: Path, files: list[FileInfo]) -> set[str]:
+    """Detect which libraries a project uses from dependencies and imports."""
+    libraries: set[str] = set()
+
+    # 1. Check pyproject.toml
+    pyproject = root / "pyproject.toml"
+    if pyproject.exists():
+        try:
+            text = pyproject.read_text(encoding="utf-8", errors="replace")
+            for pkg_name, lib_key in _PACKAGE_TO_LIBRARY.items():
+                if pkg_name in text.lower():
+                    libraries.add(lib_key)
+        except Exception:
+            pass
+
+    # 2. Check requirements*.txt files
+    for req_file in root.glob("requirements*.txt"):
+        try:
+            for line in req_file.read_text(encoding="utf-8", errors="replace").splitlines():
+                line = line.strip().lower()
+                if not line or line.startswith("#") or line.startswith("-"):
+                    continue
+                # Strip version specifiers: "django>=4.2" -> "django"
+                pkg = line.split("==")[0].split(">=")[0].split("<=")[0].split("~=")[0].split("!=")[0].split("[")[0].strip()
+                if pkg in _PACKAGE_TO_LIBRARY:
+                    libraries.add(_PACKAGE_TO_LIBRARY[pkg])
+        except Exception:
+            pass
+
+    # 3. Fall back to import scanning (catches cases with no dependency files)
+    for fi in files:
+        for imp in fi.imports:
+            top_module = imp.split(".")[0]
+            if top_module in _IMPORT_TO_LIBRARY:
+                libraries.add(_IMPORT_TO_LIBRARY[top_module])
+
+    return libraries
 
 
 def _parse_file(filepath: Path, root: Path) -> FileInfo:
