@@ -13,8 +13,6 @@ from typing import Any
 
 
 class Severity(Enum):
-    """Severity levels for architectural findings."""
-
     ERROR = "error"
     WARN = "warn"
     INFO = "info"
@@ -40,8 +38,6 @@ class Severity(Enum):
 
 
 class Category(Enum):
-    """Categories of architectural concerns."""
-
     ARCHITECTURE = "architecture"
     CODE_SMELL = "code_smell"
     ERROR_HANDLING = "error_handling"
@@ -92,7 +88,6 @@ class Finding:
     context: dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
-        """Serialize to a dictionary suitable for JSON output."""
         d = {
             "code": self.code,
             "severity": self.severity.value,
@@ -109,11 +104,9 @@ class Finding:
         return d
 
     def to_json(self) -> str:
-        """Serialize to JSON string."""
         return json.dumps(self.to_dict(), indent=2)
 
     def format_human(self) -> str:
-        """Format for human-readable terminal output."""
         severity_tag = self.severity.value.upper()
         location = ""
         if self.file:

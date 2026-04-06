@@ -16,15 +16,10 @@ logger = logging.getLogger(__name__)
 
 
 class Engine:
-    """
-    Main engine that discovers language packs and runs checks.
-    """
-
     def __init__(self) -> None:
         self._packs: dict[str, Pack] = {}
 
     def discover_packs(self) -> None:
-        """Discover installed language packs via entry points."""
         if sys.version_info >= (3, 12):
             eps = entry_points(group="gaudi.packs")
         else:
@@ -39,16 +34,13 @@ class Engine:
                 logger.warning("Failed to load pack '%s': %s", ep.name, e)
 
     def register_pack(self, pack: Pack) -> None:
-        """Manually register a language pack."""
         self._packs[pack.name] = pack
 
     @property
     def packs(self) -> dict[str, Pack]:
-        """All registered packs."""
         return dict(self._packs)
 
     def detect_packs(self, path: Path) -> list[Pack]:
-        """Auto-detect which packs are relevant for the given path."""
         return [pack for pack in self._packs.values() if pack.can_handle(path)]
 
     def check(
@@ -87,7 +79,6 @@ class Engine:
         return sorted(findings, key=lambda f: (f.severity.priority, f.code))
 
     def format_summary(self, findings: list[Finding]) -> str:
-        """Format a summary line for a set of findings."""
         errors = sum(1 for f in findings if f.severity == Severity.ERROR)
         warnings = sum(1 for f in findings if f.severity == Severity.WARN)
         infos = sum(1 for f in findings if f.severity == Severity.INFO)
