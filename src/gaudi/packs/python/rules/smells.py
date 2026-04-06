@@ -256,6 +256,17 @@ def _is_constant_value(node: ast.expr) -> bool:
     return False
 
 
+def _is_reference_data(node: ast.expr) -> bool:
+    """Return True if node is a non-empty dict/list used as reference data."""
+    if isinstance(node, ast.Dict):
+        if not node.keys:
+            return False
+        return all(k is not None for k in node.keys)
+    if isinstance(node, ast.List):
+        return bool(node.elts)
+    return False
+
+
 def _is_mutable_call(node: ast.expr) -> bool:
     """Check if a Call creates a mutable container."""
     if not isinstance(node, ast.Call):
@@ -291,11 +302,23 @@ class GlobalData(Rule):
                 # Skip constant assignments
                 if _is_constant_value(value):
                     continue
-                # Check ALL_CAPS with constant value
+                # Skip dunder names (__all__, __version__, etc.)
+                if any(
+                    isinstance(t, ast.Name) and t.id.startswith("__") and t.id.endswith("__")
+                    for t in node.targets
+                ):
+                    continue
+                # ALL_CAPS with immutable value = constant
                 is_allcaps = all(
                     isinstance(t, ast.Name) and _is_all_caps(t.id) for t in node.targets
                 )
                 if is_allcaps and _is_constant_value(value):
+                    continue
+                # ALL_CAPS tuple = constant (rule registries)
+                if is_allcaps and isinstance(value, ast.Tuple):
+                    continue
+                # ALL_CAPS non-empty dict/list = reference data table
+                if is_allcaps and _is_reference_data(value):
                     continue
                 # Flag mutable containers
                 is_mutable = isinstance(value, (ast.Dict, ast.List, ast.Set)) or _is_mutable_call(
@@ -1863,7 +1886,7 @@ class AlternativeInterfaces(Rule):
 # Exported rule instances
 # ---------------------------------------------------------------
 
-SMELL_RULES = [
+SMELL_RULES = (
     MysteriousName(),
     DuplicatedCode(),
     LongFunction(),
@@ -1888,4 +1911,4 @@ SMELL_RULES = [
     DataClassSmell(),
     RefusedBequest(),
     Comments(),
-]
+)

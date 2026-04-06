@@ -33,4 +33,4 @@ class FlaskNoAppFactory(Rule):
         return findings
 
 
-FLASK_RULES = [FlaskNoAppFactory()]
+FLASK_RULES = (FlaskNoAppFactory(),)

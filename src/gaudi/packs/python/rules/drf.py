@@ -52,4 +52,4 @@ class DRFNoThrottling(Rule):
         return findings
 
 
-DRF_RULES = [DRFNoPermissionClass(), DRFNoThrottling()]
+DRF_RULES = (DRFNoPermissionClass(), DRFNoThrottling())

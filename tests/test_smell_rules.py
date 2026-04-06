@@ -35,11 +35,11 @@ class TestSmellRules:
 
     def test_smell_005_global_data(self):
         hits = self._findings_for("smell_global_data.py", "SMELL-005")
-        assert len(hits) == 3
+        assert len(hits) == 2
         flagged = {f.context.get("name") for f in hits}
         assert "REGISTRY" in flagged
         assert "_CACHE" in flagged
-        assert "CONFIG" in flagged
+        # CONFIG has all-constant values — treated as reference data
         assert "MAX_RETRIES" not in flagged
 
     def test_smell_013_loops(self):

@@ -67,4 +67,4 @@ class PytestFixtureScope(Rule):
         return findings
 
 
-PYTEST_RULES = [PytestAssertMessage(), PytestFixtureScope()]
+PYTEST_RULES = (PytestAssertMessage(), PytestFixtureScope())

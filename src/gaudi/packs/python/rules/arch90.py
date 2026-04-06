@@ -753,7 +753,7 @@ class MissingPrecommit(Rule):
 # Exported rule list
 # ---------------------------------------------------------------
 
-ARCH90_RULES = [
+ARCH90_RULES = (
     PathHacks(),
     MissingPyproject(),
     NoEntryPoint(),
@@ -769,4 +769,4 @@ ARCH90_RULES = [
     ErrorSwallowing(),
     UnstructuredLogging(),
     MissingPrecommit(),
-]
+)

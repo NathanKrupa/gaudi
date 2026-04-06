@@ -53,4 +53,4 @@ class SQLAlchemyLazyDefault(Rule):
         return findings
 
 
-SQLALCHEMY_RULES = [SQLAlchemySessionLeak(), SQLAlchemyLazyDefault()]
+SQLALCHEMY_RULES = (SQLAlchemySessionLeak(), SQLAlchemyLazyDefault())

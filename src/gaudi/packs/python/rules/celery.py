@@ -57,4 +57,4 @@ class CeleryNoTimeLimit(Rule):
         return findings
 
 
-CELERY_RULES = [CeleryNoRetry(), CeleryNoTimeLimit()]
+CELERY_RULES = (CeleryNoRetry(), CeleryNoTimeLimit())

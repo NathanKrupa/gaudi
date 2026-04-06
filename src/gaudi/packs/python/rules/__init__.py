@@ -17,7 +17,7 @@ from gaudi.packs.python.rules.drf import DRF_RULES
 from gaudi.packs.python.rules.smells import SMELL_RULES
 from gaudi.packs.python.rules.arch90 import ARCH90_RULES
 
-ALL_RULES = [
+ALL_RULES = (
     *ARCHITECTURE_RULES,
     *PY314_RULES,
     *DJANGO_LIB_RULES,
@@ -32,4 +32,4 @@ ALL_RULES = [
     *DRF_RULES,
     *SMELL_RULES,
     *ARCH90_RULES,
-]
+)
