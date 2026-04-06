@@ -77,8 +77,18 @@ class TestArch90Rules:
         assert "create_service" not in methods
 
     def test_arch_022_scattered_config(self):
-        hits = self._findings_for("arch90_scattered_config.py", "ARCH-022")
-        assert len(hits) >= 1
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmppath = Path(tmpdir)
+            for i in range(5):
+                (tmppath / f"module_{i}.py").write_text(
+                    f'import os\nval_{i} = os.getenv("KEY_{i}")\n'
+                )
+            pack = PythonPack()
+            findings = pack.check(tmppath)
+            hits = [f for f in findings if f.code == "ARCH-022"]
+            assert len(hits) >= 1
 
     # -- Week 4: Data and Types --
 

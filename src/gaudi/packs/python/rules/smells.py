@@ -6,18 +6,11 @@ ABOUTME: Tier 1 rules use basic AST node counting and pattern matching.
 from __future__ import annotations
 
 import ast
+import copy
 from typing import Any
 
 from gaudi.core import Rule, Finding, Severity, Category
 from gaudi.packs.python.context import PythonContext
-
-
-def _parse_safe(source: str) -> ast.Module | None:
-    """Parse source, returning None on SyntaxError."""
-    try:
-        return ast.parse(source)
-    except SyntaxError:
-        return None
 
 
 # ---------------------------------------------------------------
@@ -115,7 +108,7 @@ class MysteriousName(Rule):
     def check(self, context: PythonContext) -> list[Finding]:
         findings: list[Finding] = []
         for f in context.files:
-            tree = _parse_safe(f.source)
+            tree = f.ast_tree
             if tree is None:
                 continue
             for node in ast.walk(tree):
@@ -165,7 +158,7 @@ class LongFunction(Rule):
     def check(self, context: PythonContext) -> list[Finding]:
         findings: list[Finding] = []
         for f in context.files:
-            tree = _parse_safe(f.source)
+            tree = f.ast_tree
             if tree is None:
                 continue
             for node in ast.walk(tree):
@@ -206,7 +199,7 @@ class LongParameterList(Rule):
     def check(self, context: PythonContext) -> list[Finding]:
         findings: list[Finding] = []
         for f in context.files:
-            tree = _parse_safe(f.source)
+            tree = f.ast_tree
             if tree is None:
                 continue
             for node in ast.walk(tree):
@@ -292,7 +285,7 @@ class GlobalData(Rule):
     def check(self, context: PythonContext) -> list[Finding]:
         findings: list[Finding] = []
         for f in context.files:
-            tree = _parse_safe(f.source)
+            tree = f.ast_tree
             if tree is None:
                 continue
             for node in tree.body:
@@ -368,7 +361,7 @@ class Loops(Rule):
     def check(self, context: PythonContext) -> list[Finding]:
         findings: list[Finding] = []
         for f in context.files:
-            tree = _parse_safe(f.source)
+            tree = f.ast_tree
             if tree is None:
                 continue
             for node in ast.walk(tree):
@@ -470,7 +463,7 @@ class LazyElement(Rule):
     def check(self, context: PythonContext) -> list[Finding]:
         findings: list[Finding] = []
         for f in context.files:
-            tree = _parse_safe(f.source)
+            tree = f.ast_tree
             if tree is None:
                 continue
             for node in ast.walk(tree):
@@ -513,7 +506,7 @@ class MessageChains(Rule):
     def check(self, context: PythonContext) -> list[Finding]:
         findings: list[Finding] = []
         for f in context.files:
-            tree = _parse_safe(f.source)
+            tree = f.ast_tree
             if tree is None:
                 continue
             # Track nodes we've already counted as inner
@@ -565,7 +558,7 @@ class LargeClass(Rule):
     def check(self, context: PythonContext) -> list[Finding]:
         findings: list[Finding] = []
         for f in context.files:
-            tree = _parse_safe(f.source)
+            tree = f.ast_tree
             if tree is None:
                 continue
             for node in ast.walk(tree):
@@ -639,7 +632,7 @@ class DataClassSmell(Rule):
     def check(self, context: PythonContext) -> list[Finding]:
         findings: list[Finding] = []
         for f in context.files:
-            tree = _parse_safe(f.source)
+            tree = f.ast_tree
             if tree is None:
                 continue
             for node in ast.walk(tree):
@@ -710,7 +703,7 @@ class RefusedBequest(Rule):
     def check(self, context: PythonContext) -> list[Finding]:
         findings: list[Finding] = []
         for f in context.files:
-            tree = _parse_safe(f.source)
+            tree = f.ast_tree
             if tree is None:
                 continue
             for node in ast.walk(tree):
@@ -765,7 +758,7 @@ class Comments(Rule):
     def check(self, context: PythonContext) -> list[Finding]:
         findings: list[Finding] = []
         for f in context.files:
-            tree = _parse_safe(f.source)
+            tree = f.ast_tree
             if tree is None:
                 continue
             source_lines = f.source.splitlines()
@@ -898,7 +891,7 @@ class MutableData(Rule):
     def check(self, context: PythonContext) -> list[Finding]:
         findings: list[Finding] = []
         for f in context.files:
-            tree = _parse_safe(f.source)
+            tree = f.ast_tree
             if tree is None:
                 continue
             mutables = _find_module_mutable_names(tree)
@@ -954,7 +947,7 @@ class DivergentChange(Rule):
     def check(self, context: PythonContext) -> list[Finding]:
         findings: list[Finding] = []
         for f in context.files:
-            tree = _parse_safe(f.source)
+            tree = f.ast_tree
             if tree is None:
                 continue
             for node in ast.walk(tree):
@@ -1033,7 +1026,7 @@ class FeatureEnvy(Rule):
     def check(self, context: PythonContext) -> list[Finding]:
         findings: list[Finding] = []
         for f in context.files:
-            tree = _parse_safe(f.source)
+            tree = f.ast_tree
             if tree is None:
                 continue
             for cls in ast.walk(tree):
@@ -1085,7 +1078,7 @@ class DataClumps(Rule):
     def check(self, context: PythonContext) -> list[Finding]:
         findings: list[Finding] = []
         for f in context.files:
-            tree = _parse_safe(f.source)
+            tree = f.ast_tree
             if tree is None:
                 continue
             # Collect param sets for all functions
@@ -1200,7 +1193,7 @@ class PrimitiveObsession(Rule):
     def check(self, context: PythonContext) -> list[Finding]:
         findings: list[Finding] = []
         for f in context.files:
-            tree = _parse_safe(f.source)
+            tree = f.ast_tree
             if tree is None:
                 continue
             compares = _collect_attr_string_compares(tree)
@@ -1292,7 +1285,7 @@ class RepeatedSwitches(Rule):
     def check(self, context: PythonContext) -> list[Finding]:
         findings: list[Finding] = []
         for f in context.files:
-            tree = _parse_safe(f.source)
+            tree = f.ast_tree
             if tree is None:
                 continue
             # Collect switch patterns per function
@@ -1343,7 +1336,7 @@ class SpeculativeGenerality(Rule):
     def check(self, context: PythonContext) -> list[Finding]:
         findings: list[Finding] = []
         for f in context.files:
-            tree = _parse_safe(f.source)
+            tree = f.ast_tree
             if tree is None:
                 continue
             findings.extend(self._check_abstract(tree, f.relative_path))
@@ -1486,7 +1479,7 @@ class TemporaryField(Rule):
     def check(self, context: PythonContext) -> list[Finding]:
         findings: list[Finding] = []
         for f in context.files:
-            tree = _parse_safe(f.source)
+            tree = f.ast_tree
             if tree is None:
                 continue
             for node in ast.walk(tree):
@@ -1592,7 +1585,7 @@ class MiddleMan(Rule):
     def check(self, context: PythonContext) -> list[Finding]:
         findings: list[Finding] = []
         for f in context.files:
-            tree = _parse_safe(f.source)
+            tree = f.ast_tree
             if tree is None:
                 continue
             for node in ast.walk(tree):
@@ -1641,7 +1634,7 @@ class InsiderTrading(Rule):
     def check(self, context: PythonContext) -> list[Finding]:
         findings: list[Finding] = []
         for f in context.files:
-            tree = _parse_safe(f.source)
+            tree = f.ast_tree
             if tree is None:
                 continue
             for cls in ast.walk(tree):
@@ -1711,15 +1704,13 @@ class DuplicatedCode(Rule):
     def check(self, context: PythonContext) -> list[Finding]:
         findings: list[Finding] = []
         for f in context.files:
-            tree = _parse_safe(f.source)
+            tree = f.ast_tree
             if tree is None:
                 continue
             funcs = [n for n in tree.body if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef))]
             # Normalize and dump each function
             dumps: list[tuple[str, str]] = []
             for fn in funcs:
-                import copy
-
                 fn_copy = copy.deepcopy(fn)
                 fn_copy.name = "FUNC"
                 _Normalizer().visit(fn_copy)
@@ -1764,7 +1755,7 @@ class ShotgunSurgery(Rule):
     def check(self, context: PythonContext) -> list[Finding]:
         findings: list[Finding] = []
         for f in context.files:
-            tree = _parse_safe(f.source)
+            tree = f.ast_tree
             if tree is None:
                 continue
             # Find module-level names
@@ -1825,7 +1816,7 @@ class AlternativeInterfaces(Rule):
     def check(self, context: PythonContext) -> list[Finding]:
         findings: list[Finding] = []
         for f in context.files:
-            tree = _parse_safe(f.source)
+            tree = f.ast_tree
             if tree is None:
                 continue
             classes = [n for n in ast.walk(tree) if isinstance(n, ast.ClassDef)]

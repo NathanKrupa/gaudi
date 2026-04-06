@@ -11,14 +11,6 @@ from gaudi.core import Rule, Finding, Severity, Category
 from gaudi.packs.python.context import PythonContext
 
 
-def _parse_safe(source: str) -> ast.Module | None:
-    """Parse source, returning None on SyntaxError."""
-    try:
-        return ast.parse(source)
-    except SyntaxError:
-        return None
-
-
 # ---------------------------------------------------------------
 # STRUCT-010  PathHacks
 # ---------------------------------------------------------------
@@ -36,7 +28,7 @@ class PathHacks(Rule):
     def check(self, context: PythonContext) -> list[Finding]:
         findings: list[Finding] = []
         for fi in context.files:
-            tree = _parse_safe(fi.source)
+            tree = fi.ast_tree
             if tree is None:
                 continue
             for node in ast.walk(tree):
@@ -101,7 +93,7 @@ class NoEntryPoint(Rule):
     def check(self, context: PythonContext) -> list[Finding]:
         findings: list[Finding] = []
         for fi in context.files:
-            tree = _parse_safe(fi.source)
+            tree = fi.ast_tree
             if tree is None:
                 continue
             has_cli_import = False
@@ -192,7 +184,7 @@ class ImportDirectionViolation(Rule):
     def check(self, context: PythonContext) -> list[Finding]:
         findings: list[Finding] = []
         for fi in context.files:
-            tree = _parse_safe(fi.source)
+            tree = fi.ast_tree
             if tree is None:
                 continue
             for node in ast.walk(tree):
@@ -247,25 +239,21 @@ class ConnectorLogicLeak(Rule):
             is_data_layer = any(kw in path_lower for kw in _DATA_LAYER_KEYWORDS)
             if not is_data_layer:
                 continue
-            tree = _parse_safe(fi.source)
+            tree = fi.ast_tree
             if tree is None:
                 continue
             for node in ast.walk(tree):
                 if not isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
                     continue
                 for child in ast.walk(node):
-                    if isinstance(child, ast.If):
-                        # Check for elif (orelse with If)
-                        has_elif = child.orelse and isinstance(child.orelse[0], ast.If)
-                        has_else = child.orelse and not isinstance(child.orelse[0], ast.If)
-                        if has_elif or (child.orelse and has_else and len(child.orelse) > 0):
-                            findings.append(
-                                self.finding(
-                                    file=fi.relative_path,
-                                    line=child.lineno,
-                                )
+                    if isinstance(child, ast.If) and child.orelse:
+                        findings.append(
+                            self.finding(
+                                file=fi.relative_path,
+                                line=child.lineno,
                             )
-                            break
+                        )
+                        break
         return findings
 
 
@@ -288,7 +276,7 @@ class FatScript(Rule):
     def check(self, context: PythonContext) -> list[Finding]:
         findings: list[Finding] = []
         for fi in context.files:
-            tree = _parse_safe(fi.source)
+            tree = fi.ast_tree
             if tree is None:
                 continue
             source_lines = fi.source.splitlines()
@@ -379,7 +367,7 @@ class EnvLeakage(Rule):
     def check(self, context: PythonContext) -> list[Finding]:
         findings: list[Finding] = []
         for fi in context.files:
-            tree = _parse_safe(fi.source)
+            tree = fi.ast_tree
             if tree is None:
                 continue
             for node in ast.walk(tree):
@@ -451,12 +439,11 @@ class ScatteredConfig(Rule):
     )
 
     def check(self, context: PythonContext) -> list[Finding]:
-        count = 0
-        for fi in context.files:
-            hits = re.findall(r"os\.(getenv|environ)", fi.source)
-            count += len(hits)
-        if count >= 4:
-            return [self.finding(count=count)]
+        files_with_env = sum(
+            1 for fi in context.files if re.search(r"os\.(getenv|environ)", fi.source)
+        )
+        if files_with_env >= 4:
+            return [self.finding(count=files_with_env)]
         return []
 
 
@@ -478,7 +465,7 @@ class MissingReturnTypes(Rule):
     def check(self, context: PythonContext) -> list[Finding]:
         findings: list[Finding] = []
         for fi in context.files:
-            tree = _parse_safe(fi.source)
+            tree = fi.ast_tree
             if tree is None:
                 continue
             for node in ast.iter_child_nodes(tree):
@@ -534,7 +521,7 @@ class MagicStrings(Rule):
     def check(self, context: PythonContext) -> list[Finding]:
         findings: list[Finding] = []
         for fi in context.files:
-            tree = _parse_safe(fi.source)
+            tree = fi.ast_tree
             if tree is None:
                 continue
             docstrings = self._collect_docstrings(tree)
@@ -605,7 +592,7 @@ class BareExcept(Rule):
     def check(self, context: PythonContext) -> list[Finding]:
         findings: list[Finding] = []
         for fi in context.files:
-            tree = _parse_safe(fi.source)
+            tree = fi.ast_tree
             if tree is None:
                 continue
             for node in ast.walk(tree):
@@ -651,7 +638,7 @@ class ErrorSwallowing(Rule):
     def check(self, context: PythonContext) -> list[Finding]:
         findings: list[Finding] = []
         for fi in context.files:
-            tree = _parse_safe(fi.source)
+            tree = fi.ast_tree
             if tree is None:
                 continue
             for node in ast.walk(tree):
@@ -705,7 +692,7 @@ class UnstructuredLogging(Rule):
     def check(self, context: PythonContext) -> list[Finding]:
         findings: list[Finding] = []
         for fi in context.files:
-            tree = _parse_safe(fi.source)
+            tree = fi.ast_tree
             if tree is None:
                 continue
             for node in ast.walk(tree):
