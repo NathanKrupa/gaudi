@@ -1,0 +1,18 @@
+{
+  "rule_id": "CPLX-002",
+  "description": "PassThroughVariable -- a parameter threaded through layers without being used",
+  "fixtures": {
+    "fail_pass_through.py": {
+      "expected_findings": [
+        {
+          "severity": "warn",
+          "line": 5,
+          "message_contains": "Parameter 'config' is threaded through 4 functions"
+        }
+      ]
+    },
+    "pass_no_pass_through.py": {
+      "expected_findings": []
+    }
+  }
+}

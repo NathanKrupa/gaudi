@@ -49,10 +49,30 @@ The Python pack ships with 10 rules. There are dozens more worth adding. Good ca
 - Missing migration files (STRUCT-002)
 
 Each rule needs:
-- A class in `src/gaudi/packs/python/rules.py`
+- A class in the appropriate `src/gaudi/packs/python/rules/<category>.py` module
 - A unique error code following the prefix conventions
 - A clear `message_template` and `recommendation_template`
-- A test case with a fixture that triggers it
+- A **fixture corpus directory** under `tests/fixtures/python/<RULE-ID>/` containing
+  at least one `fail_*.py`, one `pass_*.py`, and an `expected.json`. The
+  parametrized runner in `tests/test_fixture_corpus.py` will pick these up
+  automatically. Boundary fixtures (`fail_boundary_*.py` / `pass_boundary_*.py`)
+  are strongly encouraged for any rule with a numeric threshold.
+
+### Fixture-first TDD
+
+The fixture is the specification; the rule is the implementation. The workflow
+is mandatory for every new rule:
+
+1. Create the rule directory and write `fail_*.py`, `pass_*.py`, and `expected.json`.
+2. Run `pytest tests/test_fixture_corpus.py` and confirm the new cases **fail**
+   (the rule does not exist yet).
+3. Implement the rule.
+4. Re-run the suite and confirm the cases now **pass**.
+5. Verify with `gaudi-fixture-coverage` that the new rule shows `OK` in the
+   coverage table.
+
+The full rubric, naming conventions, and expected.json schema live in
+[docs/testing-fixtures.md](docs/testing-fixtures.md).
 
 ### New Language Packs
 
@@ -80,8 +100,12 @@ Show people how to use Gaudí in their pipelines:
 ## Testing
 
 - All rules must have test coverage
-- Use fixture files in `tests/fixtures/` for test data
+- New rules use the per-rule fixture corpus under `tests/fixtures/python/<RULE-ID>/`
+  with an `expected.json` rubric (see [docs/testing-fixtures.md](docs/testing-fixtures.md))
 - Run the full suite with `pytest`
+- Run `gaudi-fixture-coverage` to see which rules still lack a fixture
+  directory (CI runs this in warn-mode today and will become strict once the
+  migration backlog is drained)
 - CI enforces a minimum coverage threshold
 
 ## Pull Request Process

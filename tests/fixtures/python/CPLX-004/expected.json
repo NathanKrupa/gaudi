@@ -1,0 +1,18 @@
+{
+  "rule_id": "CPLX-004",
+  "description": "ConjoinedMethods -- temporal coupling between two methods of a class",
+  "fixtures": {
+    "fail_conjoined_methods.py": {
+      "expected_findings": [
+        {
+          "severity": "info",
+          "line": 12,
+          "message_contains": "Class 'Database' has temporal coupling on 'self._conn'"
+        }
+      ]
+    },
+    "pass_no_temporal_coupling.py": {
+      "expected_findings": []
+    }
+  }
+}
