@@ -42,9 +42,7 @@ def _get_string_assign(tree: ast.Module, var_name: str) -> str | None:
         if isinstance(node, ast.Assign):
             for target in node.targets:
                 if isinstance(target, ast.Name) and target.id == var_name:
-                    if isinstance(node.value, ast.Constant) and isinstance(
-                        node.value.value, str
-                    ):
+                    if isinstance(node.value, ast.Constant) and isinstance(node.value.value, str):
                         return node.value.value
     return None
 
