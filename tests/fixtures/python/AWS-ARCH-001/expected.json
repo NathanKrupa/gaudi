@@ -1,0 +1,21 @@
+{
+  "rule_id": "AWS-ARCH-001",
+  "description": "HardcodedRegion -- boto3 region_name must not be a literal",
+  "fixtures": {
+    "fail_hardcoded_region.py": {
+      "expected_findings": [
+        {
+          "severity": "warn",
+          "line": 5,
+          "message_contains": "region_name"
+        }
+      ]
+    },
+    "pass_region_from_env.py": {
+      "expected_findings": []
+    },
+    "pass_default_region.py": {
+      "expected_findings": []
+    }
+  }
+}
