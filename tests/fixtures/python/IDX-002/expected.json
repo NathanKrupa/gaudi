@@ -1,0 +1,31 @@
+{
+  "rule_id": "IDX-002",
+  "description": "NoIndexOnFilterableField -- DateTime/Date fields commonly filtered need an index",
+  "fixtures": {
+    "fail_datetime_unindexed.py": {
+      "expected_findings": [
+        {
+          "severity": "info",
+          "line": 7,
+          "message_contains": "starts_at"
+        },
+        {
+          "severity": "info",
+          "line": 8,
+          "message_contains": "ends_at"
+        },
+        {
+          "severity": "info",
+          "line": 9,
+          "message_contains": "published_on"
+        }
+      ]
+    },
+    "pass_indexed_datetimes.py": {
+      "expected_findings": []
+    },
+    "pass_auto_timestamps.py": {
+      "expected_findings": []
+    }
+  }
+}

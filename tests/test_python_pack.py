@@ -85,13 +85,6 @@ class TestRules:
         assert len(arch_002) >= 1
         assert any("Donor" in f.message for f in arch_002)
 
-    def test_idx_001_missing_string_index(self, findings):
-        """Should flag email and code fields without indexes."""
-        idx_001 = [f for f in findings if f.code == "IDX-001"]
-        assert len(idx_001) >= 1
-        flagged_columns = {f.context.get("column") for f in idx_001}
-        assert "email" in flagged_columns
-
     def test_schema_001_missing_timestamps(self, findings):
         """Should flag models without timestamp fields."""
         schema_001 = [f for f in findings if f.code == "SCHEMA-001"]

@@ -1,0 +1,31 @@
+{
+  "rule_id": "IDX-001",
+  "description": "MissingStringIndex -- lookup-shaped CharFields need db_index",
+  "fixtures": {
+    "fail_lookup_charfields_unindexed.py": {
+      "expected_findings": [
+        {
+          "severity": "warn",
+          "line": 7,
+          "message_contains": "email"
+        },
+        {
+          "severity": "warn",
+          "line": 8,
+          "message_contains": "slug"
+        },
+        {
+          "severity": "warn",
+          "line": 9,
+          "message_contains": "api_key"
+        }
+      ]
+    },
+    "pass_indexed_or_unique.py": {
+      "expected_findings": []
+    },
+    "pass_non_lookup_charfields.py": {
+      "expected_findings": []
+    }
+  }
+}
