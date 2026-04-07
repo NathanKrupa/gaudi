@@ -1,0 +1,39 @@
+{
+  "rule_id": "LOG-001",
+  "description": "UnstructuredLogging -- f-string in logger call blocks lazy %-formatting",
+  "fixtures": {
+    "fail_fstring_logging.py": {
+      "expected_findings": [
+        {
+          "severity": "info",
+          "line": 9,
+          "message_contains": "f-string in logger call"
+        },
+        {
+          "severity": "info",
+          "line": 10,
+          "message_contains": "f-string in logger call"
+        },
+        {
+          "severity": "info",
+          "line": 11,
+          "message_contains": "f-string in logger call"
+        },
+        {
+          "severity": "info",
+          "line": 12,
+          "message_contains": "f-string in logger call"
+        }
+      ]
+    },
+    "pass_lazy_formatting.py": {
+      "expected_findings": []
+    },
+    "pass_plain_string.py": {
+      "expected_findings": []
+    },
+    "pass_fstring_outside_logger.py": {
+      "expected_findings": []
+    }
+  }
+}
