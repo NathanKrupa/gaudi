@@ -75,6 +75,13 @@ def _validate_expected_json(path: Path, rule_id: str) -> bool:
     return data.get("rule_id") == rule_id and "fixtures" in data
 
 
+def _count_fixtures(rule_dir: Path, prefix: str) -> int:
+    """Count fixtures with the given prefix -- both single-file (.py) and multi-file (dir)."""
+    files = sum(1 for p in rule_dir.glob(f"{prefix}*.py") if p.is_file())
+    dirs = sum(1 for p in rule_dir.glob(f"{prefix}*") if p.is_dir())
+    return files + dirs
+
+
 def _inspect_rule_dir(rule_id: str) -> RuleCoverage:
     rule_dir = PYTHON_FIXTURES / rule_id
     if not rule_dir.exists():
@@ -85,8 +92,8 @@ def _inspect_rule_dir(rule_id: str) -> RuleCoverage:
     return RuleCoverage(
         rule_id=rule_id,
         has_dir=True,
-        fail_count=len(list(rule_dir.glob("fail_*.py"))),
-        pass_count=len(list(rule_dir.glob("pass_*.py"))),
+        fail_count=_count_fixtures(rule_dir, "fail_"),
+        pass_count=_count_fixtures(rule_dir, "pass_"),
         has_expected_json=has_expected,
         expected_json_valid=has_expected and _validate_expected_json(expected_path, rule_id),
     )
