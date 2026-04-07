@@ -1,0 +1,20 @@
+{
+  "rule_id": "DRF-SCALE-001",
+  "description": "DRFNoThrottling -- API views must declare throttle_classes",
+  "fixtures": {
+    "fail_no_throttle_classes.py": {
+      "expected_findings": [
+        {
+          "severity": "info",
+          "message_contains": "throttle_classes"
+        }
+      ]
+    },
+    "pass_explicit_throttle_classes.py": {
+      "expected_findings": []
+    },
+    "pass_non_drf_class.py": {
+      "expected_findings": []
+    }
+  }
+}

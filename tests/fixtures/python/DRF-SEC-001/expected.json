@@ -1,0 +1,20 @@
+{
+  "rule_id": "DRF-SEC-001",
+  "description": "DRFNoPermissionClass -- ViewSets must declare permission_classes explicitly",
+  "fixtures": {
+    "fail_no_permission_classes.py": {
+      "expected_findings": [
+        {
+          "severity": "warn",
+          "message_contains": "permission_classes"
+        }
+      ]
+    },
+    "pass_explicit_permission_classes.py": {
+      "expected_findings": []
+    },
+    "pass_non_drf_class.py": {
+      "expected_findings": []
+    }
+  }
+}
