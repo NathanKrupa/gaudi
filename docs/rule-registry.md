@@ -5,6 +5,12 @@ a named pattern, or (where original) the project's own design principles.
 This registry provides citable provenance for each rule code and serves as
 a mining queue for planned rules.
 
+The **editorial doctrine** that governs which rules enter the catalog, how
+their severity and thresholds are assigned, and when they are subsumed or cut
+lives in [principles.md](principles.md). Footnotes in this registry that
+explain rule removals (e.g. "detection too weak", "subsumed by STAB-006")
+are applications of those principles.
+
 ---
 
 ## Source Texts
