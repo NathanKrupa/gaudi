@@ -12,6 +12,12 @@ from gaudi.packs.python.context import PythonContext
 
 
 class MissingPrecommit(Rule):
+    """Detect projects without a pre-commit configuration.
+
+    Principles: #12 (Tests are the specification).
+    Source: ARCH90 Day 6 — pre-commit hooks gate the build before CI does.
+    """
+
     code = "OPS-002"
     severity = Severity.INFO
     category = Category.OPERATIONS
@@ -33,6 +39,12 @@ class MissingPrecommit(Rule):
 
 
 class MissingPRTemplate(Rule):
+    """Detect projects without a pull request template.
+
+    Principles: #8 (Smallest reasonable change).
+    Source: ARCH90 — PRs are the project's task board.
+    """
+
     code = "OPS-003"
     severity = Severity.INFO
     category = Category.OPERATIONS
@@ -60,6 +72,12 @@ class MissingPRTemplate(Rule):
 
 
 class MissingCodeowners(Rule):
+    """Detect projects without a CODEOWNERS file.
+
+    Principles: #11 (The reader is the user).
+    Source: ARCH90 — CODEOWNERS routes review to the right reader.
+    """
+
     code = "OPS-004"
     severity = Severity.INFO
     category = Category.OPERATIONS
@@ -85,6 +103,12 @@ class MissingCodeowners(Rule):
 
 
 class MissingContribGuide(Rule):
+    """Detect projects without a CONTRIBUTING.md guide.
+
+    Principles: #11 (The reader is the user).
+    Source: ARCH90 — the contributor is a future reader who has none of the maintainer's context.
+    """
+
     code = "OPS-005"
     severity = Severity.INFO
     category = Category.OPERATIONS

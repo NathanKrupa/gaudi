@@ -63,6 +63,12 @@ def _build_parent_map(tree: ast.Module) -> dict[ast.AST, ast.AST]:
 
 
 class HardcodedRegion(Rule):
+    """Detect hardcoded AWS region_name passed to boto3 clients.
+
+    Principles: #5 (State must be visible).
+    Source: FWDOCS boto3 + AWS Well-Architected — region is configuration.
+    """
+
     code = "AWS-ARCH-001"
     severity = Severity.WARN
     category = Category.ARCHITECTURE
@@ -91,6 +97,12 @@ class HardcodedRegion(Rule):
 
 
 class BareClientCall(Rule):
+    """Detect boto3 API calls without ClientError handling.
+
+    Principles: #4 (Failure must be named).
+    Source: FWDOCS boto3 error handling — every external call states its failures.
+    """
+
     code = "AWS-ERR-001"
     severity = Severity.WARN
     category = Category.ERROR_HANDLING
@@ -144,6 +156,12 @@ class BareClientCall(Rule):
 
 
 class UnpaginatedList(Rule):
+    """Detect AWS list/describe/scan calls without pagination.
+
+    Principles: #4 (Failure must be named).
+    Source: FWDOCS boto3 pagination — every result set has a bound.
+    """
+
     code = "AWS-SCALE-001"
     severity = Severity.WARN
     category = Category.SCALABILITY

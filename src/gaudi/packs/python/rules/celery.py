@@ -36,6 +36,12 @@ def _decorator_has_kwarg(node: ast.FunctionDef | ast.AsyncFunctionDef, *kwarg_na
 
 
 class CeleryNoRetry(Rule):
+    """Detect Celery tasks without retry configuration.
+
+    Principles: #4 (Failure must be named).
+    Source: FWDOCS Celery + NYGARD Ch. 5 — retries are how an external call states its failure mode.
+    """
+
     code = "CELERY-ARCH-001"
     severity = Severity.WARN
     category = Category.ARCHITECTURE
@@ -67,6 +73,12 @@ class CeleryNoRetry(Rule):
 
 
 class CeleryNoTimeLimit(Rule):
+    """Detect Celery tasks without time_limit/soft_time_limit.
+
+    Principles: #4 (Failure must be named).
+    Source: FWDOCS Celery + NYGARD Ch. 5 — every loop and call has a bound.
+    """
+
     code = "CELERY-SCALE-001"
     severity = Severity.WARN
     category = Category.SCALABILITY

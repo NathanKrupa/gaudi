@@ -20,6 +20,12 @@ def _is_pydantic_class(cls: ast.ClassDef) -> bool:
 
 
 class PydanticMutableDefault(Rule):
+    """Detect mutable default values in Pydantic models.
+
+    Principles: #5 (State must be visible).
+    Source: FWDOCS Pydantic validators — mutable defaults are shared hidden state.
+    """
+
     code = "PYD-ARCH-001"
     severity = Severity.ERROR
     category = Category.ARCHITECTURE

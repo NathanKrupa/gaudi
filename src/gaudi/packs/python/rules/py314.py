@@ -143,6 +143,9 @@ class RemovedIn314Import(Rule):
 
     Detects `from module import name` or `import module.name` patterns
     that reference APIs removed in Python 3.14.
+
+    Principles: #14 (Reversibility is a design property).
+    Source: PY314 What's New — Removals.
     """
 
     code = "PY314-001"
@@ -184,6 +187,9 @@ class DeprecatedIn314Import(Rule):
     PY314-002: Import of API deprecated in Python 3.14.
 
     These APIs still work but will be removed in a future Python version.
+
+    Principles: #14 (Reversibility is a design property).
+    Source: PY314 What's New — Deprecations.
     """
 
     code = "PY314-002"
@@ -251,6 +257,9 @@ class DeferredAnnotationAccess(Rule):
     In Python 3.14, annotations are no longer evaluated eagerly (PEP 649/749).
     Code that directly accesses `__annotations__` may get unexpected results.
     Use annotationlib.get_annotations() instead.
+
+    Principles: #14 (Reversibility is a design property).
+    Source: PEP 649 — Deferred Evaluation of Annotations.
     """
 
     code = "PY314-003"
@@ -295,6 +304,9 @@ class FinallyControlFlow(Rule):
     PEP 765 (Python 3.14) adds SyntaxWarning for control flow statements
     (return, break, continue) inside finally blocks, as these silently
     swallow exceptions. Will become SyntaxError in a future version.
+
+    Principles: #4 (Failure must be named).
+    Source: PY314 SyntaxWarning — control flow in finally is a hidden failure.
     """
 
     code = "PY314-004"
@@ -361,6 +373,9 @@ class NotImplementedBoolContext(Rule):
 
     In Python 3.14, using NotImplemented in a boolean context raises
     TypeError (previously DeprecationWarning since 3.9).
+
+    Principles: #4 (Failure must be named).
+    Source: PY314 — NotImplemented bool context now raises.
     """
 
     code = "PY314-005"
@@ -411,6 +426,9 @@ class TarfileNoFilter(Rule):
     In Python 3.14, the default tarfile extraction filter changed to 'data'.
     Code that extracts tar archives without specifying a filter should
     explicitly set filter='data' or filter='fully_trusted'.
+
+    Principles: #4 (Failure must be named).
+    Source: PY314 tarfile security — hostile archives require explicit filtering.
     """
 
     code = "PY314-006"

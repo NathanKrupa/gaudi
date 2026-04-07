@@ -182,6 +182,12 @@ def _compute_fan_out(graph: dict[str, set[str]]) -> dict[str, int]:
 
 
 class CircularImport(Rule):
+    """Detect circular imports between modules.
+
+    Principles: #9 (Dependencies flow toward stability), #1 (The structure tells the story).
+    Source: MARTIN Clean Architecture — Acyclic Dependencies Principle.
+    """
+
     code = "DEP-001"
     severity = Severity.ERROR
     category = Category.ARCHITECTURE
@@ -216,6 +222,12 @@ class CircularImport(Rule):
 
 
 class FanOutExplosion(Rule):
+    """Detect modules with high efferent coupling (fan-out explosion).
+
+    Principles: #9 (Dependencies flow toward stability), #7 (Layers must earn their existence).
+    Source: MARTIN Clean Architecture — efferent coupling (Ce).
+    """
+
     code = "DEP-002"
     severity = Severity.WARN
     category = Category.ARCHITECTURE
@@ -251,6 +263,12 @@ class FanOutExplosion(Rule):
 
 
 class FanInConcentration(Rule):
+    """Detect modules imported by most of the project (fragile hub).
+
+    Principles: #9 (Dependencies flow toward stability).
+    Source: MARTIN Clean Architecture — fragile hub detection.
+    """
+
     code = "DEP-003"
     severity = Severity.INFO
     category = Category.ARCHITECTURE
@@ -299,6 +317,12 @@ class FanInConcentration(Rule):
 
 
 class UnstableDependency(Rule):
+    """Detect modules that violate the Stable Dependencies Principle.
+
+    Principles: #9 (Dependencies flow toward stability).
+    Source: MARTIN Clean Architecture — Stable Dependencies Principle (SDP).
+    """
+
     code = "DEP-004"
     severity = Severity.WARN
     category = Category.ARCHITECTURE

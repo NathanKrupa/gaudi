@@ -11,6 +11,12 @@ _ROUTE_METHODS = frozenset({"get", "post", "put", "patch", "delete"})
 
 
 class FastAPINoResponseModel(Rule):
+    """Detect FastAPI endpoints missing response_model.
+
+    Principles: #3 (Names are contracts), #10 (Boundaries are real or fictional).
+    Source: FWDOCS FastAPI response models — the response shape is a contract.
+    """
+
     code = "FAPI-ARCH-001"
     severity = Severity.WARN
     category = Category.ARCHITECTURE

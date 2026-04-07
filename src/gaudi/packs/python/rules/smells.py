@@ -93,7 +93,11 @@ def _mysterious_in_init(cls: ast.ClassDef) -> list[str]:
 
 
 class MysteriousName(Rule):
-    """SMELL-001: Functions or classes that use too many mysterious names."""
+    """SMELL-001: Functions or classes that use too many mysterious names.
+
+    Principles: #3 (Names are contracts), #11 (The reader is the user).
+    Source: FOWLER Ch. 3 — Mysterious Name.
+    """
 
     code = "SMELL-001"
     severity = Severity.INFO
@@ -179,7 +183,11 @@ def _is_mutable_call(node: ast.expr) -> bool:
 
 
 class GlobalData(Rule):
-    """SMELL-005: Mutable module-level variables."""
+    """SMELL-005: Mutable module-level variables.
+
+    Principles: #5 (State must be visible).
+    Source: FOWLER Ch. 3 — Global Data.
+    """
 
     code = "SMELL-005"
     severity = Severity.ERROR
@@ -256,7 +264,11 @@ def _is_append_on(call: ast.Call, var_name: str) -> bool:
 
 
 class Loops(Rule):
-    """SMELL-013: Accumulation loops replaceable by comprehensions."""
+    """SMELL-013: Accumulation loops replaceable by comprehensions.
+
+    Principles: #11 (The reader is the user).
+    Source: FOWLER Ch. 3 — Loops.
+    """
 
     code = "SMELL-013"
     severity = Severity.INFO
@@ -419,7 +431,11 @@ def _function_mutates(
 
 
 class MutableData(Rule):
-    """SMELL-006: Shared mutable state mutated by multiple functions."""
+    """SMELL-006: Shared mutable state mutated by multiple functions.
+
+    Principles: #5 (State must be visible).
+    Source: FOWLER Ch. 3 — Mutable Data.
+    """
 
     code = "SMELL-006"
     severity = Severity.ERROR

@@ -9,6 +9,12 @@ from gaudi.packs.python.context import PythonContext
 
 
 class SQLAlchemyLazyDefault(Rule):
+    """Detect SQLAlchemy relationships without explicit lazy loading strategy.
+
+    Principles: #4 (Failure must be named).
+    Source: FWDOCS SQLAlchemy — default lazy loading causes N+1 failures under load.
+    """
+
     code = "SA-SCALE-001"
     severity = Severity.WARN
     category = Category.SCALABILITY

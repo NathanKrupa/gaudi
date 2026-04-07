@@ -23,6 +23,9 @@ class NoTenantIsolation(Rule):
     If a project has 3+ models with relationships between them but no
     model has a tenant/organization/account foreign key, the project
     likely needs a tenant isolation strategy.
+
+    Principles: #1 (The structure tells the story), #4 (Failure must be named).
+    Source: FWDOCS Django multi-tenancy patterns — tenant isolation is structural.
     """
 
     code = "ARCH-001"
@@ -63,6 +66,9 @@ class NoTenantIsolation(Rule):
 class GodModel(Rule):
     """
     ARCH-002: Model with too many fields suggests it should be split.
+
+    Principles: #7 (Layers must earn their existence), #2 (One concept, one home).
+    Source: FOWLER Ch. 3 — Large Class, applied to ORM models.
     """
 
     code = "ARCH-002"
@@ -95,6 +101,9 @@ class GodModel(Rule):
 class NullableForeignKeySprawl(Rule):
     """
     ARCH-003: Multiple nullable ForeignKeys suggest missing join table or polymorphism.
+
+    Principles: #1 (The structure tells the story).
+    Source: FWDOCS Django relationship patterns — nullable FK sprawl signals a missing entity.
     """
 
     code = "ARCH-003"
@@ -137,6 +146,9 @@ class MissingStringIndex(Rule):
 
     CharField fields with common lookup names (email, slug, username, code, etc.)
     should have db_index=True.
+
+    Principles: #4 (Failure must be named).
+    Source: FWDOCS Django query optimization — missing indexes fail under load.
     """
 
     code = "IDX-001"
@@ -183,6 +195,9 @@ class MissingStringIndex(Rule):
 class NoIndexOnFilterableField(Rule):
     """
     IDX-002: DateTimeField without an index — common filter/sort target.
+
+    Principles: #4 (Failure must be named).
+    Source: FWDOCS Django query optimization — missing indexes fail under load.
     """
 
     code = "IDX-002"
@@ -224,6 +239,9 @@ class NoIndexOnFilterableField(Rule):
 class MissingTimestamps(Rule):
     """
     SCHEMA-001: Model without created_at/updated_at timestamps.
+
+    Principles: #13 (The system must explain itself).
+    Source: FWDOCS Django audit trail conventions — timestamps explain the row's history.
     """
 
     code = "SCHEMA-001"
@@ -273,6 +291,9 @@ class MissingTimestamps(Rule):
 class ColumnSprawl(Rule):
     """
     SCHEMA-002: Too many nullable columns suggest the table is trying to do too much.
+
+    Principles: #7 (Layers must earn their existence), #2 (One concept, one home).
+    Source: FOWLER Ch. 3 — Large Class, applied to schema width.
     """
 
     code = "SCHEMA-002"
@@ -315,6 +336,9 @@ class ColumnSprawl(Rule):
 class NoStringLengthLimit(Rule):
     """
     SCHEMA-003: TextField used where CharField with max_length might be appropriate.
+
+    Principles: #4 (Failure must be named).
+    Source: FWDOCS Django field best practices — unbounded text is an unbounded failure mode.
     """
 
     code = "SCHEMA-003"
@@ -354,6 +378,9 @@ class NoStringLengthLimit(Rule):
 class NoMetaPermissions(Rule):
     """
     SEC-001: Django model without explicit permissions in Meta.
+
+    Principles: #4 (Failure must be named).
+    Source: FWDOCS Django auth framework — implicit permissions are silent failure under hostile input.
     """
 
     code = "SEC-001"
@@ -390,6 +417,9 @@ class NoMetaPermissions(Rule):
 class SingleFileModels(Rule):
     """
     STRUCT-001: All models in a single file that's getting too long.
+
+    Principles: #1 (The structure tells the story), #7 (Layers must earn their existence).
+    Source: ARCH90 Day 1 — one concern per module.
     """
 
     code = "STRUCT-001"

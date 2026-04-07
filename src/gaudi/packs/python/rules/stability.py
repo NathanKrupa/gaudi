@@ -24,6 +24,12 @@ _ORM_ALL_ATTRS = frozenset({"all", "filter", "exclude", "select_related", "prefe
 
 
 class UnboundedResultSet(Rule):
+    """Detect ORM queries returning unbounded result sets.
+
+    Principles: #4 (Failure must be named).
+    Source: NYGARD Ch. 4 — Unbounded Result Sets anti-pattern.
+    """
+
     code = "STAB-001"
     severity = Severity.WARN
     category = Category.STABILITY
@@ -77,6 +83,12 @@ class UnboundedResultSet(Rule):
 
 
 class RetryWithoutBackoff(Rule):
+    """Detect retry logic without exponential backoff.
+
+    Principles: #4 (Failure must be named).
+    Source: NYGARD Ch. 5 — Retry must include backoff to avoid thundering herds.
+    """
+
     code = "STAB-003"
     severity = Severity.WARN
     category = Category.STABILITY
@@ -143,6 +155,12 @@ class RetryWithoutBackoff(Rule):
 
 
 class UnboundedCache(Rule):
+    """Detect unbounded caches (lru_cache without maxsize, or @cache).
+
+    Principles: #4 (Failure must be named).
+    Source: NYGARD Ch. 5 — Steady State: unbounded resource growth.
+    """
+
     code = "STAB-004"
     severity = Severity.WARN
     category = Category.STABILITY
@@ -208,6 +226,12 @@ _BLOCKING_MODULES = frozenset({"time", "requests"})
 
 
 class BlockingInAsync(Rule):
+    """Detect blocking calls inside async functions.
+
+    Principles: #5 (State must be visible), #4 (Failure must be named).
+    Source: NYGARD Ch. 4 — Blocked Threads anti-pattern.
+    """
+
     code = "STAB-005"
     severity = Severity.ERROR
     category = Category.STABILITY
@@ -264,6 +288,12 @@ _RESOURCE_CALLS = frozenset({"open", "Session", "connect", "Connection"})
 
 
 class UnmanagedResource(Rule):
+    """Detect resources opened without context-manager management.
+
+    Principles: #4 (Failure must be named).
+    Source: NYGARD Ch. 5 — Steady State: every resource has an owner.
+    """
+
     code = "STAB-006"
     severity = Severity.WARN
     category = Category.STABILITY
@@ -341,6 +371,12 @@ class UnmanagedResource(Rule):
 
 
 class UnboundedThreadPool(Rule):
+    """Detect ThreadPoolExecutor instantiated without max_workers.
+
+    Principles: #4 (Failure must be named).
+    Source: NYGARD Ch. 4 — Unbalanced Capacities anti-pattern.
+    """
+
     code = "STAB-007"
     severity = Severity.WARN
     category = Category.STABILITY

@@ -30,6 +30,12 @@ def _has_class_attr(cls: ast.ClassDef, attr_name: str) -> bool:
 
 
 class DRFNoPermissionClass(Rule):
+    """Detect DRF ViewSets without explicit permission_classes.
+
+    Principles: #4 (Failure must be named).
+    Source: FWDOCS DRF permissions — implicit auth fails silently against hostile input.
+    """
+
     code = "DRF-SEC-001"
     severity = Severity.WARN
     category = Category.SECURITY
@@ -56,6 +62,12 @@ class DRFNoPermissionClass(Rule):
 
 
 class DRFNoThrottling(Rule):
+    """Detect DRF API views without throttle_classes.
+
+    Principles: #4 (Failure must be named).
+    Source: FWDOCS DRF throttling — unthrottled endpoints are an unbounded failure mode.
+    """
+
     code = "DRF-SCALE-001"
     severity = Severity.INFO
     category = Category.SCALABILITY

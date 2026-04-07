@@ -13,6 +13,12 @@ from gaudi.packs.python.context import PythonContext
 
 
 class EnvLeakage(Rule):
+    """Detect class methods reading os.getenv() directly (env leakage).
+
+    Principles: #5 (State must be visible).
+    Source: ARCH90 Day 4 — config injection over direct environment reads.
+    """
+
     code = "ARCH-020"
     severity = Severity.WARN
     category = Category.ARCHITECTURE
@@ -86,6 +92,12 @@ class EnvLeakage(Rule):
 
 
 class ScatteredConfig(Rule):
+    """Detect environment reads scattered across many files.
+
+    Principles: #2 (One concept, one home).
+    Source: ARCH90 Day 4 — centralize configuration.
+    """
+
     code = "ARCH-022"
     severity = Severity.WARN
     category = Category.ARCHITECTURE

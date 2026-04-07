@@ -30,7 +30,11 @@ def _method_attr_set(
 
 
 class DivergentChange(Rule):
-    """SMELL-007: Class methods touch disjoint attribute sets."""
+    """SMELL-007: Class methods touch disjoint attribute sets.
+
+    Principles: #2 (One concept, one home), #7 (Layers must earn their existence).
+    Source: FOWLER Ch. 3 — Divergent Change.
+    """
 
     code = "SMELL-007"
     severity = Severity.WARN
@@ -109,7 +113,11 @@ class DivergentChange(Rule):
 
 
 class ShotgunSurgery(Rule):
-    """SMELL-008: Module-level name used in 4+ functions."""
+    """SMELL-008: Module-level name used in 4+ functions.
+
+    Principles: #2 (One concept, one home).
+    Source: FOWLER Ch. 3 — Shotgun Surgery.
+    """
 
     code = "SMELL-008"
     severity = Severity.WARN
@@ -184,7 +192,11 @@ class _Normalizer(ast.NodeTransformer):
 
 
 class DuplicatedCode(Rule):
-    """SMELL-002: Functions with identical normalized structure."""
+    """SMELL-002: Functions with identical normalized structure.
+
+    Principles: #2 (One concept, one home).
+    Source: FOWLER Ch. 3 — Duplicated Code.
+    """
 
     code = "SMELL-002"
     severity = Severity.WARN

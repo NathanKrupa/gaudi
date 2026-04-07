@@ -19,7 +19,11 @@ _BOILERPLATE_DUNDERS = frozenset({"__init__", "__repr__", "__str__", "__eq__", "
 
 
 class LazyElement(Rule):
-    """SMELL-014: Classes with a single trivial method."""
+    """SMELL-014: Classes with a single trivial method.
+
+    Principles: #6 (The best line is the one not written).
+    Source: FOWLER Ch. 3 — Lazy Element.
+    """
 
     code = "SMELL-014"
     severity = Severity.INFO
@@ -61,7 +65,11 @@ class LazyElement(Rule):
 
 
 class SpeculativeGenerality(Rule):
-    """SMELL-015: Premature abstractions or unused parameters."""
+    """SMELL-015: Premature abstractions or unused parameters.
+
+    Principles: #6 (The best line is the one not written).
+    Source: FOWLER Ch. 3 — Speculative Generality.
+    """
 
     code = "SMELL-015"
     severity = Severity.WARN
@@ -185,7 +193,11 @@ class SpeculativeGenerality(Rule):
 
 
 class Comments(Rule):
-    """SMELL-024: Functions with excessive comment density."""
+    """SMELL-024: Functions with excessive comment density.
+
+    Principles: #3 (Names are contracts), #11 (The reader is the user).
+    Source: FOWLER Ch. 3 — Comments.
+    """
 
     code = "SMELL-024"
     severity = Severity.INFO
@@ -252,7 +264,11 @@ _DATA_DUNDERS = _BOILERPLATE_DUNDERS | {"__lt__", "__le__", "__gt__", "__ge__"}
 
 
 class DataClassSmell(Rule):
-    """SMELL-022: Classes that are pure data holders."""
+    """SMELL-022: Classes that are pure data holders.
+
+    Principles: #6 (The best line is the one not written).
+    Source: FOWLER Ch. 3 — Data Class.
+    """
 
     code = "SMELL-022"
     severity = Severity.INFO

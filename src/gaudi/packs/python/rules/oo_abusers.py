@@ -70,7 +70,11 @@ def _extract_compare(
 
 
 class RepeatedSwitches(Rule):
-    """SMELL-012: Same switch pattern in multiple functions."""
+    """SMELL-012: Same switch pattern in multiple functions.
+
+    Principles: #2 (One concept, one home).
+    Source: FOWLER Ch. 3 — Repeated Switches.
+    """
 
     code = "SMELL-012"
     severity = Severity.WARN
@@ -123,7 +127,11 @@ class RepeatedSwitches(Rule):
 
 
 class TemporaryField(Rule):
-    """SMELL-016: Class with attributes set in only one method."""
+    """SMELL-016: Class with attributes set in only one method.
+
+    Principles: #5 (State must be visible).
+    Source: FOWLER Ch. 3 — Temporary Field.
+    """
 
     code = "SMELL-016"
     severity = Severity.WARN
@@ -218,7 +226,11 @@ def _is_refused_body(body: list[ast.stmt]) -> bool:
 
 
 class RefusedBequest(Rule):
-    """SMELL-023: Subclasses that refuse inherited behavior."""
+    """SMELL-023: Subclasses that refuse inherited behavior.
+
+    Principles: #10 (Boundaries are real or fictional).
+    Source: FOWLER Ch. 3 — Refused Bequest.
+    """
 
     code = "SMELL-023"
     severity = Severity.WARN
@@ -269,7 +281,11 @@ class RefusedBequest(Rule):
 
 
 class AlternativeInterfaces(Rule):
-    """SMELL-021: Similar classes with different method names."""
+    """SMELL-021: Similar classes with different method names.
+
+    Principles: #3 (Names are contracts).
+    Source: FOWLER Ch. 3 — Alternative Classes with Different Interfaces.
+    """
 
     code = "SMELL-021"
     severity = Severity.INFO

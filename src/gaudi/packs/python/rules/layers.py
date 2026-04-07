@@ -15,6 +15,12 @@ _OUTER_KEYWORDS = ("scripts.", "cli.", "commands.", "views.")
 
 
 class ImportDirectionViolation(Rule):
+    """Detect inner-layer files importing from outer layers (import direction violation).
+
+    Principles: #1 (The structure tells the story), #9 (Dependencies flow toward stability).
+    Source: ARCH90 Day 3 — arrows point inward only.
+    """
+
     code = "ARCH-010"
     severity = Severity.ERROR
     category = Category.ARCHITECTURE
@@ -67,6 +73,12 @@ _DATA_LAYER_KEYWORDS = ("connector", "store", "repository", "db")
 
 
 class ConnectorLogicLeak(Rule):
+    """Detect data-layer files containing business logic (connector logic leak).
+
+    Principles: #10 (Boundaries are real or fictional).
+    Source: ARCH90 Day 3 — connectors translate, services decide.
+    """
+
     code = "ARCH-011"
     severity = Severity.WARN
     category = Category.ARCHITECTURE
@@ -107,6 +119,12 @@ class ConnectorLogicLeak(Rule):
 
 
 class FatScript(Rule):
+    """Detect entry-point functions with too much business logic (fat scripts).
+
+    Principles: #1 (The structure tells the story), #7 (Layers must earn their existence).
+    Source: ARCH90 Day 3 — thin entry points, fat services.
+    """
+
     code = "ARCH-013"
     severity = Severity.WARN
     category = Category.ARCHITECTURE

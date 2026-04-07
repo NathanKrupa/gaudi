@@ -58,6 +58,12 @@ def _build_parent_map(tree: ast.Module) -> dict[ast.AST, ast.AST]:
 
 
 class HardcodedModel(Rule):
+    """Detect hardcoded Anthropic model names instead of config injection.
+
+    Principles: #5 (State must be visible), #2 (One concept, one home).
+    Source: FWDOCS Anthropic SDK — model selection is configuration, not code.
+    """
+
     code = "LLM-ARCH-001"
     severity = Severity.WARN
     category = Category.ARCHITECTURE
@@ -89,6 +95,12 @@ class HardcodedModel(Rule):
 
 
 class BareAPICall(Rule):
+    """Detect Anthropic API calls without error handling for transient failures.
+
+    Principles: #4 (Failure must be named).
+    Source: FWDOCS Anthropic SDK + NYGARD Ch. 5 — every external call states its failures.
+    """
+
     code = "LLM-ERR-001"
     severity = Severity.WARN
     category = Category.ERROR_HANDLING
@@ -119,6 +131,12 @@ class BareAPICall(Rule):
 
 
 class NoTokenCounting(Rule):
+    """Detect Anthropic API calls without token counting safeguards.
+
+    Principles: #4 (Failure must be named).
+    Source: FWDOCS Anthropic SDK — token budgets are explicit failure modes.
+    """
+
     code = "LLM-SCALE-001"
     severity = Severity.WARN
     category = Category.SCALABILITY

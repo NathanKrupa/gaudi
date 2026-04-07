@@ -48,6 +48,12 @@ def _get_string_assign(tree: ast.Module, var_name: str) -> str | None:
 
 
 class MigrationNoDowngrade(Rule):
+    """Detect Alembic migrations missing a downgrade path.
+
+    Principles: #14 (Reversibility is a design property), #4 (Failure must be named).
+    Source: FWDOCS Alembic — every migration needs a downgrade for safe rollback.
+    """
+
     code = "ALM-ARCH-001"
     severity = Severity.WARN
     category = Category.ARCHITECTURE
@@ -73,6 +79,12 @@ class MigrationNoDowngrade(Rule):
 
 
 class MultipleHeads(Rule):
+    """Detect divergent (multiple) Alembic migration heads.
+
+    Principles: #14 (Reversibility is a design property), #1 (The structure tells the story).
+    Source: FWDOCS Alembic — branched heads block safe deploys until merged.
+    """
+
     code = "ALM-OPS-001"
     severity = Severity.ERROR
     category = Category.OPERATIONS

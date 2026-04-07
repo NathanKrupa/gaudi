@@ -13,6 +13,12 @@ _EXPENSIVE_FIXTURE_NAMES = frozenset(
 
 
 class PytestAssertMessage(Rule):
+    """Detect complex assertions without failure messages.
+
+    Principles: #12 (Tests are the specification), #13 (The system must explain itself).
+    Source: FWDOCS pytest assertion introspection — failure messages are the test's diagnostic surface.
+    """
+
     code = "TEST-STRUCT-001"
     severity = Severity.INFO
     category = Category.STRUCTURE
@@ -50,6 +56,12 @@ class PytestAssertMessage(Rule):
 
 
 class PytestFixtureScope(Rule):
+    """Detect expensive pytest fixtures without explicit scope.
+
+    Principles: #12 (Tests are the specification).
+    Source: FWDOCS pytest fixture optimization — expensive fixtures need wider scope.
+    """
+
     code = "TEST-SCALE-001"
     severity = Severity.INFO
     category = Category.SCALABILITY
