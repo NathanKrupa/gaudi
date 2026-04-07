@@ -1,9 +1,32 @@
 # ABOUTME: Django REST Framework architectural rules for Gaudí Python pack.
-# ABOUTME: Covers missing permission classes and throttling on ViewSets.
+# ABOUTME: Covers missing permission classes and throttling on ViewSets via AST.
 from __future__ import annotations
+
+import ast
 
 from gaudi.core import Rule, Finding, Severity, Category
 from gaudi.packs.python.context import PythonContext
+
+_DRF_BASES = frozenset({"ViewSet", "ModelViewSet", "GenericViewSet", "APIView", "GenericAPIView"})
+
+
+def _has_drf_base(cls: ast.ClassDef) -> bool:
+    """Check if a class inherits from a DRF ViewSet or APIView."""
+    return any(
+        (isinstance(b, ast.Name) and b.id in _DRF_BASES)
+        or (isinstance(b, ast.Attribute) and b.attr in _DRF_BASES)
+        for b in cls.bases
+    )
+
+
+def _has_class_attr(cls: ast.ClassDef, attr_name: str) -> bool:
+    """Check if a class defines a specific attribute."""
+    for item in cls.body:
+        if isinstance(item, ast.Assign):
+            for target in item.targets:
+                if isinstance(target, ast.Name) and target.id == attr_name:
+                    return True
+    return False
 
 
 class DRFNoPermissionClass(Rule):
@@ -22,11 +45,13 @@ class DRFNoPermissionClass(Rule):
         for f in context.files:
             if not f.has_import("rest_framework"):
                 continue
-            source = f.source
-            if not source:
+            tree = f.ast_tree
+            if tree is None:
                 continue
-            if ("ViewSet" in source or "APIView" in source) and "permission_classes" not in source:
-                findings.append(self.finding(file=f.relative_path))
+            for node in ast.walk(tree):
+                if isinstance(node, ast.ClassDef) and _has_drf_base(node):
+                    if not _has_class_attr(node, "permission_classes"):
+                        findings.append(self.finding(file=f.relative_path))
         return findings
 
 
@@ -46,11 +71,13 @@ class DRFNoThrottling(Rule):
         for f in context.files:
             if not f.has_import("rest_framework"):
                 continue
-            source = f.source
-            if not source:
+            tree = f.ast_tree
+            if tree is None:
                 continue
-            if ("ViewSet" in source or "APIView" in source) and "throttle_classes" not in source:
-                findings.append(self.finding(file=f.relative_path))
+            for node in ast.walk(tree):
+                if isinstance(node, ast.ClassDef) and _has_drf_base(node):
+                    if not _has_class_attr(node, "throttle_classes"):
+                        findings.append(self.finding(file=f.relative_path))
         return findings
 
 

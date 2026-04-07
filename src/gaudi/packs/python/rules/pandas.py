@@ -1,6 +1,8 @@
 # ABOUTME: Pandas-specific architectural rules for Gaudí Python pack.
-# ABOUTME: Covers inplace anti-pattern and iterrows performance.
+# ABOUTME: Covers inplace anti-pattern and iterrows performance via AST.
 from __future__ import annotations
+
+import ast
 
 from gaudi.core import Rule, Finding, Severity, Category
 from gaudi.packs.python.context import PythonContext
@@ -22,12 +24,19 @@ class PandasInplaceAntiPattern(Rule):
         for f in context.files:
             if not f.has_import("pandas"):
                 continue
-            source = f.source
-            if not source:
+            tree = f.ast_tree
+            if tree is None:
                 continue
-            for i, line in enumerate(source.splitlines(), 1):
-                if "inplace=True" in line:
-                    findings.append(self.finding(file=f.relative_path, line=i))
+            for node in ast.walk(tree):
+                if not isinstance(node, ast.Call):
+                    continue
+                for kw in node.keywords:
+                    if (
+                        kw.arg == "inplace"
+                        and isinstance(kw.value, ast.Constant)
+                        and kw.value.value is True
+                    ):
+                        findings.append(self.finding(file=f.relative_path, line=node.lineno))
         return findings
 
 
@@ -45,12 +54,16 @@ class PandasIterrows(Rule):
     def check(self, context: PythonContext) -> list[Finding]:
         findings = []
         for f in context.files:
-            source = f.source
-            if not source:
+            tree = f.ast_tree
+            if tree is None:
                 continue
-            for i, line in enumerate(source.splitlines(), 1):
-                if ".iterrows()" in line:
-                    findings.append(self.finding(file=f.relative_path, line=i))
+            for node in ast.walk(tree):
+                if (
+                    isinstance(node, ast.Call)
+                    and isinstance(node.func, ast.Attribute)
+                    and node.func.attr == "iterrows"
+                ):
+                    findings.append(self.finding(file=f.relative_path, line=node.lineno))
         return findings
 
 

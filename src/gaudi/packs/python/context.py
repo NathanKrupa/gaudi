@@ -122,3 +122,7 @@ class PythonContext:
     @property
     def model_names(self) -> set[str]:
         return {m.name for m in self.models}
+
+    def file_for_model(self, model: ModelInfo) -> FileInfo | None:
+        """Look up the FileInfo for a model's source file."""
+        return next((f for f in self.files if f.relative_path == model.source_file), None)

@@ -1,6 +1,8 @@
 # ABOUTME: Django-specific architectural rules for Gaudi Python pack.
-# ABOUTME: Covers SECRET_KEY exposure and DEBUG mode.
+# ABOUTME: Covers SECRET_KEY exposure and DEBUG mode via AST analysis.
 from __future__ import annotations
+
+import ast
 
 from gaudi.core import Rule, Finding, Severity, Category
 from gaudi.packs.python.context import PythonContext
@@ -22,18 +24,18 @@ class DjangoSecretKeyExposed(Rule):
         for f in context.files:
             if "settings" not in f.relative_path.lower():
                 continue
-            source = f.source
-            if not source:
+            tree = f.ast_tree
+            if tree is None:
                 continue
-            for i, line in enumerate(source.splitlines(), 1):
-                if (
-                    "SECRET_KEY" in line
-                    and ("'" in line or '"' in line)
-                    and "os.environ" not in line
-                    and "env(" not in line
-                ):
-                    if not line.strip().startswith("#"):
-                        findings.append(self.finding(file=f.relative_path, line=i))
+            for node in ast.walk(tree):
+                if not isinstance(node, ast.Assign):
+                    continue
+                for target in node.targets:
+                    if isinstance(target, ast.Name) and target.id == "SECRET_KEY":
+                        if isinstance(node.value, ast.Constant) and isinstance(
+                            node.value.value, str
+                        ):
+                            findings.append(self.finding(file=f.relative_path, line=node.lineno))
         return findings
 
 
@@ -52,13 +54,16 @@ class DjangoDebugTrue(Rule):
         for f in context.files:
             if "settings" not in f.relative_path.lower():
                 continue
-            source = f.source
-            if not source:
+            tree = f.ast_tree
+            if tree is None:
                 continue
-            for i, line in enumerate(source.splitlines(), 1):
-                stripped = line.strip()
-                if stripped == "DEBUG = True" or stripped == "DEBUG=True":
-                    findings.append(self.finding(file=f.relative_path, line=i))
+            for node in ast.walk(tree):
+                if not isinstance(node, ast.Assign):
+                    continue
+                for target in node.targets:
+                    if isinstance(target, ast.Name) and target.id == "DEBUG":
+                        if isinstance(node.value, ast.Constant) and node.value.value is True:
+                            findings.append(self.finding(file=f.relative_path, line=node.lineno))
         return findings
 
 

@@ -1,9 +1,38 @@
 # ABOUTME: Celery-specific architectural rules for Gaudí Python pack.
-# ABOUTME: Covers missing retry configuration and time limits on tasks.
+# ABOUTME: Covers missing retry configuration and time limits on tasks via AST.
 from __future__ import annotations
+
+import ast
 
 from gaudi.core import Rule, Finding, Severity, Category
 from gaudi.packs.python.context import PythonContext
+
+_TASK_DECORATORS = frozenset({"task", "shared_task"})
+
+
+def _has_task_decorator(node: ast.FunctionDef | ast.AsyncFunctionDef) -> bool:
+    """Check if a function has a @task or @shared_task decorator."""
+    for dec in node.decorator_list:
+        if isinstance(dec, ast.Name) and dec.id in _TASK_DECORATORS:
+            return True
+        if isinstance(dec, ast.Call):
+            func = dec.func
+            if isinstance(func, ast.Name) and func.id in _TASK_DECORATORS:
+                return True
+            if isinstance(func, ast.Attribute) and func.attr in _TASK_DECORATORS:
+                return True
+        if isinstance(dec, ast.Attribute) and dec.attr in _TASK_DECORATORS:
+            return True
+    return False
+
+
+def _decorator_has_kwarg(node: ast.FunctionDef | ast.AsyncFunctionDef, *kwarg_names: str) -> bool:
+    """Check if any task decorator includes specific keyword arguments."""
+    for dec in node.decorator_list:
+        if isinstance(dec, ast.Call):
+            if any(kw.arg in kwarg_names for kw in dec.keywords):
+                return True
+    return False
 
 
 class CeleryNoRetry(Rule):
@@ -22,14 +51,18 @@ class CeleryNoRetry(Rule):
         for f in context.files:
             if not f.has_import("celery"):
                 continue
-            source = f.source
-            if not source:
+            tree = f.ast_tree
+            if tree is None:
                 continue
-            for i, line in enumerate(source.splitlines(), 1):
-                if "@" in line and (".task" in line or "shared_task" in line):
-                    block = "\n".join(source.splitlines()[max(0, i - 1) : i + 5])
-                    if "retry" not in block and "max_retries" not in block:
-                        findings.append(self.finding(file=f.relative_path, line=i))
+            for node in ast.walk(tree):
+                if not isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                    continue
+                if not _has_task_decorator(node):
+                    continue
+                if not _decorator_has_kwarg(
+                    node, "autoretry_for", "max_retries", "retry", "retry_backoff"
+                ):
+                    findings.append(self.finding(file=f.relative_path, line=node.lineno))
         return findings
 
 
@@ -48,14 +81,16 @@ class CeleryNoTimeLimit(Rule):
         for f in context.files:
             if not f.has_import("celery"):
                 continue
-            source = f.source
-            if not source:
+            tree = f.ast_tree
+            if tree is None:
                 continue
-            for i, line in enumerate(source.splitlines(), 1):
-                if "@" in line and (".task" in line or "shared_task" in line):
-                    block = "\n".join(source.splitlines()[max(0, i - 1) : i + 5])
-                    if "time_limit" not in block:
-                        findings.append(self.finding(file=f.relative_path, line=i))
+            for node in ast.walk(tree):
+                if not isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                    continue
+                if not _has_task_decorator(node):
+                    continue
+                if not _decorator_has_kwarg(node, "time_limit", "soft_time_limit"):
+                    findings.append(self.finding(file=f.relative_path, line=node.lineno))
         return findings
 
 

@@ -415,7 +415,8 @@ class SingleFileModels(Rule):
 
         findings = []
         for filepath, models in models_by_file.items():
-            file_info = next((f for f in context.files if f.relative_path == filepath), None)
+            sample_model = models[0]
+            file_info = context.file_for_model(sample_model)
             lines = file_info.line_count if file_info else 0
 
             if len(models) >= self.MAX_MODELS_PER_FILE or lines >= self.MAX_LINES:

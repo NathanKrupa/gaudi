@@ -1,11 +1,13 @@
 # ABOUTME: HTTP requests architectural rules for Gaudi Python pack.
-# ABOUTME: Covers missing timeouts for requests library.
+# ABOUTME: Covers missing timeouts for requests library via AST analysis.
 from __future__ import annotations
 
-import re
+import ast
 
 from gaudi.core import Rule, Finding, Severity, Category
 from gaudi.packs.python.context import PythonContext
+
+_HTTP_METHODS = frozenset({"get", "post", "put", "patch", "delete", "head", "options"})
 
 
 class RequestsNoTimeout(Rule):
@@ -22,16 +24,28 @@ class RequestsNoTimeout(Rule):
     def check(self, context: PythonContext) -> list[Finding]:
         findings = []
         for f in context.files:
-            source = f.source
-            if not source:
+            tree = f.ast_tree
+            if tree is None:
                 continue
-            pattern = re.compile(r"requests\.(get|post|put|patch|delete|head|options)\s*\(")
-            for i, line in enumerate(source.splitlines(), 1):
-                if pattern.search(line) and "timeout" not in line:
-                    block = "\n".join(source.splitlines()[i - 1 : i + 3])
-                    if "timeout" not in block:
-                        findings.append(self.finding(file=f.relative_path, line=i))
+            for node in ast.walk(tree):
+                if not isinstance(node, ast.Call):
+                    continue
+                if not self._is_requests_call(node):
+                    continue
+                if not any(kw.arg == "timeout" for kw in node.keywords):
+                    findings.append(self.finding(file=f.relative_path, line=node.lineno))
         return findings
+
+    @staticmethod
+    def _is_requests_call(node: ast.Call) -> bool:
+        """Check if node is requests.get/post/etc."""
+        func = node.func
+        return (
+            isinstance(func, ast.Attribute)
+            and func.attr in _HTTP_METHODS
+            and isinstance(func.value, ast.Name)
+            and func.value.id == "requests"
+        )
 
 
 REQUESTS_RULES = (RequestsNoTimeout(),)
