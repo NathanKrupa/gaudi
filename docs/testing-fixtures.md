@@ -78,7 +78,39 @@ A special case of fail/pass files that sit right at a rule's threshold. If a rul
 - `pass_boundary_10_methods.py` — exactly 10 methods (should pass)
 - `fail_boundary_11_methods.py` — exactly 11 methods (should fail)
 
-### 4. Expected Output (`expected.json`)
+### 4. Multi-file Fixtures (`fail_*/`, `pass_*/`)
+
+Some rules are inherently cross-file: alembic head divergence, layering rules,
+circular imports, and most architecture rules can only be exercised by a small
+project tree, not a single file. For these, a fixture is a **directory** rather
+than a `.py` file.
+
+```
+ALM-OPS-001/
+├── fail_branched_heads/
+│   └── alembic/versions/
+│       ├── 001_a.py
+│       └── 001_b.py
+├── pass_linear_chain/
+│   └── alembic/versions/
+│       ├── 001_a.py
+│       └── 002_c.py
+└── expected.json
+```
+
+When the runner executes a directory fixture, it copies the directory's
+**contents** (not the directory itself) into the temp project root, preserving
+subdirectories. So `fail_branched_heads/alembic/versions/001_a.py` lands at
+`<tmp>/alembic/versions/001_a.py` exactly as a real project would lay it out.
+
+The `expected.json` key for a directory fixture is the directory name (with or
+without a trailing slash). Findings are matched the same way as single-file
+fixtures — by severity, optional line, and message substring — and the runner
+already tolerates findings arriving in any order.
+
+A single rule directory may freely mix single-file and multi-file fixtures.
+
+### 5. Expected Output (`expected.json`)
 
 Each rule directory contains an `expected.json` that declares the findings the engine should produce for each fixture file. This is the **assertion source** for automated tests.
 
@@ -111,7 +143,7 @@ Each rule directory contains an `expected.json` that declares the findings the e
 }
 ```
 
-### 5. Gauntlet Files
+### 6. Gauntlet Files
 
 Composite files containing **multiple violations across multiple rules**. These verify:
 - Rules do not interfere with each other
@@ -128,8 +160,10 @@ Each gauntlet file has a companion `*_expected.json` with findings from all appl
 | Element | Convention | Example |
 |---|---|---|
 | Rule directory | `<RULE-ID>/` | `PY-001/`, `PY314-003/` |
-| Fail fixture | `fail_<snake_case_description>.py` | `fail_god_class.py` |
-| Pass fixture | `pass_<snake_case_description>.py` | `pass_clean_class.py` |
+| Fail fixture (file) | `fail_<snake_case_description>.py` | `fail_god_class.py` |
+| Pass fixture (file) | `pass_<snake_case_description>.py` | `pass_clean_class.py` |
+| Fail fixture (multi-file) | `fail_<snake_case_description>/` | `fail_branched_heads/` |
+| Pass fixture (multi-file) | `pass_<snake_case_description>/` | `pass_linear_chain/` |
 | Boundary fixture | `fail_boundary_<detail>.py` / `pass_boundary_<detail>.py` | `fail_boundary_11_methods.py` |
 | Expected output | `expected.json` | — |
 | Gauntlet file | `<language>_gauntlet_<nn>.py` | `python_gauntlet_01.py` |
