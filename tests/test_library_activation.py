@@ -64,6 +64,7 @@ class TestLibraryFiltering:
                 "TEST-",
                 "DRF-",
                 "AWS-",
+                "LLM-",
             ]
             lib_codes = [
                 f.code for f in findings if any(f.code.startswith(p) for p in lib_prefixes)

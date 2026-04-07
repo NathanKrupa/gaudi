@@ -25,6 +25,7 @@ from gaudi.packs.python.rules.logging_rules import LOGGING_RULES
 from gaudi.packs.python.rules.ops import OPS_RULES
 from gaudi.packs.python.rules.stability import STABILITY_RULES
 from gaudi.packs.python.rules.services import SERVICE_RULES
+from gaudi.packs.python.rules.anthropic_rules import ANTHROPIC_RULES
 
 ALL_RULES = (
     *ARCHITECTURE_RULES,
@@ -50,4 +51,5 @@ ALL_RULES = (
     *OPS_RULES,
     *STABILITY_RULES,
     *SERVICE_RULES,
+    *ANTHROPIC_RULES,
 )
