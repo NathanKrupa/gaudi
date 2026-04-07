@@ -1,0 +1,21 @@
+{
+  "rule_id": "AWS-ERR-001",
+  "description": "BareClientCall -- boto3 API calls must be wrapped in try/except",
+  "fixtures": {
+    "fail_bare_client_call.py": {
+      "expected_findings": [
+        {
+          "severity": "warn",
+          "line": 9,
+          "message_contains": "error handling"
+        }
+      ]
+    },
+    "pass_handled_client_call.py": {
+      "expected_findings": []
+    },
+    "pass_no_boto3_client.py": {
+      "expected_findings": []
+    }
+  }
+}

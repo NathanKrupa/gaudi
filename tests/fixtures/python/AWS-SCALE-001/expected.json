@@ -1,0 +1,26 @@
+{
+  "rule_id": "AWS-SCALE-001",
+  "description": "UnpaginatedList -- boto3 list/describe/scan calls must use a paginator",
+  "fixtures": {
+    "fail_unpaginated_list.py": {
+      "expected_findings": [
+        {
+          "severity": "warn",
+          "line": 9,
+          "message_contains": "list_buckets"
+        },
+        {
+          "severity": "warn",
+          "line": 13,
+          "message_contains": "list_objects_v2"
+        }
+      ]
+    },
+    "pass_paginator.py": {
+      "expected_findings": []
+    },
+    "pass_non_listing_call.py": {
+      "expected_findings": []
+    }
+  }
+}
