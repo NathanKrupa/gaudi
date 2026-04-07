@@ -34,28 +34,32 @@ class ExpectedFinding:
 
 @dataclass(frozen=True)
 class FixtureCase:
-    """One fixture file paired with its expected findings."""
+    """One fixture (a single .py file or a directory of .py files) paired with expected findings."""
 
     rule_id: str
     rule_dir: Path
-    filename: str
+    name: str
     expected: tuple[ExpectedFinding, ...]
 
     @property
     def path(self) -> Path:
-        return self.rule_dir / self.filename
+        return self.rule_dir / self.name
+
+    @property
+    def is_directory(self) -> bool:
+        return self.path.is_dir()
 
     @property
     def is_pass(self) -> bool:
-        return self.filename.startswith("pass_")
+        return self.name.startswith("pass_")
 
     @property
     def is_fail(self) -> bool:
-        return self.filename.startswith("fail_")
+        return self.name.startswith("fail_")
 
     @property
     def test_id(self) -> str:
-        return f"{self.rule_id}::{self.filename}"
+        return f"{self.rule_id}::{self.name}"
 
 
 def _load_expected(rule_dir: Path) -> dict[str, Any]:
@@ -84,43 +88,62 @@ def _cases_for_rule_dir(rule_dir: Path) -> list[FixtureCase]:
             f"expected.json rule_id={rule_id!r} does not match directory {rule_dir.name!r}"
         )
     cases: list[FixtureCase] = []
-    for filename, file_spec in spec["fixtures"].items():
-        fixture_path = rule_dir / filename
+    for name, file_spec in spec["fixtures"].items():
+        # Accept both "fail_branched/" and "fail_branched" as directory keys.
+        normalized = name.rstrip("/\\")
+        fixture_path = rule_dir / normalized
         if not fixture_path.exists():
             raise FileNotFoundError(f"expected.json references missing fixture {fixture_path}")
         expected = tuple(
             ExpectedFinding.from_dict(item) for item in file_spec.get("expected_findings", [])
         )
-        cases.append(FixtureCase(rule_id, rule_dir, filename, expected))
+        cases.append(FixtureCase(rule_id, rule_dir, normalized, expected))
     return cases
 
 
 def discover_cases(language: str = DEFAULT_LANGUAGE) -> list[FixtureCase]:
-    """Discover every (rule, fixture-file) case in the corpus for parametrized tests."""
+    """Discover every (rule, fixture) case in the corpus for parametrized tests."""
     cases: list[FixtureCase] = []
     for rule_dir in discover_rule_dirs(language):
         cases.extend(_cases_for_rule_dir(rule_dir))
     return cases
 
 
+def _strip_fixture_prefix(name: str) -> str:
+    for prefix in ("fail_", "pass_"):
+        if name.startswith(prefix):
+            return name[len(prefix) :]
+    return name
+
+
 @contextmanager
 def fixture_as_project(case: FixtureCase) -> Iterator[Path]:
-    """Copy a fixture file into a clean temporary project tree.
+    """Copy a fixture into a clean temporary project tree.
+
+    Two fixture shapes are supported:
+
+    * **Single file** (`fail_xxx.py` / `pass_xxx.py`): copied to the temp project
+      root with the `fail_`/`pass_` prefix stripped, so module names look ordinary
+      to rules that key on filenames.
+    * **Multi-file directory** (`fail_xxx/` / `pass_xxx/`): the entire tree under
+      the fixture directory is copied verbatim into the temp project root,
+      preserving subdirectories. This lets cross-file rules (alembic head
+      divergence, layering, circular imports, ...) be specified declaratively.
 
     Many rules deliberately skip paths containing 'tests' or 'fixtures', so
     fixtures cannot be analyzed in place. The temp project gives the engine a
-    realistic root with a `pyproject.toml` and the fixture file at the top level.
+    realistic root with a `pyproject.toml`.
     """
     with tempfile.TemporaryDirectory() as tmpdir:
         tmppath = Path(tmpdir)
         (tmppath / "pyproject.toml").write_text(_PYPROJECT_STUB, encoding="utf-8")
         (tmppath / "requirements-lock.txt").write_text("", encoding="utf-8")
-        # Strip any leading "fail_"/"pass_" so module names look ordinary; some rules
-        # key on filenames or dunder layout.
-        target_name = case.filename
-        for prefix in ("fail_", "pass_"):
-            if target_name.startswith(prefix):
-                target_name = target_name[len(prefix) :]
-                break
-        shutil.copy(case.path, tmppath / target_name)
+        if case.is_directory:
+            # Copy the directory's contents (not the directory itself) into the
+            # temp root, so paths inside the fixture (e.g. alembic/versions/a.py)
+            # land at the project root.
+            shutil.copytree(case.path, tmppath, dirs_exist_ok=True)
+        else:
+            target_name = _strip_fixture_prefix(case.name)
+            shutil.copy(case.path, tmppath / target_name)
         yield tmppath
