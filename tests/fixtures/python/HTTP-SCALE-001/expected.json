@@ -1,0 +1,26 @@
+{
+  "rule_id": "HTTP-SCALE-001",
+  "description": "RequestsNoTimeout -- requests calls must declare a timeout",
+  "fixtures": {
+    "fail_no_timeout.py": {
+      "expected_findings": [
+        {
+          "severity": "error",
+          "line": 7,
+          "message_contains": "timeout"
+        },
+        {
+          "severity": "error",
+          "line": 11,
+          "message_contains": "timeout"
+        }
+      ]
+    },
+    "pass_with_timeout.py": {
+      "expected_findings": []
+    },
+    "pass_unrelated_get.py": {
+      "expected_findings": []
+    }
+  }
+}
