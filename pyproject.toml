@@ -44,6 +44,7 @@ dev = [
 
 [project.scripts]
 gaudi = "gaudi.cli:main"
+gaudi-fixture-coverage = "gaudi.tools.fixture_coverage:main"
 
 [project.entry-points."gaudi.packs"]
 python = "gaudi.packs.python:PythonPack"

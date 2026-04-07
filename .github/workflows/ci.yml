@@ -70,5 +70,5 @@ jobs:
         run: pytest --tb=short --cov=gaudi --cov-report=term-missing --cov-fail-under=60
 
       - name: Fixture corpus coverage (warn-mode)
-        run: python scripts/fixture_coverage.py
+        run: gaudi-fixture-coverage
         continue-on-error: true
