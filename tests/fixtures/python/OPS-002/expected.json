@@ -1,0 +1,17 @@
+{
+  "rule_id": "OPS-002",
+  "description": "MissingPrecommit -- project must ship a .pre-commit-config.yaml",
+  "fixtures": {
+    "fail_no_precommit/": {
+      "expected_findings": [
+        {
+          "severity": "info",
+          "message_contains": "pre-commit-config.yaml"
+        }
+      ]
+    },
+    "pass_with_precommit/": {
+      "expected_findings": []
+    }
+  }
+}

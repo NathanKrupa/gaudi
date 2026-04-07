@@ -1,0 +1,17 @@
+{
+  "rule_id": "OPS-004",
+  "description": "MissingCodeowners -- project must ship a CODEOWNERS file",
+  "fixtures": {
+    "fail_no_codeowners/": {
+      "expected_findings": [
+        {
+          "severity": "info",
+          "message_contains": "CODEOWNERS"
+        }
+      ]
+    },
+    "pass_with_codeowners/": {
+      "expected_findings": []
+    }
+  }
+}

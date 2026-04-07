@@ -1,0 +1,17 @@
+{
+  "rule_id": "OPS-003",
+  "description": "MissingPRTemplate -- project must ship a pull request template",
+  "fixtures": {
+    "fail_no_pr_template/": {
+      "expected_findings": [
+        {
+          "severity": "info",
+          "message_contains": "pull request template"
+        }
+      ]
+    },
+    "pass_with_pr_template/": {
+      "expected_findings": []
+    }
+  }
+}
