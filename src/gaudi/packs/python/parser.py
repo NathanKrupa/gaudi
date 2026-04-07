@@ -34,6 +34,7 @@ _IMPORT_TO_LIBRARY: dict[str, str] = {
     "boto3": "boto3",
     "botocore": "boto3",
     "anthropic": "anthropic",
+    "alembic": "alembic",
 }
 
 # Maps PyPI package names to library activation keys
@@ -51,6 +52,7 @@ _PACKAGE_TO_LIBRARY: dict[str, str] = {
     "pytest": "pytest",
     "boto3": "boto3",
     "anthropic": "anthropic",
+    "alembic": "alembic",
 }
 
 # Django field types that map to database columns
