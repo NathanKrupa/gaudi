@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import ast
-import re
 from gaudi.core import Rule, Finding, Severity, Category
 from gaudi.packs.python.context import PythonContext
 
@@ -98,12 +97,35 @@ class ScatteredConfig(Rule):
     )
 
     def check(self, context: PythonContext) -> list[Finding]:
-        files_with_env = sum(
-            1 for fi in context.files if re.search(r"os\.(getenv|environ)", fi.source)
-        )
+        files_with_env = sum(1 for fi in context.files if self._has_env_access(fi))
         if files_with_env >= 4:
             return [self.finding(count=files_with_env)]
         return []
+
+    @staticmethod
+    def _has_env_access(fi) -> bool:
+        """Check if a file accesses os.getenv or os.environ via AST."""
+        tree = fi.ast_tree
+        if tree is None:
+            return False
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Call):
+                func = node.func
+                if (
+                    isinstance(func, ast.Attribute)
+                    and func.attr == "getenv"
+                    and isinstance(func.value, ast.Name)
+                    and func.value.id == "os"
+                ):
+                    return True
+            if isinstance(node, ast.Attribute):
+                if (
+                    node.attr == "environ"
+                    and isinstance(node.value, ast.Name)
+                    and node.value.id == "os"
+                ):
+                    return True
+        return False
 
 
 # ---------------------------------------------------------------

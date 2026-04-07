@@ -1,11 +1,13 @@
 # ABOUTME: FastAPI-specific architectural rules for Gaudi Python pack.
-# ABOUTME: Covers missing response_model on endpoints.
+# ABOUTME: Covers missing response_model on endpoints via AST analysis.
 from __future__ import annotations
 
-import re
+import ast
 
 from gaudi.core import Rule, Finding, Severity, Category
 from gaudi.packs.python.context import PythonContext
+
+_ROUTE_METHODS = frozenset({"get", "post", "put", "patch", "delete"})
 
 
 class FastAPINoResponseModel(Rule):
@@ -24,17 +26,32 @@ class FastAPINoResponseModel(Rule):
         for f in context.files:
             if not f.has_import("fastapi"):
                 continue
-            source = f.source
-            if not source:
+            tree = f.ast_tree
+            if tree is None:
                 continue
-            pattern = re.compile(r"@\w+\.(get|post|put|patch|delete)\s*\(")
-            for i, line in enumerate(source.splitlines(), 1):
-                if pattern.search(line) and "response_model" not in line:
-                    # Check next few lines for response_model
-                    block = "\n".join(source.splitlines()[i - 1 : i + 3])
-                    if "response_model" not in block:
-                        findings.append(self.finding(file=f.relative_path, line=i))
+            for node in ast.walk(tree):
+                if not isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                    continue
+                for decorator in node.decorator_list:
+                    if self._is_route_decorator(decorator):
+                        if not self._has_response_model(decorator):
+                            findings.append(
+                                self.finding(file=f.relative_path, line=decorator.lineno)
+                            )
         return findings
+
+    @staticmethod
+    def _is_route_decorator(node: ast.expr) -> bool:
+        """Check if decorator is @something.get/post/put/patch/delete(...)."""
+        if not isinstance(node, ast.Call):
+            return False
+        func = node.func
+        return isinstance(func, ast.Attribute) and func.attr in _ROUTE_METHODS
+
+    @staticmethod
+    def _has_response_model(call: ast.Call) -> bool:
+        """Check if a decorator call includes response_model keyword."""
+        return any(kw.arg == "response_model" for kw in call.keywords)
 
 
 FASTAPI_RULES = (FastAPINoResponseModel(),)

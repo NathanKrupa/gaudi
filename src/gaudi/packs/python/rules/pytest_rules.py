@@ -1,9 +1,13 @@
 # ABOUTME: Pytest-specific architectural rules for Gaudí Python pack.
-# ABOUTME: Covers assertion messages and fixture scope optimization.
+# ABOUTME: Covers assertion messages and fixture scope optimization via AST.
 from __future__ import annotations
+
+import ast
 
 from gaudi.core import Rule, Finding, Severity, Category
 from gaudi.packs.python.context import PythonContext
+
+_EXPENSIVE_FIXTURE_NAMES = frozenset({"connection", "engine", "client", "session", "database", "db"})
 
 
 class PytestAssertMessage(Rule):
@@ -22,13 +26,24 @@ class PytestAssertMessage(Rule):
         for f in context.files:
             if "test_" not in f.relative_path:
                 continue
-            source = f.source
-            if not source:
+            tree = f.ast_tree
+            if tree is None:
                 continue
-            for i, line in enumerate(source.splitlines(), 1):
-                stripped = line.strip()
-                if stripped.startswith("assert ") and "," not in stripped and len(stripped) > 40:
-                    findings.append(self.finding(file=f.relative_path, line=i))
+            for node in ast.walk(tree):
+                if not isinstance(node, ast.Assert):
+                    continue
+                # No failure message provided
+                if node.msg is not None:
+                    continue
+                # Only flag complex assertions (BoolOp, Compare chains)
+                test = node.test
+                is_complex = (
+                    isinstance(test, ast.BoolOp)
+                    or (isinstance(test, ast.Compare) and len(test.comparators) > 1)
+                    or (isinstance(test, ast.UnaryOp) and isinstance(test.op, ast.Not))
+                )
+                if is_complex:
+                    findings.append(self.finding(file=f.relative_path, line=node.lineno))
         return findings
 
 
@@ -45,28 +60,46 @@ class PytestFixtureScope(Rule):
 
     def check(self, context: PythonContext) -> list[Finding]:
         findings = []
-        expensive_patterns = [
-            "connection",
-            "engine",
-            "client",
-            "session",
-            "database",
-            "db",
-        ]
         for f in context.files:
             if "conftest" not in f.relative_path:
                 continue
-            source = f.source
-            if not source:
+            tree = f.ast_tree
+            if tree is None:
                 continue
-            for i, line in enumerate(source.splitlines(), 1):
-                if "@pytest.fixture" in line and "scope=" not in line:
-                    # Check fixture name
-                    next_lines = source.splitlines()[i : i + 3]
-                    func_line = "\n".join(next_lines)
-                    if any(p in func_line.lower() for p in expensive_patterns):
-                        findings.append(self.finding(file=f.relative_path, line=i))
+            for node in ast.walk(tree):
+                if not isinstance(node, ast.FunctionDef):
+                    continue
+                if not self._has_fixture_without_scope(node):
+                    continue
+                # Check if fixture name suggests expensive resource
+                if any(p in node.name.lower() for p in _EXPENSIVE_FIXTURE_NAMES):
+                    findings.append(self.finding(file=f.relative_path, line=node.lineno))
         return findings
+
+    @staticmethod
+    def _has_fixture_without_scope(func: ast.FunctionDef) -> bool:
+        """Check if function has @pytest.fixture without scope= kwarg."""
+        for dec in func.decorator_list:
+            # @pytest.fixture (no args)
+            if (
+                isinstance(dec, ast.Attribute)
+                and dec.attr == "fixture"
+                and isinstance(dec.value, ast.Name)
+                and dec.value.id == "pytest"
+            ):
+                return True
+            # @pytest.fixture() (with args but no scope)
+            if isinstance(dec, ast.Call):
+                func_node = dec.func
+                if (
+                    isinstance(func_node, ast.Attribute)
+                    and func_node.attr == "fixture"
+                    and isinstance(func_node.value, ast.Name)
+                    and func_node.value.id == "pytest"
+                ):
+                    if not any(kw.arg == "scope" for kw in dec.keywords):
+                        return True
+        return False
 
 
 PYTEST_RULES = (PytestAssertMessage(), PytestFixtureScope())

@@ -1,11 +1,22 @@
 # ABOUTME: Pydantic-specific architectural rules for Gaudí Python pack.
-# ABOUTME: Covers mutable default values in Pydantic models.
+# ABOUTME: Covers mutable default values in Pydantic models via AST analysis.
 from __future__ import annotations
 
-import re
+import ast
 
 from gaudi.core import Rule, Finding, Severity, Category
 from gaudi.packs.python.context import PythonContext
+
+_PYDANTIC_BASES = frozenset({"BaseModel", "BaseSettings"})
+
+
+def _is_pydantic_class(cls: ast.ClassDef) -> bool:
+    """Check if a class inherits from BaseModel or BaseSettings."""
+    return any(
+        (isinstance(b, ast.Name) and b.id in _PYDANTIC_BASES)
+        or (isinstance(b, ast.Attribute) and b.attr in _PYDANTIC_BASES)
+        for b in cls.bases
+    )
 
 
 class PydanticMutableDefault(Rule):
@@ -24,13 +35,22 @@ class PydanticMutableDefault(Rule):
         for f in context.files:
             if not f.has_import("pydantic"):
                 continue
-            source = f.source
-            if not source:
+            tree = f.ast_tree
+            if tree is None:
                 continue
-            for i, line in enumerate(source.splitlines(), 1):
-                if re.search(r"=\s*\[\s*\]|=\s*\{\s*\}", line) and "Field(" not in line:
-                    if "BaseModel" in source or "BaseSettings" in source:
-                        findings.append(self.finding(file=f.relative_path, line=i))
+            for node in ast.walk(tree):
+                if not isinstance(node, ast.ClassDef):
+                    continue
+                if not _is_pydantic_class(node):
+                    continue
+                for item in node.body:
+                    if not isinstance(item, (ast.Assign, ast.AnnAssign)):
+                        continue
+                    value = item.value if isinstance(item, ast.AnnAssign) else item.value
+                    if value is None:
+                        continue
+                    if isinstance(value, (ast.List, ast.Dict, ast.Set)):
+                        findings.append(self.finding(file=f.relative_path, line=item.lineno))
         return findings
 
 
