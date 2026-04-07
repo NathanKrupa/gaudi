@@ -1,0 +1,21 @@
+{
+  "rule_id": "LLM-ARCH-001",
+  "description": "HardcodedModel -- Anthropic model name must not be a literal in the API call",
+  "fixtures": {
+    "fail_hardcoded_model.py": {
+      "expected_findings": [
+        {
+          "severity": "warn",
+          "line": 9,
+          "message_contains": "Hardcoded model"
+        }
+      ]
+    },
+    "pass_model_from_config.py": {
+      "expected_findings": []
+    },
+    "pass_no_api_call.py": {
+      "expected_findings": []
+    }
+  }
+}

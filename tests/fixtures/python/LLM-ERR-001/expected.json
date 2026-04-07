@@ -1,0 +1,21 @@
+{
+  "rule_id": "LLM-ERR-001",
+  "description": "BareAPICall -- Anthropic API calls must be wrapped in try/except",
+  "fixtures": {
+    "fail_bare_api_call.py": {
+      "expected_findings": [
+        {
+          "severity": "warn",
+          "line": 13,
+          "message_contains": "error handling"
+        }
+      ]
+    },
+    "pass_handled_api_call.py": {
+      "expected_findings": []
+    },
+    "pass_no_api_call.py": {
+      "expected_findings": []
+    }
+  }
+}

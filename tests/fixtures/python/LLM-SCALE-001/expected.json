@@ -1,0 +1,20 @@
+{
+  "rule_id": "LLM-SCALE-001",
+  "description": "NoTokenCounting -- Anthropic API calls must be paired with a token-budget check",
+  "fixtures": {
+    "fail_no_token_counting.py": {
+      "expected_findings": [
+        {
+          "severity": "warn",
+          "message_contains": "token counting"
+        }
+      ]
+    },
+    "pass_with_count_tokens.py": {
+      "expected_findings": []
+    },
+    "pass_no_api_call.py": {
+      "expected_findings": []
+    }
+  }
+}
