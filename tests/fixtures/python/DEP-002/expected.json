@@ -1,0 +1,17 @@
+{
+  "rule_id": "DEP-002",
+  "description": "FanOutExplosion -- one module imports too many internal modules",
+  "fixtures": {
+    "fail_high_fan_out/": {
+      "expected_findings": [
+        {
+          "severity": "warn",
+          "message_contains": "imports 10 internal modules"
+        }
+      ]
+    },
+    "pass_below_threshold/": {
+      "expected_findings": []
+    }
+  }
+}

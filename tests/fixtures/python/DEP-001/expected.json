@@ -1,0 +1,17 @@
+{
+  "rule_id": "DEP-001",
+  "description": "CircularImport -- Acyclic Dependencies Principle",
+  "fixtures": {
+    "fail_simple_cycle/": {
+      "expected_findings": [
+        {
+          "severity": "error",
+          "message_contains": "Circular import"
+        }
+      ]
+    },
+    "pass_linear_chain/": {
+      "expected_findings": []
+    }
+  }
+}
