@@ -1,0 +1,26 @@
+{
+  "rule_id": "PYD-ARCH-001",
+  "description": "PydanticMutableDefault -- bare mutable literal as a Pydantic model default",
+  "fixtures": {
+    "fail_mutable_defaults.py": {
+      "expected_findings": [
+        {
+          "severity": "error",
+          "line": 7,
+          "message_contains": "Mutable default"
+        },
+        {
+          "severity": "error",
+          "line": 8,
+          "message_contains": "Mutable default"
+        }
+      ]
+    },
+    "pass_default_factory.py": {
+      "expected_findings": []
+    },
+    "pass_non_pydantic_class.py": {
+      "expected_findings": []
+    }
+  }
+}
