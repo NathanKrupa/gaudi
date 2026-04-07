@@ -4,10 +4,34 @@ from __future__ import annotations
 
 import pytest
 
+from gaudi.core import Finding
 from gaudi.packs.python.pack import PythonPack
-from tests.fixture_corpus import FixtureCase, discover_cases, fixture_as_project
+from tests.fixture_corpus import (
+    DEFAULT_LANGUAGE,
+    ExpectedFinding,
+    FixtureCase,
+    discover_cases,
+    fixture_as_project,
+)
 
-_CASES = discover_cases("python")
+_CASES = discover_cases(DEFAULT_LANGUAGE)
+_MISMATCH = "{test_id}: {field} mismatch -- expected {expected}, got {actual}"
+
+
+def _assert_finding_matches(finding: Finding, expectation: ExpectedFinding, test_id: str) -> None:
+    assert finding.severity.value == expectation.severity, _MISMATCH.format(
+        test_id=test_id,
+        field="severity",
+        expected=expectation.severity,
+        actual=finding.severity.value,
+    )
+    assert expectation.message_contains in finding.message, (
+        f"{test_id}: message {finding.message!r} does not contain {expectation.message_contains!r}"
+    )
+    if expectation.line is not None:
+        assert finding.line == expectation.line, _MISMATCH.format(
+            test_id=test_id, field="line", expected=expectation.line, actual=finding.line
+        )
 
 
 @pytest.mark.skipif(not _CASES, reason="No fixture cases discovered")
@@ -22,7 +46,6 @@ def test_fixture_case(case: FixtureCase) -> None:
     pack = PythonPack()
     with fixture_as_project(case) as project_root:
         all_findings = pack.check(project_root)
-
     findings = [f for f in all_findings if f.code == case.rule_id]
 
     assert len(findings) == len(case.expected), (
@@ -30,20 +53,7 @@ def test_fixture_case(case: FixtureCase) -> None:
         f"got {len(findings)}: {[f.message for f in findings]}"
     )
 
-    # Match expectations to findings positionally after sorting both by line.
     sorted_findings = sorted(findings, key=lambda f: (f.line or 0, f.message))
     sorted_expected = sorted(case.expected, key=lambda e: (e.line or 0, e.message_contains))
-
     for finding, expectation in zip(sorted_findings, sorted_expected):
-        assert finding.severity.value == expectation.severity, (
-            f"{case.test_id}: severity mismatch -- "
-            f"expected {expectation.severity}, got {finding.severity.value}"
-        )
-        assert expectation.message_contains in finding.message, (
-            f"{case.test_id}: message {finding.message!r} does not contain "
-            f"{expectation.message_contains!r}"
-        )
-        if expectation.line is not None:
-            assert finding.line == expectation.line, (
-                f"{case.test_id}: line mismatch -- expected {expectation.line}, got {finding.line}"
-            )
+        _assert_finding_matches(finding, expectation, case.test_id)
