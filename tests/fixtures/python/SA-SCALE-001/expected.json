@@ -1,0 +1,21 @@
+{
+  "rule_id": "SA-SCALE-001",
+  "description": "SQLAlchemyLazyDefault -- relationship() must declare its lazy loading strategy",
+  "fixtures": {
+    "fail_default_lazy.py": {
+      "expected_findings": [
+        {
+          "severity": "warn",
+          "line": 10,
+          "message_contains": "lazy"
+        }
+      ]
+    },
+    "pass_explicit_lazy.py": {
+      "expected_findings": []
+    },
+    "pass_lazy_kwarg_escape.py": {
+      "expected_findings": []
+    }
+  }
+}
