@@ -13,6 +13,7 @@ a mining queue for planned rules.
 |------------|---------------------------------------------------------------|------------------------|---------|
 | **FOWLER** | *Refactoring: Improving the Design of Existing Code*          | Martin Fowler          | 2nd     |
 | **NYGARD** | *Release It! Design and Deploy Production-Ready Software*     | Michael T. Nygard      | 2nd     |
+| **MARTIN** | *Clean Architecture: A Craftsman's Guide to Software Structure and Design* | Robert C. Martin | 1st  |
 | **ARCH90** | Architecture 90 (internal curriculum)                         | Nathan Krupa           | --      |
 | **PY314**  | CPython 3.14 changelog / PEPs                                 | Python core devs       | --      |
 | **FWDOCS** | Framework official documentation (Django, FastAPI, Flask, etc.)| Various                | --      |
@@ -149,6 +150,18 @@ detectable failure states -- exactly the grammar Gaudi needs.
 | STAB-007  | UnboundedThreadPool   | Unbalanced Capacities (anti-pattern)         | Ch. 4     |
 
 *STAB-002 (NoCircuitBreaker) removed -- detection too weak (project-level heuristic). Moved to mining queue.*
+
+### Dependency Graph Rules (DEP) -- Source: MARTIN
+
+Rules mined from *Clean Architecture*. Module-level coupling metrics that
+no other Python linter detects, because they require project-wide graph analysis.
+
+| Code     | Class Name           | Martin Principle                            | Detection                          |
+|----------|----------------------|----------------------------------------------|------------------------------------|
+| DEP-001  | CircularImport       | Acyclic Dependencies Principle (ADP)         | DFS cycle detection on import graph|
+| DEP-002  | FanOutExplosion      | Component coupling: efferent coupling (Ce)   | Internal imports per module >= 10  |
+| DEP-003  | FanInConcentration   | Fragile hub detection                        | Imported by >= 80% of project      |
+| DEP-004  | UnstableDependency   | Stable Dependencies Principle (SDP)          | I = Ce / (Ca + Ce) >= 0.5 with high Ca |
 
 ---
 
