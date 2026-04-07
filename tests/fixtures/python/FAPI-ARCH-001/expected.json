@@ -1,0 +1,21 @@
+{
+  "rule_id": "FAPI-ARCH-001",
+  "description": "FastAPINoResponseModel -- FastAPI endpoints must declare a response_model",
+  "fixtures": {
+    "fail_no_response_model.py": {
+      "expected_findings": [
+        {
+          "severity": "warn",
+          "line": 8,
+          "message_contains": "response_model"
+        }
+      ]
+    },
+    "pass_with_response_model.py": {
+      "expected_findings": []
+    },
+    "pass_plain_function.py": {
+      "expected_findings": []
+    }
+  }
+}
