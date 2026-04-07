@@ -1,0 +1,21 @@
+{
+  "rule_id": "DJ-SEC-001",
+  "description": "DjangoSecretKeyExposed -- SECRET_KEY must not be a string literal in settings",
+  "fixtures": {
+    "fail_settings_hardcoded_secret.py": {
+      "expected_findings": [
+        {
+          "severity": "error",
+          "line": 5,
+          "message_contains": "SECRET_KEY"
+        }
+      ]
+    },
+    "pass_settings_secret_from_env.py": {
+      "expected_findings": []
+    },
+    "pass_models.py": {
+      "expected_findings": []
+    }
+  }
+}

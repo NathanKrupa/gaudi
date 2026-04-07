@@ -1,0 +1,21 @@
+{
+  "rule_id": "DJ-SEC-002",
+  "description": "DjangoDebugTrue -- DEBUG must not be the literal True in settings",
+  "fixtures": {
+    "fail_settings_debug_true.py": {
+      "expected_findings": [
+        {
+          "severity": "error",
+          "line": 8,
+          "message_contains": "DEBUG"
+        }
+      ]
+    },
+    "pass_settings_debug_false.py": {
+      "expected_findings": []
+    },
+    "pass_settings_debug_from_env.py": {
+      "expected_findings": []
+    }
+  }
+}
