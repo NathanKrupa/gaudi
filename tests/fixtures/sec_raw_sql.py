@@ -1,5 +1,6 @@
 # Fixture for SEC-002 RawSQLInjection.
 
+
 def get_user_fstring(conn, user_id):
     # POSITIVE: f-string in execute call
     cursor = conn.cursor()

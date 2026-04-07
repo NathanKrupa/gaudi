@@ -59,7 +59,9 @@ class RawSQLInjection(Rule):
     code = "SEC-002"
     severity = Severity.ERROR
     category = Category.SECURITY
-    message_template = "Interpolated string passed to '{method}' at line {line} — SQL injection risk"
+    message_template = (
+        "Interpolated string passed to '{method}' at line {line} — SQL injection risk"
+    )
     recommendation_template = (
         "Use parameterized queries: pass values as a separate "
         "tuple/dict argument to execute() instead of formatting "
