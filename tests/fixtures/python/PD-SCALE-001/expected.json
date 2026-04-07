@@ -1,0 +1,21 @@
+{
+  "rule_id": "PD-SCALE-001",
+  "description": "PandasIterrows -- row-by-row iteration is the wrong tool at production data sizes",
+  "fixtures": {
+    "fail_iterrows.py": {
+      "expected_findings": [
+        {
+          "severity": "warn",
+          "line": 8,
+          "message_contains": "iterrows"
+        }
+      ]
+    },
+    "pass_vectorized.py": {
+      "expected_findings": []
+    },
+    "pass_itertuples.py": {
+      "expected_findings": []
+    }
+  }
+}
