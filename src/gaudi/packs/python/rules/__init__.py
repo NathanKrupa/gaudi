@@ -16,6 +16,11 @@ from gaudi.packs.python.rules.pytest_rules import PYTEST_RULES
 from gaudi.packs.python.rules.boto3 import BOTO3_RULES
 from gaudi.packs.python.rules.drf import DRF_RULES
 from gaudi.packs.python.rules.smells import SMELL_RULES
+from gaudi.packs.python.rules.bloaters import BLOATER_RULES
+from gaudi.packs.python.rules.dispensables import DISPENSABLE_RULES
+from gaudi.packs.python.rules.couplers import COUPLER_RULES
+from gaudi.packs.python.rules.oo_abusers import OO_ABUSER_RULES
+from gaudi.packs.python.rules.change_preventers import CHANGE_PREVENTER_RULES
 from gaudi.packs.python.rules.packaging import PACKAGING_RULES
 from gaudi.packs.python.rules.layers import LAYERS_RULES
 from gaudi.packs.python.rules.config_rules import CONFIG_RULES
@@ -44,6 +49,11 @@ ALL_RULES = (
     *BOTO3_RULES,
     *DRF_RULES,
     *SMELL_RULES,
+    *BLOATER_RULES,
+    *DISPENSABLE_RULES,
+    *COUPLER_RULES,
+    *OO_ABUSER_RULES,
+    *CHANGE_PREVENTER_RULES,
     *PACKAGING_RULES,
     *LAYERS_RULES,
     *CONFIG_RULES,
