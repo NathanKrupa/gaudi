@@ -1,0 +1,21 @@
+{
+  "rule_id": "FLASK-STRUCT-001",
+  "description": "FlaskNoAppFactory -- Flask() at module level instead of inside an application factory",
+  "fixtures": {
+    "fail_module_level_app.py": {
+      "expected_findings": [
+        {
+          "severity": "warn",
+          "line": 5,
+          "message_contains": "application factory"
+        }
+      ]
+    },
+    "pass_application_factory.py": {
+      "expected_findings": []
+    },
+    "pass_no_flask_import.py": {
+      "expected_findings": []
+    }
+  }
+}
