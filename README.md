@@ -164,7 +164,7 @@ Gaudi is named after Antoni Gaudi, the architect of La Sagrada Familia. He built
 
 This tool embodies that philosophy: **validate the architecture before you build.** The earlier you catch a structural flaw, the less it costs to fix. And with AI agents writing increasingly large portions of our codebases, we need automated architectural discipline more than ever.
 
-The first principles that govern Gaudi — twelve numbered claims in three pillars (Truthfulness, Economy, Cost-honesty) — are written down in [docs/principles.md](docs/principles.md). They are intended to be portable: any project can adopt them as the doctrine its design decisions appeal to.
+The first principles that govern Gaudi — fourteen numbered claims in three pillars (Truthfulness, Economy, Cost-honesty) — are written down in [docs/principles.md](docs/principles.md). They are intended to be portable: any project can adopt them as the doctrine its design decisions appeal to.
 
 ## Contributing
 

@@ -2,6 +2,13 @@
 
 > *Not just structurally sound. Beautiful.*
 
+**Doctrine version:** 0.1 (2026-04-07)
+
+This document is versioned. Material changes — adding, removing, or rewording a
+principle, changing the priority order, or altering the Rule Acceptance Test —
+bump the version and require a written justification in the PR that makes the
+change. Cosmetic edits do not.
+
 These are the first principles that govern Gaudi — both as a linter (which rules
 we accept, how we tune them, when we cut them) and as a portable design doctrine
 that any project can adopt. They are the **positive** complement to the rule
@@ -109,6 +116,12 @@ should describe *what*, never *how* (`ZodValidator`), *when* (`NewAPI`), or
 Code that does not state how it fails has not been designed; it has been
 wished into existence. The wish holds until production load arrives.
 
+This includes hostile input. The system must name what happens when input is
+malformed, missing, or malicious — silence in the face of an attacker is the
+same lie as silence in the face of a memory leak. The structural half of the
+OWASP Top 10 (Broken Access Control, Insecure Design, SSRF, Auth Failures) is
+this principle applied to adversarial input.
+
 - **In projects:** Every HTTP call has a timeout. Every retry has backoff.
   Every database query has a result-set bound. Every file handle, lock, and
   session is closed by `with`. Bare `except:` is forbidden; catch the
@@ -125,6 +138,13 @@ wished into existence. The wish holds until production load arrives.
 A function that reads a global, mutates a singleton, or pulls config from
 `os.getenv()` cannot be tested without staging the world. It has dependencies
 it refuses to declare. Make them parameters.
+
+State shared across execution contexts — threads, processes, coroutines —
+must be synchronized at the boundary or the boundary must not exist. A race
+condition is hidden state with extra steps. The same principle that bans the
+hidden global bans the unsynchronized shared variable, for the same reason:
+a function whose behavior depends on what some other context did is lying
+about what it does.
 
 - **In projects:** Classes take dependencies as `__init__` parameters. Only
   factory functions or composition roots read environment variables. Pure
@@ -258,6 +278,47 @@ true.
   specification; the rule is the implementation. Boundary fixtures are
   required for any rule with a numeric threshold.
 
+### 13. The system must explain itself
+
+> *When the system fails, the diagnosis must be possible from outside the
+> running process. Logs, metrics, traces, and error context are how the
+> system communicates with its operators — they are not optional.*
+
+A system that fails silently is a lie about whether it is working.
+Truthfulness #4 names the failure modes; this principle makes them visible
+when they fire. Nygard's "Transparency" chapter is exactly this: production
+systems need to explain themselves to the people on call, and the
+explanation must be designed in, not bolted on after the first incident.
+
+- **In projects:** Every long-lived service emits structured logs. Every
+  request carries an identifier that follows it across service boundaries.
+  Every error includes the context needed to reproduce it (inputs, state,
+  call site). Sensitive data is redacted at the logger, not at the reader.
+- **In Gaudi:** `LOG-001 UnstructuredLogging`, the planned correlation-ID
+  rule, the planned sensitive-data-in-logs rule, and the structural slice
+  of OWASP A09 (Logging and Monitoring Failures).
+
+### 14. Reversibility is a design property
+
+> *Every change must be safe to land alone. The blast radius of every action
+> must be knowable in advance. Operations that cannot be undone deserve more
+> care than operations that can.*
+
+The other thirteen principles describe code at rest. This one describes code
+in motion. Migrations without rollback, deprecations without windows,
+breaking API changes without versioning, refactors that cannot be split into
+landable pieces — these are design defects even when the resulting static
+code is clean. The cost of a change includes the risk of the change.
+
+- **In projects:** Every database migration has a rollback path. Every
+  deprecation has a window. Every PR is a single logical change that can
+  be reverted cleanly. Before any destructive action, name the blast radius
+  out loud. Prefer reversible operations to irreversible ones at equal cost.
+- **In Gaudi:** `ALM-OPS-001` (Alembic head divergence) and the rest of the
+  Alembic family, the planned deprecation-without-warning rule, the planned
+  breaking-schema-change rule, and the `OPS-???` family for deploy
+  readiness.
+
 ---
 
 ## How These Cash Out in Gaudi
@@ -344,12 +405,72 @@ mapping below is concrete:
 | 10. Boundaries are real or fictional | A connector talks to one system. Half-enforced boundaries are deleted, not patched. |
 | 11. The reader is the user | Recommendations name the fix, not the diagnosis. Comments explain *why*. |
 | 12. Tests are the specification | Failing test first. The test is the requirement; the code is the implementation. |
+| 13. The system must explain itself | Structured logs, correlation IDs, error context, redaction at the logger. The on-call reader is a first-class user. |
+| 14. Reversibility is a design property | Migrations have rollbacks, deprecations have windows, PRs revert cleanly, destructive actions name their blast radius first. |
 
 When a design question arises in any project — *should this be a service or a
 connector? should this rule have a higher threshold? should this PR include
-the cleanup?* — name the principle that decides it. If two principles point
-opposite directions, the question is genuinely hard and warrants discussion.
-If no principle applies, the doctrine has a gap that should be closed.
+the cleanup?* — name the principle that decides it. If no principle applies,
+the doctrine has a gap that should be closed. If two principles point opposite
+directions, apply the priority order below.
+
+---
+
+## Applying the Principles
+
+### When Principles Conflict
+
+When two principles point opposite directions, the priority order is:
+
+> **Truthfulness  >  Cost-honesty  >  Economy**
+
+Truth first, because lies compound the fastest. A misleading name corrupts every
+reader's mental model from the moment it lands; the cost of leaving it untouched
+grows linearly with each new reader.
+
+Cost-honesty next, because unpaid debt compounds slower but heavier. A missing
+timeout doesn't lie about anything until production load arrives — but when it
+arrives, it amplifies.
+
+Economy last, because excess is the cheapest of the three to fix later. You
+can always delete code. You cannot retroactively make a misleading name honest,
+and you cannot retroactively buy back the production incident the missing
+timeout caused.
+
+The most common conflict in practice is **#3 (Names are contracts) versus
+#8 (Smallest reasonable change)**. A misleading name appears in a PR that has
+nothing to do with naming. The priority order says: fix the name. Truth wins.
+Take the diff hit.
+
+The ordering is doctrinal but not absolute. A genuinely hard conflict — one
+that survives the priority order — is grounds for discussion, not a coin flip.
+Note the conflict in the PR or issue and name both principles by number.
+
+### Asymmetric Rigor
+
+The principles apply universally. The *rigor* with which they are applied
+scales with the code's leverage — how many readers it has, how many callers
+depend on it, how long it lives, how wide its blast radius is when it fails.
+
+A kernel module shared by every service in the project must satisfy all
+fourteen principles hard. A one-off migration script that runs once and is
+deleted has lower obligations because its blast radius is smaller and its
+lifespan is shorter. The principles still apply — a one-off script must still
+tell the truth about what it does — but the strictness of enforcement is
+proportional to the leverage of the code.
+
+This is not a license to lower the bar. It is a recognition that perfection
+is expensive and the budget should go where it earns the most return. The
+rule of thumb:
+
+> **The deeper the import graph beneath you, the harder the principles bind.**
+
+Code that nothing depends on can be sloppy and the cost is bounded. Code that
+everything depends on must be exact, because every imprecision multiplies by
+the number of dependents. Gaudi rules can express this in their severity
+assignment: a rule that targets kernel-shape code (DEP, ARCH, STRUCT) tends
+to be ERROR or WARN; a rule that targets leaf-shape code (SMELL, CPLX) tends
+to be INFO. The grammar is already there — the principle is what it appeals to.
 
 ---
 
