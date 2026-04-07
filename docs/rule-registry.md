@@ -117,6 +117,9 @@ All 24 rules map directly to Fowler's smell catalog in *Refactoring* (2nd ed.), 
 | PYD-ARCH-001    | PydanticMutableDefault   | Pydantic    | FWDOCS: Pydantic validators             |
 | TEST-STRUCT-001 | PytestAssertMessage      | pytest      | FWDOCS: pytest assertion introspection  |
 | TEST-SCALE-001  | PytestFixtureScope       | pytest      | FWDOCS: pytest fixture optimization     |
+| AWS-ARCH-001    | HardcodedRegion          | boto3       | FWDOCS: AWS Well-Architected Framework  |
+| AWS-ERR-001     | BareClientCall           | boto3       | FWDOCS: boto3 error handling            |
+| AWS-SCALE-001   | UnpaginatedList          | boto3       | FWDOCS: boto3 pagination                |
 | DRF-SEC-001     | DRFNoPermissionClass     | DRF         | FWDOCS: DRF permissions                 |
 | DRF-SCALE-001   | DRFNoThrottling          | DRF         | FWDOCS: DRF throttling                  |
 

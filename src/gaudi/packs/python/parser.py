@@ -31,6 +31,8 @@ _IMPORT_TO_LIBRARY: dict[str, str] = {
     "httpx": "requests",
     "pydantic": "pydantic",
     "pytest": "pytest",
+    "boto3": "boto3",
+    "botocore": "boto3",
 }
 
 # Maps PyPI package names to library activation keys
@@ -46,6 +48,7 @@ _PACKAGE_TO_LIBRARY: dict[str, str] = {
     "httpx": "requests",
     "pydantic": "pydantic",
     "pytest": "pytest",
+    "boto3": "boto3",
 }
 
 # Django field types that map to database columns
