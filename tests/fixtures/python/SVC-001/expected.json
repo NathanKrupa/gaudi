@@ -1,0 +1,26 @@
+{
+  "rule_id": "SVC-001",
+  "description": "HardcodedServiceURL -- localhost/loopback URLs are configuration leaks",
+  "fixtures": {
+    "fail_localhost_url.py": {
+      "expected_findings": [
+        {
+          "severity": "warn",
+          "line": 3,
+          "message_contains": "localhost"
+        },
+        {
+          "severity": "warn",
+          "line": 4,
+          "message_contains": "127.0.0.1"
+        }
+      ]
+    },
+    "pass_url_from_env.py": {
+      "expected_findings": []
+    },
+    "pass_external_url.py": {
+      "expected_findings": []
+    }
+  }
+}

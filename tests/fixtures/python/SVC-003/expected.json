@@ -1,0 +1,21 @@
+{
+  "rule_id": "SVC-003",
+  "description": "NoAPIVersioning -- API routes should carry a version prefix",
+  "fixtures": {
+    "fail_unversioned_route.py": {
+      "expected_findings": [
+        {
+          "severity": "info",
+          "line": 8,
+          "message_contains": "version"
+        }
+      ]
+    },
+    "pass_versioned_route.py": {
+      "expected_findings": []
+    },
+    "pass_health_endpoint.py": {
+      "expected_findings": []
+    }
+  }
+}
