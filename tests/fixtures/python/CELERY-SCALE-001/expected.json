@@ -1,0 +1,21 @@
+{
+  "rule_id": "CELERY-SCALE-001",
+  "description": "CeleryNoTimeLimit -- Celery tasks must be bounded by a time limit",
+  "fixtures": {
+    "fail_task_without_time_limit.py": {
+      "expected_findings": [
+        {
+          "severity": "warn",
+          "line": 7,
+          "message_contains": "time limit"
+        }
+      ]
+    },
+    "pass_task_with_time_limit.py": {
+      "expected_findings": []
+    },
+    "pass_plain_function.py": {
+      "expected_findings": []
+    }
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "rule_id": "CELERY-ARCH-001",
+  "description": "CeleryNoRetry -- Celery tasks must declare a retry policy",
+  "fixtures": {
+    "fail_task_without_retry.py": {
+      "expected_findings": [
+        {
+          "severity": "warn",
+          "line": 7,
+          "message_contains": "retry"
+        }
+      ]
+    },
+    "pass_task_with_retry.py": {
+      "expected_findings": []
+    },
+    "pass_plain_function.py": {
+      "expected_findings": []
+    }
+  }
+}
