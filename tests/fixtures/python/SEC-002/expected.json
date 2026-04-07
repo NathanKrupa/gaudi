@@ -1,0 +1,36 @@
+{
+  "rule_id": "SEC-002",
+  "description": "RawSQLInjection -- interpolated SQL strings are an injection vector",
+  "fixtures": {
+    "fail_interpolated_sql.py": {
+      "expected_findings": [
+        {
+          "severity": "error",
+          "line": 6,
+          "message_contains": "execute"
+        },
+        {
+          "severity": "error",
+          "line": 12,
+          "message_contains": "execute"
+        },
+        {
+          "severity": "error",
+          "line": 18,
+          "message_contains": "execute"
+        },
+        {
+          "severity": "error",
+          "line": 23,
+          "message_contains": "raw"
+        }
+      ]
+    },
+    "pass_parameterized_sql.py": {
+      "expected_findings": []
+    },
+    "pass_static_sql.py": {
+      "expected_findings": []
+    }
+  }
+}

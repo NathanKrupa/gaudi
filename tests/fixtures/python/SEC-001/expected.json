@@ -1,0 +1,20 @@
+{
+  "rule_id": "SEC-001",
+  "description": "NoMetaPermissions -- Django Meta class must declare explicit permissions",
+  "fixtures": {
+    "fail_meta_no_permissions.py": {
+      "expected_findings": [
+        {
+          "severity": "info",
+          "message_contains": "Order"
+        }
+      ]
+    },
+    "pass_meta_with_permissions.py": {
+      "expected_findings": []
+    },
+    "pass_no_meta_class.py": {
+      "expected_findings": []
+    }
+  }
+}
