@@ -1,0 +1,18 @@
+{
+  "rule_id": "CPLX-001",
+  "description": "ShallowModule -- modules exposing many public names with trivial bodies",
+  "fixtures": {
+    "fail_shallow_module.py": {
+      "expected_findings": [
+        {
+          "severity": "info",
+          "line": 5,
+          "message_contains": "shallow interface"
+        }
+      ]
+    },
+    "pass_deep_module.py": {
+      "expected_findings": []
+    }
+  }
+}

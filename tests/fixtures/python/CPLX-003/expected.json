@@ -1,0 +1,23 @@
+{
+  "rule_id": "CPLX-003",
+  "description": "InformationLeakage -- public function signatures referencing private types",
+  "fixtures": {
+    "fail_information_leakage.py": {
+      "expected_findings": [
+        {
+          "severity": "warn",
+          "line": 13,
+          "message_contains": "Public function 'fetch_row' exposes private type '_InternalRow'"
+        },
+        {
+          "severity": "warn",
+          "line": 17,
+          "message_contains": "Public function 'store_row' exposes private type '_InternalRow'"
+        }
+      ]
+    },
+    "pass_public_types_only.py": {
+      "expected_findings": []
+    }
+  }
+}
