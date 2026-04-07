@@ -8,15 +8,12 @@ from pathlib import Path
 import pytest
 
 from tests.fixture_corpus import (
-    FixtureCase,
     _cases_for_rule_dir,
     fixture_as_project,
 )
 
 
-def _write_rule_dir(
-    root: Path, rule_id: str, expected: dict, files: dict[str, str]
-) -> Path:
+def _write_rule_dir(root: Path, rule_id: str, expected: dict, files: dict[str, str]) -> Path:
     rule_dir = root / rule_id
     rule_dir.mkdir(parents=True)
     (rule_dir / "expected.json").write_text(json.dumps(expected), encoding="utf-8")
@@ -36,9 +33,7 @@ class TestSingleFileFixtures:
                 "rule_id": "DEMO-001",
                 "fixtures": {
                     "fail_thing.py": {
-                        "expected_findings": [
-                            {"severity": "warning", "message_contains": "boom"}
-                        ]
+                        "expected_findings": [{"severity": "warning", "message_contains": "boom"}]
                     },
                     "pass_thing.py": {"expected_findings": []},
                 },
@@ -70,7 +65,9 @@ class TestSingleFileFixtures:
 
         with fixture_as_project(case) as project_root:
             assert (project_root / "thing.py").read_text(encoding="utf-8") == "x = 1\n"
-            assert not (project_root / "fail_thing.py").exists(), "fail_ prefix should be stripped from copied path"
+            assert not (project_root / "fail_thing.py").exists(), (
+                "fail_ prefix should be stripped from copied path"
+            )
             assert (project_root / "pyproject.toml").exists()
 
 
@@ -83,9 +80,7 @@ class TestMultiFileFixtures:
                 "rule_id": "DEMO-003",
                 "fixtures": {
                     "fail_branched": {
-                        "expected_findings": [
-                            {"severity": "error", "message_contains": "diverged"}
-                        ]
+                        "expected_findings": [{"severity": "error", "message_contains": "diverged"}]
                     },
                     "pass_linear": {"expected_findings": []},
                 },
@@ -145,7 +140,9 @@ class TestMultiFileFixtures:
                 encoding="utf-8"
             ) == "revision = 'b'\n"
             # The fail_ prefix is NOT preserved at the project root.
-            assert not (project_root / "fail_branched").exists(), "directory fixture wrapper should not appear in temp project"
+            assert not (project_root / "fail_branched").exists(), (
+                "directory fixture wrapper should not appear in temp project"
+            )
             assert (project_root / "pyproject.toml").exists()
 
     def test_mixed_single_and_multi_in_one_rule(self, tmp_path: Path) -> None:
