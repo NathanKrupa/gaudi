@@ -122,7 +122,9 @@ class ShallowModule(Rule):
 _PASSTHROUGH_MIN_FUNCS = 3
 
 
-def _function_uses_param_only_as_passthrough(func: ast.FunctionDef | ast.AsyncFunctionDef, name: str) -> bool:
+def _function_uses_param_only_as_passthrough(
+    func: ast.FunctionDef | ast.AsyncFunctionDef, name: str
+) -> bool:
     """True if every Name(load) reference to `name` inside func is as a call argument."""
     pass_through_uses = 0
     other_uses = 0
@@ -233,9 +235,7 @@ class InformationLeakage(Rule):
     code = "CPLX-003"
     severity = Severity.WARN
     category = Category.COMPLEXITY
-    message_template = (
-        "Public function '{func}' exposes private type '{leaked}' in its signature"
-    )
+    message_template = "Public function '{func}' exposes private type '{leaked}' in its signature"
     recommendation_template = (
         "Information leakage couples callers to implementation details. "
         "Either widen '{leaked}' to a public type/protocol or make '{func}' itself private. "
