@@ -1,0 +1,17 @@
+{
+  "rule_id": "OPS-005",
+  "description": "MissingContribGuide -- project must ship a CONTRIBUTING.md",
+  "fixtures": {
+    "fail_no_contributing/": {
+      "expected_findings": [
+        {
+          "severity": "info",
+          "message_contains": "CONTRIBUTING.md"
+        }
+      ]
+    },
+    "pass_with_contributing/": {
+      "expected_findings": []
+    }
+  }
+}
