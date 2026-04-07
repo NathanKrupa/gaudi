@@ -1,0 +1,26 @@
+{
+  "rule_id": "TEST-SCALE-001",
+  "description": "PytestFixtureScope -- expensive conftest fixtures need an explicit scope",
+  "fixtures": {
+    "fail_conftest_no_scope.py": {
+      "expected_findings": [
+        {
+          "severity": "info",
+          "line": 7,
+          "message_contains": "without scope"
+        },
+        {
+          "severity": "info",
+          "line": 12,
+          "message_contains": "without scope"
+        }
+      ]
+    },
+    "pass_conftest_with_scope.py": {
+      "expected_findings": []
+    },
+    "pass_conftest_cheap_fixtures.py": {
+      "expected_findings": []
+    }
+  }
+}

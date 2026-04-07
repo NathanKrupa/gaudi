@@ -1,0 +1,31 @@
+{
+  "rule_id": "TEST-STRUCT-001",
+  "description": "PytestAssertMessage -- complex assertions need a failure message",
+  "fixtures": {
+    "fail_test_complex_assertions.py": {
+      "expected_findings": [
+        {
+          "severity": "info",
+          "line": 8,
+          "message_contains": "Complex assertion"
+        },
+        {
+          "severity": "info",
+          "line": 13,
+          "message_contains": "Complex assertion"
+        },
+        {
+          "severity": "info",
+          "line": 18,
+          "message_contains": "Complex assertion"
+        }
+      ]
+    },
+    "pass_test_with_messages.py": {
+      "expected_findings": []
+    },
+    "pass_test_simple_assertions.py": {
+      "expected_findings": []
+    }
+  }
+}
