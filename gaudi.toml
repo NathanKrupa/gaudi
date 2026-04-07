@@ -1,0 +1,8 @@
+# Gaudí configuration for the Gaudí project itself.
+# Schema: https://github.com/NathanKrupa/gaudi
+[gaudi]
+# Glob patterns excluded from analysis (in addition to the built-in defaults
+# like venv/ and __pycache__/). The fixture corpus under tests/fixtures/
+# contains deliberately broken sample code that exists to drive the rule
+# tests; running rules against it produces noise, not signal.
+exclude = ["tests/fixtures/**"]

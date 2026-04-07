@@ -10,19 +10,6 @@ from gaudi.packs.python.context import PythonContext
 _LIBRARY = "alembic"
 
 
-def _is_test_or_fixture(relpath: str) -> bool:
-    """Skip files under tests/, fixtures/, or named like test files.
-
-    Duplicated from complexity.py until we extract a shared helpers module.
-    Without this, running ``gaudi check`` against the Gaudi repo itself
-    matches our own ALM fixture corpus and reports findings on the test data.
-    """
-    parts = relpath.replace("\\", "/").split("/")
-    return any(p in {"tests", "test", "fixtures", "conftest.py"} for p in parts) or any(
-        p.startswith("test_") for p in parts
-    )
-
-
 def _is_alembic_migration(tree: ast.Module) -> bool:
     """Check if an AST looks like an alembic migration (has module-level `revision` assignment)."""
     for node in ast.iter_child_nodes(tree):
@@ -74,8 +61,6 @@ class MigrationNoDowngrade(Rule):
     def check(self, context: PythonContext) -> list[Finding]:
         findings = []
         for f in context.files:
-            if _is_test_or_fixture(f.relative_path):
-                continue
             tree = f.ast_tree
             if tree is None:
                 continue
@@ -105,8 +90,6 @@ class MultipleHeads(Rule):
         # Map down_revision -> list of migration files that depend on it
         children: dict[str, list[str]] = {}
         for f in context.files:
-            if _is_test_or_fixture(f.relative_path):
-                continue
             tree = f.ast_tree
             if tree is None:
                 continue

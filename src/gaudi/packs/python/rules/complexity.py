@@ -8,13 +8,6 @@ from gaudi.core import Category, Finding, Rule, Severity
 from gaudi.packs.python.context import PythonContext
 
 
-def _is_test_or_fixture(relpath: str) -> bool:
-    parts = relpath.replace("\\", "/").split("/")
-    return any(p in {"tests", "test", "fixtures", "conftest.py"} for p in parts) or any(
-        p.startswith("test_") for p in parts
-    )
-
-
 def _public_module_members(tree: ast.Module) -> list[ast.AST]:
     """Top-level public functions and classes (or those in __all__ if present)."""
     explicit: set[str] | None = None
@@ -86,8 +79,6 @@ class ShallowModule(Rule):
     def check(self, context: PythonContext) -> list[Finding]:
         findings: list[Finding] = []
         for fi in context.files:
-            if _is_test_or_fixture(fi.relative_path):
-                continue
             if fi.path.name == "__init__.py":
                 continue
             tree = fi.ast_tree
@@ -181,8 +172,6 @@ class PassThroughVariable(Rule):
     def check(self, context: PythonContext) -> list[Finding]:
         findings: list[Finding] = []
         for fi in context.files:
-            if _is_test_or_fixture(fi.relative_path):
-                continue
             tree = fi.ast_tree
             if tree is None:
                 continue
@@ -245,8 +234,6 @@ class InformationLeakage(Rule):
     def check(self, context: PythonContext) -> list[Finding]:
         findings: list[Finding] = []
         for fi in context.files:
-            if _is_test_or_fixture(fi.relative_path):
-                continue
             tree = fi.ast_tree
             if tree is None:
                 continue
@@ -353,8 +340,6 @@ class ConjoinedMethods(Rule):
     def check(self, context: PythonContext) -> list[Finding]:
         findings: list[Finding] = []
         for fi in context.files:
-            if _is_test_or_fixture(fi.relative_path):
-                continue
             tree = fi.ast_tree
             if tree is None:
                 continue
