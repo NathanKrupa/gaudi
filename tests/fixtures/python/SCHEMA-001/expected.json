@@ -1,0 +1,20 @@
+{
+  "rule_id": "SCHEMA-001",
+  "description": "MissingTimestamps -- models without created_at/updated_at",
+  "fixtures": {
+    "fail_no_timestamps.py": {
+      "expected_findings": [
+        {
+          "severity": "info",
+          "message_contains": "Order"
+        }
+      ]
+    },
+    "pass_with_timestamps.py": {
+      "expected_findings": []
+    },
+    "pass_through_table.py": {
+      "expected_findings": []
+    }
+  }
+}
