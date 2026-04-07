@@ -7,7 +7,9 @@ import ast
 from gaudi.core import Rule, Finding, Severity, Category
 from gaudi.packs.python.context import PythonContext
 
-_EXPENSIVE_FIXTURE_NAMES = frozenset({"connection", "engine", "client", "session", "database", "db"})
+_EXPENSIVE_FIXTURE_NAMES = frozenset(
+    {"connection", "engine", "client", "session", "database", "db"}
+)
 
 
 class PytestAssertMessage(Rule):
