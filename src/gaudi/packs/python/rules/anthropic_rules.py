@@ -84,9 +84,7 @@ class HardcodedModel(Rule):
                 for kw in node.keywords:
                     if kw.arg == "model" and isinstance(kw.value, ast.Constant):
                         if isinstance(kw.value.value, str):
-                            findings.append(
-                                self.finding(file=f.relative_path, line=node.lineno)
-                            )
+                            findings.append(self.finding(file=f.relative_path, line=node.lineno))
         return findings
 
 
@@ -116,9 +114,7 @@ class BareAPICall(Rule):
                 if not _is_anthropic_api_call(node):
                     continue
                 if not _node_inside_try(node, parent_map):
-                    findings.append(
-                        self.finding(file=f.relative_path, line=node.lineno)
-                    )
+                    findings.append(self.finding(file=f.relative_path, line=node.lineno))
         return findings
 
 
@@ -154,9 +150,7 @@ class NoTokenCounting(Rule):
             source_lower = f.source.lower()
             if any(kw in source_lower for kw in _TOKEN_KEYWORDS):
                 continue
-            findings.append(
-                self.finding(file=f.relative_path, line=api_call_line)
-            )
+            findings.append(self.finding(file=f.relative_path, line=api_call_line))
         return findings
 
 
