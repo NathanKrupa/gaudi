@@ -1,0 +1,17 @@
+{
+  "rule_id": "DEP-004",
+  "description": "UnstableDependency -- module is depended on but unstable (Stable Dependencies Principle)",
+  "fixtures": {
+    "fail_unstable_hub/": {
+      "expected_findings": [
+        {
+          "severity": "warn",
+          "message_contains": "unstable"
+        }
+      ]
+    },
+    "pass_stable_hub/": {
+      "expected_findings": []
+    }
+  }
+}

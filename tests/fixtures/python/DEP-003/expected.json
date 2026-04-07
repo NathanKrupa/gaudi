@@ -1,0 +1,17 @@
+{
+  "rule_id": "DEP-003",
+  "description": "FanInConcentration -- one module is depended on by most of the project",
+  "fixtures": {
+    "fail_hub/": {
+      "expected_findings": [
+        {
+          "severity": "info",
+          "message_contains": "imported by 4/5"
+        }
+      ]
+    },
+    "pass_no_hub/": {
+      "expected_findings": []
+    }
+  }
+}
