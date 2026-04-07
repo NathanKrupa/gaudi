@@ -41,6 +41,7 @@ class Category(Enum):
     ARCHITECTURE = "architecture"
     CODE_SMELL = "code_smell"
     COMPLEXITY = "complexity"
+    DOMAIN_MODEL = "domain_model"
     ERROR_HANDLING = "error_handling"
     INDEXING = "indexing"
     LOGGING = "logging"
@@ -58,6 +59,7 @@ CATEGORY_PREFIXES = {
     Category.ARCHITECTURE: "ARCH",
     Category.CODE_SMELL: "SMELL",
     Category.COMPLEXITY: "CPLX",
+    Category.DOMAIN_MODEL: "DOM",
     Category.ERROR_HANDLING: "ERR",
     Category.INDEXING: "IDX",
     Category.LOGGING: "LOG",
