@@ -40,6 +40,7 @@ class Severity(Enum):
 class Category(Enum):
     ARCHITECTURE = "architecture"
     CODE_SMELL = "code_smell"
+    COMPLEXITY = "complexity"
     ERROR_HANDLING = "error_handling"
     INDEXING = "indexing"
     LOGGING = "logging"
@@ -56,6 +57,7 @@ class Category(Enum):
 CATEGORY_PREFIXES = {
     Category.ARCHITECTURE: "ARCH",
     Category.CODE_SMELL: "SMELL",
+    Category.COMPLEXITY: "CPLX",
     Category.ERROR_HANDLING: "ERR",
     Category.INDEXING: "IDX",
     Category.LOGGING: "LOG",

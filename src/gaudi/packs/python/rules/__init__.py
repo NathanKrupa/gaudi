@@ -34,6 +34,7 @@ from gaudi.packs.python.rules.anthropic_rules import ANTHROPIC_RULES
 from gaudi.packs.python.rules.alembic import ALEMBIC_RULES
 from gaudi.packs.python.rules.dependency import DEPENDENCY_RULES
 from gaudi.packs.python.rules.security import SECURITY_RULES
+from gaudi.packs.python.rules.complexity import COMPLEXITY_RULES
 
 ALL_RULES = (
     *ARCHITECTURE_RULES,
@@ -68,4 +69,5 @@ ALL_RULES = (
     *ALEMBIC_RULES,
     *DEPENDENCY_RULES,
     *SECURITY_RULES,
+    *COMPLEXITY_RULES,
 )

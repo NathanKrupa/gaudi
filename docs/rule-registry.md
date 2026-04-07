@@ -163,6 +163,19 @@ no other Python linter detects, because they require project-wide graph analysis
 | DEP-003  | FanInConcentration   | Fragile hub detection                        | Imported by >= 80% of project      |
 | DEP-004  | UnstableDependency   | Stable Dependencies Principle (SDP)          | I = Ce / (Ca + Ce) >= 0.5 with high Ca |
 
+### Complexity Rules (CPLX) -- Source: OUSTRHOUT
+
+Rules mined from *A Philosophy of Software Design*. Ousterhout's design quality
+heuristics target module shape rather than line-level style -- territory no
+existing Python linter covers.
+
+| Code     | Class Name            | Ousterhout Principle                         | Chapter   |
+|----------|-----------------------|----------------------------------------------|-----------|
+| CPLX-001 | ShallowModule         | "Modules Should Be Deep"                     | Ch. 4     |
+| CPLX-002 | PassThroughVariable   | "Different Layer, Different Abstraction"     | Ch. 7     |
+| CPLX-003 | InformationLeakage    | "Information Hiding"                         | Ch. 5     |
+| CPLX-004 | ConjoinedMethods      | "General-Purpose Modules are Deeper"         | Ch. 6     |
+
 ---
 
 ## Nygard Mining Queue (planned, not yet implemented)
@@ -204,12 +217,7 @@ anti-patterns detectable within a single Python project.
 
 ### Ousterhout -- *A Philosophy of Software Design*
 
-| Planned Prefix | Topic Area                        | Detectability | Notes                                    |
-|----------------|-----------------------------------|---------------|------------------------------------------|
-| CPLX-???       | Shallow modules                   | High          | Public API surface >> implementation     |
-| CPLX-???       | Information leakage               | Medium        | Implementation detail in public types    |
-| CPLX-???       | Pass-through variables            | High          | Parameter threaded through 3+ layers     |
-| CPLX-???       | Conjoined methods                 | Medium        | Methods that must be called in sequence  |
+*Implemented as CPLX-001..004 -- see "Complexity Rules (CPLX)" above.*
 
 ### Fowler -- *Patterns of Enterprise Application Architecture*
 
