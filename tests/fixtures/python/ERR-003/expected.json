@@ -1,0 +1,21 @@
+{
+  "rule_id": "ERR-003",
+  "description": "ErrorSwallowing -- logging an error without re-raising hides failures",
+  "fixtures": {
+    "fail_log_no_reraise.py": {
+      "expected_findings": [
+        {
+          "severity": "warn",
+          "line": 11,
+          "message_contains": "not re-raised"
+        }
+      ]
+    },
+    "pass_log_and_reraise.py": {
+      "expected_findings": []
+    },
+    "pass_handle_no_log.py": {
+      "expected_findings": []
+    }
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "rule_id": "ERR-001",
+  "description": "BareExcept -- bare/broad handlers must name their exception or re-raise",
+  "fixtures": {
+    "fail_bare_and_broad.py": {
+      "expected_findings": [
+        {
+          "severity": "warn",
+          "line": 7,
+          "message_contains": "Broad exception"
+        },
+        {
+          "severity": "warn",
+          "line": 15,
+          "message_contains": "Broad exception"
+        }
+      ]
+    },
+    "pass_specific_exceptions.py": {
+      "expected_findings": []
+    },
+    "pass_broad_with_reraise.py": {
+      "expected_findings": []
+    }
+  }
+}
