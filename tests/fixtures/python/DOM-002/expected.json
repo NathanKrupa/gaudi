@@ -1,0 +1,30 @@
+{
+  "rule_id": "DOM-002",
+  "description": "WrongLayerPlacement -- business logic in view/endpoint files",
+  "fixtures": {
+    "fail_branched_view": {
+      "expected_findings": [
+        {
+          "severity": "warn",
+          "line": 6,
+          "message_contains": "order_status"
+        }
+      ]
+    },
+    "fail_boundary_four_branches": {
+      "expected_findings": [
+        {
+          "severity": "warn",
+          "line": 5,
+          "message_contains": "role_label"
+        }
+      ]
+    },
+    "pass_thin_view": {
+      "expected_findings": []
+    },
+    "pass_boundary_three_branches": {
+      "expected_findings": []
+    }
+  }
+}

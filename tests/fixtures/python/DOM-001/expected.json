@@ -1,0 +1,30 @@
+{
+  "rule_id": "DOM-001",
+  "description": "AnemicDomainModel -- domain models with many fields and zero behavior",
+  "fixtures": {
+    "fail_anemic_django_model.py": {
+      "expected_findings": [
+        {
+          "severity": "warn",
+          "line": 6,
+          "message_contains": "Invoice"
+        }
+      ]
+    },
+    "fail_boundary_anemic_dataclass.py": {
+      "expected_findings": [
+        {
+          "severity": "warn",
+          "line": 5,
+          "message_contains": "Order"
+        }
+      ]
+    },
+    "pass_rich_django_model.py": {
+      "expected_findings": []
+    },
+    "pass_boundary_four_field_dataclass.py": {
+      "expected_findings": []
+    }
+  }
+}

@@ -227,8 +227,8 @@ anti-patterns detectable within a single Python project.
 
 ### Fowler -- *Patterns of Enterprise Application Architecture*
 
-| Planned Prefix | Topic Area                        | Detectability | Notes                                    |
-|----------------|-----------------------------------|---------------|------------------------------------------|
-| DOM-???        | Anemic Domain Model               | High          | Models with no methods (pure data)       |
-| DOM-???        | Wrong layer placement              | Medium        | Business logic in view/template layer    |
-| DOM-???        | Active Record misuse               | Medium        | AR pattern with complex business rules   |
+| Code    | Name                 | Severity | Implemented | Notes                                                           |
+|---------|----------------------|----------|-------------|-----------------------------------------------------------------|
+| DOM-001 | AnemicDomainModel    | WARN     | Yes         | Domain class with 5+ fields and zero behavior methods           |
+| DOM-002 | WrongLayerPlacement  | WARN     | Yes         | View function with a 4+ branch if/elif chain (business logic)   |
+| DOM-003 | ActiveRecordMisuse   | INFO     | Yes         | Model method calls requests / send_mail / celery / boto3 / smtp |

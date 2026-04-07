@@ -1,0 +1,27 @@
+{
+  "rule_id": "DOM-003",
+  "description": "ActiveRecordMisuse -- model classes calling external services directly",
+  "fixtures": {
+    "fail_model_calls_requests.py": {
+      "expected_findings": [
+        {
+          "severity": "info",
+          "line": 11,
+          "message_contains": "Webhook.fire"
+        }
+      ]
+    },
+    "fail_model_sends_email.py": {
+      "expected_findings": [
+        {
+          "severity": "info",
+          "line": 10,
+          "message_contains": "User.notify_signup"
+        }
+      ]
+    },
+    "pass_model_pure_logic.py": {
+      "expected_findings": []
+    }
+  }
+}
