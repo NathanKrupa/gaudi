@@ -13,6 +13,12 @@ from gaudi.packs.python.context import PythonContext
 
 
 class PathHacks(Rule):
+    """Detect sys.path manipulation (path hacks).
+
+    Principles: #1 (The structure tells the story), #9 (Dependencies flow toward stability).
+    Source: ARCH90 Day 1 — proper packaging over sys.path hacks.
+    """
+
     code = "STRUCT-010"
     severity = Severity.ERROR
     category = Category.STRUCTURE
@@ -57,6 +63,12 @@ class PathHacks(Rule):
 
 
 class MissingPyproject(Rule):
+    """Detect projects without a pyproject.toml.
+
+    Principles: #1 (The structure tells the story), #14 (Reversibility is a design property).
+    Source: ARCH90 Day 1 — modern packaging requires pyproject.toml.
+    """
+
     code = "STRUCT-011"
     severity = Severity.WARN
     category = Category.STRUCTURE
@@ -78,6 +90,12 @@ class MissingPyproject(Rule):
 
 
 class NoEntryPoint(Rule):
+    """Detect CLI scripts without console_scripts entry points.
+
+    Principles: #1 (The structure tells the story).
+    Source: ARCH90 Day 1 — CLI scripts need entry points.
+    """
+
     code = "STRUCT-012"
     severity = Severity.WARN
     category = Category.STRUCTURE
@@ -141,6 +159,12 @@ _LOCK_FILES = (
 
 
 class NoLockFile(Rule):
+    """Detect projects without a dependency lock file.
+
+    Principles: #14 (Reversibility is a design property).
+    Source: ARCH90 Day 1 — pin dependencies for reproducibility.
+    """
+
     code = "STRUCT-013"
     severity = Severity.INFO
     category = Category.STRUCTURE

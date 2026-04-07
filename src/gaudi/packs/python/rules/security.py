@@ -54,7 +54,11 @@ def _is_unsafe_sql_arg(arg: ast.expr) -> bool:
 
 
 class RawSQLInjection(Rule):
-    """SEC-002: SQL execution with interpolated strings."""
+    """SEC-002: SQL execution with interpolated strings.
+
+    Principles: #4 (Failure must be named).
+    Source: OWASP A03 — Injection: hostile input must be parameterized.
+    """
 
     code = "SEC-002"
     severity = Severity.ERROR
@@ -139,7 +143,11 @@ def _looks_like_placeholder_value(value: str) -> bool:
 
 
 class HardcodedCredential(Rule):
-    """SEC-003: Credential-named variable assigned to a string literal."""
+    """SEC-003: Credential-named variable assigned to a string literal.
+
+    Principles: #5 (State must be visible), #4 (Failure must be named).
+    Source: OWASP A07 — secrets are configuration, not code.
+    """
 
     code = "SEC-003"
     severity = Severity.ERROR
@@ -198,7 +206,11 @@ class HardcodedCredential(Rule):
 
 
 class EvalExecUsage(Rule):
-    """SEC-004: Use of built-in eval() or exec()."""
+    """SEC-004: Use of built-in eval() or exec().
+
+    Principles: #4 (Failure must be named).
+    Source: OWASP A03 — arbitrary code execution from hostile input.
+    """
 
     code = "SEC-004"
     severity = Severity.ERROR
@@ -251,7 +263,11 @@ def _yaml_load_has_safe_loader(call: ast.Call) -> bool:
 
 
 class UnsafeDeserialization(Rule):
-    """SEC-005: Insecure deserialization via pickle or yaml.load."""
+    """SEC-005: Insecure deserialization via pickle or yaml.load.
+
+    Principles: #4 (Failure must be named).
+    Source: OWASP A08 — Software and Data Integrity Failures.
+    """
 
     code = "SEC-005"
     severity = Severity.ERROR

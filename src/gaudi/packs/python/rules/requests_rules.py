@@ -11,6 +11,12 @@ _HTTP_METHODS = frozenset({"get", "post", "put", "patch", "delete", "head", "opt
 
 
 class RequestsNoTimeout(Rule):
+    """Detect HTTP requests without a timeout parameter.
+
+    Principles: #4 (Failure must be named).
+    Source: NYGARD Ch. 5 — Timeouts: every external call has a deadline.
+    """
+
     code = "HTTP-SCALE-001"
     severity = Severity.ERROR
     category = Category.SCALABILITY

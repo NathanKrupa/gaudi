@@ -13,6 +13,12 @@ from gaudi.packs.python.context import PythonContext
 
 
 class BareExcept(Rule):
+    """Detect bare except blocks and broad Exception handlers.
+
+    Principles: #4 (Failure must be named).
+    Source: ARCH90 Day 5 — catch the exception you actually expect.
+    """
+
     code = "ERR-001"
     severity = Severity.WARN
     category = Category.ERROR_HANDLING
@@ -58,6 +64,12 @@ class BareExcept(Rule):
 
 
 class ErrorSwallowing(Rule):
+    """Detect errors that are logged but not re-raised (error swallowing).
+
+    Principles: #4 (Failure must be named), #13 (The system must explain itself).
+    Source: ARCH90 Day 5 — silent failure is hidden from monitoring.
+    """
+
     code = "ERR-003"
     severity = Severity.WARN
     category = Category.ERROR_HANDLING

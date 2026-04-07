@@ -15,7 +15,11 @@ from gaudi.packs.python.rules.dispensables import _BOILERPLATE_DUNDERS
 
 
 class FeatureEnvy(Rule):
-    """SMELL-009: Method accesses another object more than its own."""
+    """SMELL-009: Method accesses another object more than its own.
+
+    Principles: #10 (Boundaries are real or fictional).
+    Source: FOWLER Ch. 3 — Feature Envy.
+    """
 
     code = "SMELL-009"
     severity = Severity.WARN
@@ -69,7 +73,11 @@ class FeatureEnvy(Rule):
 
 
 class MessageChains(Rule):
-    """SMELL-017: Long attribute access chains."""
+    """SMELL-017: Long attribute access chains.
+
+    Principles: #10 (Boundaries are real or fictional).
+    Source: FOWLER Ch. 3 — Message Chains.
+    """
 
     code = "SMELL-017"
     severity = Severity.INFO
@@ -148,7 +156,11 @@ def _is_pure_delegation(method: ast.FunctionDef) -> bool:
 
 
 class MiddleMan(Rule):
-    """SMELL-018: Class that mostly delegates to another."""
+    """SMELL-018: Class that mostly delegates to another.
+
+    Principles: #7 (Layers must earn their existence).
+    Source: FOWLER Ch. 3 — Middle Man.
+    """
 
     code = "SMELL-018"
     severity = Severity.WARN
@@ -197,7 +209,11 @@ class MiddleMan(Rule):
 
 
 class InsiderTrading(Rule):
-    """SMELL-019: Method writes to another object's attributes."""
+    """SMELL-019: Method writes to another object's attributes.
+
+    Principles: #10 (Boundaries are real or fictional).
+    Source: FOWLER Ch. 3 — Insider Trading.
+    """
 
     code = "SMELL-019"
     severity = Severity.WARN

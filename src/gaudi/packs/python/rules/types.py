@@ -13,6 +13,12 @@ from gaudi.packs.python.context import PythonContext
 
 
 class MissingReturnTypes(Rule):
+    """Detect public functions without return type annotations.
+
+    Principles: #11 (The reader is the user), #3 (Names are contracts).
+    Source: ARCH90 Day 2 — type annotations on public APIs.
+    """
+
     code = "STRUCT-020"
     severity = Severity.INFO
     category = Category.STRUCTURE
@@ -72,6 +78,12 @@ _EXEMPT_STRINGS = frozenset(
 
 
 class MagicStrings(Rule):
+    """Detect repeated string literals that should be named constants.
+
+    Principles: #2 (One concept, one home), #3 (Names are contracts).
+    Source: ARCH90 Day 2 — extract repeated literals to constants.
+    """
+
     code = "STRUCT-021"
     severity = Severity.WARN
     category = Category.STRUCTURE

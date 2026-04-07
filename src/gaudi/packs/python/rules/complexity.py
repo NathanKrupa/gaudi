@@ -62,6 +62,12 @@ _MAX_AVG_DEPTH = 3.0
 
 
 class ShallowModule(Rule):
+    """Detect modules with many shallow public names (small interface, small body).
+
+    Principles: #7 (Layers must earn their existence).
+    Source: OUSTERHOUT Ch. 4 — Modules Should Be Deep.
+    """
+
     code = "CPLX-001"
     severity = Severity.INFO
     category = Category.COMPLEXITY
@@ -156,6 +162,12 @@ def _function_params(func: ast.FunctionDef | ast.AsyncFunctionDef) -> list[str]:
 
 
 class PassThroughVariable(Rule):
+    """Detect parameters threaded through many functions without use.
+
+    Principles: #7 (Layers must earn their existence).
+    Source: OUSTERHOUT Ch. 7 — Different Layer, Different Abstraction.
+    """
+
     code = "CPLX-002"
     severity = Severity.WARN
     category = Category.COMPLEXITY
@@ -221,6 +233,12 @@ def _annotation_leaks_private(ann: ast.expr | None) -> str | None:
 
 
 class InformationLeakage(Rule):
+    """Detect public function signatures that expose private types.
+
+    Principles: #10 (Boundaries are real or fictional).
+    Source: OUSTERHOUT Ch. 5 — Information Hiding.
+    """
+
     code = "CPLX-003"
     severity = Severity.WARN
     category = Category.COMPLEXITY
@@ -324,6 +342,12 @@ def _attrs_in_test(test: ast.expr) -> set[str]:
 
 
 class ConjoinedMethods(Rule):
+    """Detect classes whose methods have temporal-coupling state.
+
+    Principles: #7 (Layers must earn their existence), #5 (State must be visible).
+    Source: OUSTERHOUT Ch. 6 — General-Purpose Modules are Deeper.
+    """
+
     code = "CPLX-004"
     severity = Severity.INFO
     category = Category.COMPLEXITY

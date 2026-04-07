@@ -9,6 +9,12 @@ from gaudi.packs.python.context import PythonContext
 
 
 class FlaskNoAppFactory(Rule):
+    """Detect Flask apps created at module level (no app factory).
+
+    Principles: #5 (State must be visible), #1 (The structure tells the story).
+    Source: FWDOCS Flask application factory pattern.
+    """
+
     code = "FLASK-STRUCT-001"
     severity = Severity.WARN
     category = Category.STRUCTURE

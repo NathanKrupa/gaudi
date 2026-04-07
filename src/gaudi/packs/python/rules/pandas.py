@@ -9,6 +9,12 @@ from gaudi.packs.python.context import PythonContext
 
 
 class PandasInplaceAntiPattern(Rule):
+    """Detect pandas inplace=True usage.
+
+    Principles: #5 (State must be visible).
+    Source: FWDOCS Pandas deprecation guidance — inplace mutates hidden state.
+    """
+
     code = "PD-ARCH-001"
     severity = Severity.WARN
     category = Category.ARCHITECTURE
@@ -41,6 +47,12 @@ class PandasInplaceAntiPattern(Rule):
 
 
 class PandasIterrows(Rule):
+    """Detect pandas iterrows() usage.
+
+    Principles: #4 (Failure must be named).
+    Source: FWDOCS Pandas vectorization — row iteration fails under production data sizes.
+    """
+
     code = "PD-SCALE-001"
     severity = Severity.WARN
     category = Category.SCALABILITY

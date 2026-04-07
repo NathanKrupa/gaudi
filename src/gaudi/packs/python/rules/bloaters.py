@@ -16,7 +16,11 @@ from gaudi.packs.python.context import PythonContext
 
 
 class LongFunction(Rule):
-    """SMELL-003: Functions that exceed 25 lines."""
+    """SMELL-003: Functions that exceed 25 lines.
+
+    Principles: #7 (Layers must earn their existence), #11 (The reader is the user).
+    Source: FOWLER Ch. 3 — Long Function.
+    """
 
     code = "SMELL-003"
     severity = Severity.WARN
@@ -56,7 +60,11 @@ class LongFunction(Rule):
 
 
 class LongParameterList(Rule):
-    """SMELL-004: Functions with too many parameters."""
+    """SMELL-004: Functions with too many parameters.
+
+    Principles: #11 (The reader is the user), #3 (Names are contracts).
+    Source: FOWLER Ch. 3 — Long Parameter List.
+    """
 
     code = "SMELL-004"
     severity = Severity.WARN
@@ -106,7 +114,11 @@ class LongParameterList(Rule):
 
 
 class LargeClass(Rule):
-    """SMELL-020: Classes with too many methods or attributes."""
+    """SMELL-020: Classes with too many methods or attributes.
+
+    Principles: #7 (Layers must earn their existence), #2 (One concept, one home).
+    Source: FOWLER Ch. 3 — Large Class.
+    """
 
     code = "SMELL-020"
     severity = Severity.WARN
@@ -165,7 +177,11 @@ class LargeClass(Rule):
 
 
 class DataClumps(Rule):
-    """SMELL-010: Same parameter groups in multiple functions."""
+    """SMELL-010: Same parameter groups in multiple functions.
+
+    Principles: #2 (One concept, one home).
+    Source: FOWLER Ch. 3 — Data Clumps.
+    """
 
     code = "SMELL-010"
     severity = Severity.INFO
@@ -275,7 +291,11 @@ def _collect_attr_string_compares(
 
 
 class PrimitiveObsession(Rule):
-    """SMELL-011: Attribute compared to many string literals."""
+    """SMELL-011: Attribute compared to many string literals.
+
+    Principles: #3 (Names are contracts).
+    Source: FOWLER Ch. 3 — Primitive Obsession.
+    """
 
     code = "SMELL-011"
     severity = Severity.WARN

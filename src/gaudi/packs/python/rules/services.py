@@ -28,6 +28,12 @@ _HARDCODED_URL_RE = re.compile(
 
 
 class HardcodedServiceURL(Rule):
+    """Detect hardcoded service URLs (localhost, 127.0.0.1, etc.).
+
+    Principles: #5 (State must be visible).
+    Source: NEWMAN Ch. 5 — service discovery: endpoints are configuration.
+    """
+
     code = "SVC-001"
     severity = Severity.WARN
     category = Category.ARCHITECTURE
@@ -71,6 +77,12 @@ _HTTP_MODULES = frozenset({"requests", "httpx", "aiohttp", "client", "session"})
 
 
 class ChattyIntegration(Rule):
+    """Detect functions making many HTTP calls (chatty integration).
+
+    Principles: #10 (Boundaries are real or fictional).
+    Source: NEWMAN Ch. 4 — chatty service boundary.
+    """
+
     code = "SVC-002"
     severity = Severity.INFO
     category = Category.ARCHITECTURE
@@ -134,6 +146,12 @@ _ROUTE_DECORATOR_RE = re.compile(r"@\w+\.(get|post|put|patch|delete|route|api_ro
 
 
 class NoAPIVersioning(Rule):
+    """Detect API endpoints without a version prefix.
+
+    Principles: #14 (Reversibility is a design property).
+    Source: NEWMAN Ch. 7 — API versioning enables safe evolution.
+    """
+
     code = "SVC-003"
     severity = Severity.INFO
     category = Category.ARCHITECTURE

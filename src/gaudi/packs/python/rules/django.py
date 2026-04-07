@@ -9,6 +9,12 @@ from gaudi.packs.python.context import PythonContext
 
 
 class DjangoSecretKeyExposed(Rule):
+    """Detect Django SECRET_KEY hardcoded in settings.
+
+    Principles: #5 (State must be visible), #4 (Failure must be named).
+    Source: FWDOCS Django deployment checklist — secrets are configuration, not code.
+    """
+
     code = "DJ-SEC-001"
     severity = Severity.ERROR
     category = Category.SECURITY
@@ -40,6 +46,12 @@ class DjangoSecretKeyExposed(Rule):
 
 
 class DjangoDebugTrue(Rule):
+    """Detect DEBUG=True in Django settings.
+
+    Principles: #5 (State must be visible), #4 (Failure must be named).
+    Source: FWDOCS Django deployment checklist — DEBUG=True is a hostile-input failure mode.
+    """
+
     code = "DJ-SEC-002"
     severity = Severity.ERROR
     category = Category.SECURITY

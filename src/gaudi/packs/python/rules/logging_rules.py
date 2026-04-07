@@ -22,6 +22,12 @@ _LOG_METHODS = frozenset(
 
 
 class UnstructuredLogging(Rule):
+    """Detect f-strings in logger calls (use lazy %-formatting).
+
+    Principles: #13 (The system must explain itself).
+    Source: ARCH90 Day 5 — structured logging is how the system explains itself.
+    """
+
     code = "LOG-001"
     severity = Severity.INFO
     category = Category.LOGGING
