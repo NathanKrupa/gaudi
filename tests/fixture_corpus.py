@@ -10,8 +10,9 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Iterator
 
+DEFAULT_LANGUAGE = "python"
 CORPUS_ROOT = Path(__file__).parent / "fixtures"
-PYTHON_CORPUS = CORPUS_ROOT / "python"
+PYTHON_CORPUS = CORPUS_ROOT / DEFAULT_LANGUAGE
 
 _PYPROJECT_STUB = "[project]\nname = 'fixture_project'\nversion = '0.0.0'\n"
 
@@ -67,7 +68,7 @@ def _load_expected(rule_dir: Path) -> dict[str, Any]:
     return json.loads(expected_path.read_text(encoding="utf-8"))
 
 
-def discover_rule_dirs(language: str = "python") -> list[Path]:
+def discover_rule_dirs(language: str = DEFAULT_LANGUAGE) -> list[Path]:
     """Return all rule directories under tests/fixtures/<language>/, sorted by rule id."""
     lang_root = CORPUS_ROOT / language
     if not lang_root.exists():
@@ -75,31 +76,30 @@ def discover_rule_dirs(language: str = "python") -> list[Path]:
     return sorted(p for p in lang_root.iterdir() if p.is_dir())
 
 
-def discover_cases(language: str = "python") -> list[FixtureCase]:
+def _cases_for_rule_dir(rule_dir: Path) -> list[FixtureCase]:
+    spec = _load_expected(rule_dir)
+    rule_id = spec["rule_id"]
+    if rule_id != rule_dir.name:
+        raise ValueError(
+            f"expected.json rule_id={rule_id!r} does not match directory {rule_dir.name!r}"
+        )
+    cases: list[FixtureCase] = []
+    for filename, file_spec in spec["fixtures"].items():
+        fixture_path = rule_dir / filename
+        if not fixture_path.exists():
+            raise FileNotFoundError(f"expected.json references missing fixture {fixture_path}")
+        expected = tuple(
+            ExpectedFinding.from_dict(item) for item in file_spec.get("expected_findings", [])
+        )
+        cases.append(FixtureCase(rule_id, rule_dir, filename, expected))
+    return cases
+
+
+def discover_cases(language: str = DEFAULT_LANGUAGE) -> list[FixtureCase]:
     """Discover every (rule, fixture-file) case in the corpus for parametrized tests."""
     cases: list[FixtureCase] = []
     for rule_dir in discover_rule_dirs(language):
-        spec = _load_expected(rule_dir)
-        rule_id = spec["rule_id"]
-        if rule_id != rule_dir.name:
-            raise ValueError(
-                f"expected.json rule_id={rule_id!r} does not match directory {rule_dir.name!r}"
-            )
-        for filename, file_spec in spec["fixtures"].items():
-            expected = tuple(
-                ExpectedFinding.from_dict(item) for item in file_spec.get("expected_findings", [])
-            )
-            fixture_path = rule_dir / filename
-            if not fixture_path.exists():
-                raise FileNotFoundError(f"expected.json references missing fixture {fixture_path}")
-            cases.append(
-                FixtureCase(
-                    rule_id=rule_id,
-                    rule_dir=rule_dir,
-                    filename=filename,
-                    expected=expected,
-                )
-            )
+        cases.extend(_cases_for_rule_dir(rule_dir))
     return cases
 
 

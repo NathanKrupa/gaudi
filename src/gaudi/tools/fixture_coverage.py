@@ -1,5 +1,5 @@
 # ABOUTME: Reports which Python pack rules have / lack a fixture directory under tests/fixtures/python/.
-# ABOUTME: Runs in warn-mode by default; pass --strict to fail when any rule is missing fixtures.
+# ABOUTME: Wired as the `gaudi-fixture-coverage` console entry point in pyproject.toml.
 """Fixture coverage reporter for the Gaudi rule corpus.
 
 Walks every Rule registered in the Python pack and checks whether
@@ -20,8 +20,23 @@ from pathlib import Path
 
 from gaudi.packs.python.rules import ALL_RULES
 
-REPO_ROOT = Path(__file__).resolve().parent.parent
+
+# Resolve the project root by walking up until we find pyproject.toml. This lets
+# the tool be invoked as a console script from anywhere inside a Gaudi checkout.
+def _find_repo_root(start: Path) -> Path:
+    for candidate in [start, *start.parents]:
+        if (candidate / "pyproject.toml").exists():
+            return candidate
+    return start
+
+
+REPO_ROOT = _find_repo_root(Path.cwd())
 PYTHON_FIXTURES = REPO_ROOT / "tests" / "fixtures" / "python"
+
+_COL_RULE = "<14"
+_COL_STATUS = "<8"
+_COL_COUNT = ">4"
+_COL_EXPECTED = "<14"
 
 
 @dataclass
@@ -52,37 +67,28 @@ class RuleCoverage:
         return "PARTIAL"
 
 
+def _validate_expected_json(path: Path, rule_id: str) -> bool:
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError:
+        return False
+    return data.get("rule_id") == rule_id and "fixtures" in data
+
+
 def _inspect_rule_dir(rule_id: str) -> RuleCoverage:
     rule_dir = PYTHON_FIXTURES / rule_id
     if not rule_dir.exists():
-        return RuleCoverage(
-            rule_id=rule_id,
-            has_dir=False,
-            fail_count=0,
-            pass_count=0,
-            has_expected_json=False,
-            expected_json_valid=False,
-        )
+        return RuleCoverage(rule_id, False, 0, 0, False, False)
 
-    fail_files = sorted(rule_dir.glob("fail_*.py"))
-    pass_files = sorted(rule_dir.glob("pass_*.py"))
     expected_path = rule_dir / "expected.json"
     has_expected = expected_path.exists()
-    valid = False
-    if has_expected:
-        try:
-            data = json.loads(expected_path.read_text(encoding="utf-8"))
-            valid = data.get("rule_id") == rule_id and "fixtures" in data
-        except json.JSONDecodeError:
-            valid = False
-
     return RuleCoverage(
         rule_id=rule_id,
         has_dir=True,
-        fail_count=len(fail_files),
-        pass_count=len(pass_files),
+        fail_count=len(list(rule_dir.glob("fail_*.py"))),
+        pass_count=len(list(rule_dir.glob("pass_*.py"))),
         has_expected_json=has_expected,
-        expected_json_valid=valid,
+        expected_json_valid=has_expected and _validate_expected_json(expected_path, rule_id),
     )
 
 
@@ -97,30 +103,43 @@ def collect_coverage() -> list[RuleCoverage]:
     return sorted(coverage, key=lambda c: c.rule_id)
 
 
-def render_report(coverage: list[RuleCoverage]) -> str:
+def _expected_state(c: RuleCoverage) -> str:
+    if c.expected_json_valid:
+        return "valid"
+    return "invalid" if c.has_expected_json else "absent"
+
+
+def _format_row(c: RuleCoverage) -> str:
+    return (
+        f"{c.rule_id:{_COL_RULE}} {c.status:{_COL_STATUS}} "
+        f"{c.fail_count:{_COL_COUNT}} {c.pass_count:{_COL_COUNT}} "
+        f"{_expected_state(c):{_COL_EXPECTED}}"
+    )
+
+
+def _summary_lines(coverage: list[RuleCoverage]) -> list[str]:
     total = len(coverage)
     complete = sum(1 for c in coverage if c.is_complete)
     partial = sum(1 for c in coverage if c.status == "PARTIAL")
     missing = sum(1 for c in coverage if c.status == "MISSING")
+    return [
+        "Gaudi Fixture Corpus Coverage",
+        "=" * 60,
+        f"Total rules : {total}",
+        f"Complete    : {complete}",
+        f"Partial     : {partial}",
+        f"Missing     : {missing}",
+        "",
+    ]
 
-    lines: list[str] = []
-    lines.append("Gaudi Fixture Corpus Coverage")
-    lines.append("=" * 60)
-    lines.append(f"Total rules : {total}")
-    lines.append(f"Complete    : {complete}")
-    lines.append(f"Partial     : {partial}")
-    lines.append(f"Missing     : {missing}")
-    lines.append("")
-    header = f"{'Rule ID':<14} {'Status':<8} {'Fail':>4} {'Pass':>4} {'expected.json':<14}"
-    lines.append(header)
-    lines.append("-" * len(header))
-    for c in coverage:
-        exp_state = (
-            "valid" if c.expected_json_valid else ("invalid" if c.has_expected_json else "absent")
-        )
-        lines.append(
-            f"{c.rule_id:<14} {c.status:<8} {c.fail_count:>4} {c.pass_count:>4} {exp_state:<14}"
-        )
+
+def render_report(coverage: list[RuleCoverage]) -> str:
+    header = (
+        f"{'Rule ID':{_COL_RULE}} {'Status':{_COL_STATUS}} "
+        f"{'Fail':{_COL_COUNT}} {'Pass':{_COL_COUNT}} {'expected.json':{_COL_EXPECTED}}"
+    )
+    lines = _summary_lines(coverage) + [header, "-" * len(header)]
+    lines.extend(_format_row(c) for c in coverage)
     return "\n".join(lines)
 
 
