@@ -1,0 +1,26 @@
+{
+  "rule_id": "SEC-004",
+  "description": "EvalExecUsage -- built-in eval/exec execute arbitrary code",
+  "fixtures": {
+    "fail_eval_exec.py": {
+      "expected_findings": [
+        {
+          "severity": "error",
+          "line": 5,
+          "message_contains": "eval"
+        },
+        {
+          "severity": "error",
+          "line": 9,
+          "message_contains": "exec"
+        }
+      ]
+    },
+    "pass_literal_eval.py": {
+      "expected_findings": []
+    },
+    "pass_no_dynamic_eval.py": {
+      "expected_findings": []
+    }
+  }
+}

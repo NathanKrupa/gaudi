@@ -1,0 +1,36 @@
+{
+  "rule_id": "SEC-003",
+  "description": "HardcodedCredential -- credential-named identifiers must not be string literals",
+  "fixtures": {
+    "fail_hardcoded_credentials.py": {
+      "expected_findings": [
+        {
+          "severity": "error",
+          "line": 3,
+          "message_contains": "password"
+        },
+        {
+          "severity": "error",
+          "line": 4,
+          "message_contains": "api_key"
+        },
+        {
+          "severity": "error",
+          "line": 5,
+          "message_contains": "SECRET"
+        },
+        {
+          "severity": "error",
+          "line": 6,
+          "message_contains": "auth_token"
+        }
+      ]
+    },
+    "pass_credentials_from_env.py": {
+      "expected_findings": []
+    },
+    "pass_placeholder_values.py": {
+      "expected_findings": []
+    }
+  }
+}
