@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from gaudi.config import load_config
 from gaudi.core import Finding
 from gaudi.pack import Pack
 from gaudi.packs.python.context import PythonContext
@@ -22,7 +23,10 @@ class PythonPack(Pack):
         self._rules = list(ALL_RULES)
 
     def parse(self, path: Path) -> PythonContext:
-        return parse_project(path)
+        project_root = path if path.is_dir() else path.parent
+        config = load_config(project_root)
+        extra_excludes = list(config.get("exclude") or [])
+        return parse_project(path, extra_excludes=extra_excludes)
 
     def check(self, path: Path) -> list[Finding]:
         context = self.parse(path)
