@@ -165,10 +165,7 @@ def _count_branches(node: ast.If) -> int:
     """Count branches in an if/elif chain rooted at ``node``."""
     count = 1
     current = node
-    while (
-        len(current.orelse) == 1
-        and isinstance(current.orelse[0], ast.If)
-    ):
+    while len(current.orelse) == 1 and isinstance(current.orelse[0], ast.If):
         count += 1
         current = current.orelse[0]
     return count
@@ -181,8 +178,10 @@ def _walk_branched_ifs(func: ast.FunctionDef | ast.AsyncFunctionDef) -> int:
     # First pass: collect ids of If nodes that are the orelse-child of another If
     # so we don't double-count an elif as the start of a new chain.
     for node in ast.walk(func):
-        if isinstance(node, ast.If) and len(node.orelse) == 1 and isinstance(
-            node.orelse[0], ast.If
+        if (
+            isinstance(node, ast.If)
+            and len(node.orelse) == 1
+            and isinstance(node.orelse[0], ast.If)
         ):
             seen_inner.add(id(node.orelse[0]))
     for node in ast.walk(func):
@@ -286,14 +285,13 @@ def _call_is_external(call: ast.Call) -> bool:
         return True
     if isinstance(func, ast.Attribute):
         # requests.post(...), httpx.get(...), celery_app.send_task(...)
-        if (
-            isinstance(func.value, ast.Name)
-            and func.value.id in _EXTERNAL_CALL_MODULES
-        ):
+        if isinstance(func.value, ast.Name) and func.value.id in _EXTERNAL_CALL_MODULES:
             return True
-        if func.attr in _EXTERNAL_CALL_ATTRS and isinstance(
-            func.value, ast.Name
-        ) and func.value.id not in {"self", "cls"}:
+        if (
+            func.attr in _EXTERNAL_CALL_ATTRS
+            and isinstance(func.value, ast.Name)
+            and func.value.id not in {"self", "cls"}
+        ):
             return True
     return False
 
