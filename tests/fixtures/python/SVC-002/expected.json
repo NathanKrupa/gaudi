@@ -1,0 +1,21 @@
+{
+  "rule_id": "SVC-002",
+  "description": "ChattyIntegration -- a function making >= 3 HTTP calls is a chatty boundary",
+  "fixtures": {
+    "fail_chatty_integration.py": {
+      "expected_findings": [
+        {
+          "severity": "info",
+          "line": 6,
+          "message_contains": "fetch_dashboard"
+        }
+      ]
+    },
+    "pass_batched.py": {
+      "expected_findings": []
+    },
+    "pass_two_calls.py": {
+      "expected_findings": []
+    }
+  }
+}
