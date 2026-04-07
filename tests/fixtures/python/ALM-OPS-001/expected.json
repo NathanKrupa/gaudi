@@ -1,0 +1,17 @@
+{
+  "rule_id": "ALM-OPS-001",
+  "description": "MultipleHeads -- alembic migrations sharing the same down_revision",
+  "fixtures": {
+    "fail_branched_heads": {
+      "expected_findings": [
+        {
+          "severity": "error",
+          "message_contains": "'root00'"
+        }
+      ]
+    },
+    "pass_linear_chain": {
+      "expected_findings": []
+    }
+  }
+}

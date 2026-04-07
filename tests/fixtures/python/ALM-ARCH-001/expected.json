@@ -1,0 +1,36 @@
+{
+  "rule_id": "ALM-ARCH-001",
+  "description": "MigrationNoDowngrade -- alembic migration without a working downgrade function",
+  "fixtures": {
+    "fail_missing_downgrade.py": {
+      "expected_findings": [
+        {
+          "severity": "warn",
+          "message_contains": "has no downgrade path"
+        }
+      ]
+    },
+    "fail_empty_downgrade.py": {
+      "expected_findings": [
+        {
+          "severity": "warn",
+          "message_contains": "has no downgrade path"
+        }
+      ]
+    },
+    "fail_ellipsis_downgrade.py": {
+      "expected_findings": [
+        {
+          "severity": "warn",
+          "message_contains": "has no downgrade path"
+        }
+      ]
+    },
+    "pass_with_downgrade.py": {
+      "expected_findings": []
+    },
+    "pass_not_a_migration.py": {
+      "expected_findings": []
+    }
+  }
+}
