@@ -7,6 +7,8 @@ import ast
 from gaudi.core import Category, Finding, Rule, Severity
 from gaudi.packs.python.context import PythonContext
 
+_LIBRARY = "anthropic"
+
 # Methods on the anthropic client that make API calls
 _API_METHODS = frozenset({"create", "stream"})
 
@@ -59,7 +61,7 @@ class HardcodedModel(Rule):
     code = "LLM-ARCH-001"
     severity = Severity.WARN
     category = Category.ARCHITECTURE
-    requires_library = "anthropic"
+    requires_library = _LIBRARY
     message_template = "Hardcoded model name in API call at line {line}"
     recommendation_template = (
         "Extract model names to a configuration constant or environment variable. "
@@ -69,7 +71,7 @@ class HardcodedModel(Rule):
     def check(self, context: PythonContext) -> list[Finding]:
         findings = []
         for f in context.files:
-            if not f.has_import("anthropic"):
+            if not f.has_import(_LIBRARY):
                 continue
             tree = f.ast_tree
             if tree is None:
@@ -92,7 +94,7 @@ class BareAPICall(Rule):
     code = "LLM-ERR-001"
     severity = Severity.WARN
     category = Category.ERROR_HANDLING
-    requires_library = "anthropic"
+    requires_library = _LIBRARY
     message_template = "Anthropic API call without error handling at line {line}"
     recommendation_template = (
         "Wrap anthropic API calls in try/except to handle APIError, RateLimitError, "
@@ -102,7 +104,7 @@ class BareAPICall(Rule):
     def check(self, context: PythonContext) -> list[Finding]:
         findings = []
         for f in context.files:
-            if not f.has_import("anthropic"):
+            if not f.has_import(_LIBRARY):
                 continue
             tree = f.ast_tree
             if tree is None:
@@ -124,7 +126,7 @@ class NoTokenCounting(Rule):
     code = "LLM-SCALE-001"
     severity = Severity.WARN
     category = Category.SCALABILITY
-    requires_library = "anthropic"
+    requires_library = _LIBRARY
     message_template = "Anthropic API call without token counting in {file}"
     recommendation_template = (
         "Check prompt token length before making API calls. Without token counting, "
@@ -134,7 +136,7 @@ class NoTokenCounting(Rule):
     def check(self, context: PythonContext) -> list[Finding]:
         findings = []
         for f in context.files:
-            if not f.has_import("anthropic"):
+            if not f.has_import(_LIBRARY):
                 continue
             tree = f.ast_tree
             if tree is None:
