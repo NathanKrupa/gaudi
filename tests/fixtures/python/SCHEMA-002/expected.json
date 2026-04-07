@@ -1,0 +1,20 @@
+{
+  "rule_id": "SCHEMA-002",
+  "description": "ColumnSprawl -- too many nullable columns suggests the table covers multiple concerns",
+  "fixtures": {
+    "fail_many_nullable.py": {
+      "expected_findings": [
+        {
+          "severity": "warn",
+          "message_contains": "nullable columns"
+        }
+      ]
+    },
+    "pass_few_nullable.py": {
+      "expected_findings": []
+    },
+    "pass_below_min_columns.py": {
+      "expected_findings": []
+    }
+  }
+}

@@ -1,0 +1,31 @@
+{
+  "rule_id": "SCHEMA-003",
+  "description": "NoStringLengthLimit -- TextField on a short-name column should be a CharField",
+  "fixtures": {
+    "fail_textfield_short_names.py": {
+      "expected_findings": [
+        {
+          "severity": "info",
+          "line": 7,
+          "message_contains": "name"
+        },
+        {
+          "severity": "info",
+          "line": 8,
+          "message_contains": "sku"
+        },
+        {
+          "severity": "info",
+          "line": 9,
+          "message_contains": "status"
+        }
+      ]
+    },
+    "pass_charfield_short_names.py": {
+      "expected_findings": []
+    },
+    "pass_textfield_long_form.py": {
+      "expected_findings": []
+    }
+  }
+}
