@@ -35,7 +35,7 @@ Gaudi is the discipline layer. It encodes architectural best practices into stru
 ## Installation
 
 ```bash
-pip install gaudi-linter  # not yet published — coming soon
+pip install gaudi-linter
 ```
 
 ## Quick Start
@@ -164,7 +164,7 @@ Gaudi is named after Antoni Gaudi, the architect of La Sagrada Familia. He built
 
 This tool embodies that philosophy: **validate the architecture before you build.** The earlier you catch a structural flaw, the less it costs to fix. And with AI agents writing increasingly large portions of our codebases, we need automated architectural discipline more than ever.
 
-The first principles that govern Gaudi — fourteen numbered claims in three pillars (Truthfulness, Economy, Cost-honesty) — are written down in [docs/principles.md](docs/principles.md). They are intended to be portable: any project can adopt them as the doctrine its design decisions appeal to.
+The first principles that govern Gaudi — fourteen numbered claims in three pillars (Truthfulness, Economy, Cost-honesty) — are written down in [docs/principles.md](https://github.com/NathanKrupa/gaudi/blob/main/docs/principles.md). They are intended to be portable: any project can adopt them as the doctrine its design decisions appeal to.
 
 ## Contributing
 
@@ -174,11 +174,11 @@ Contributions welcome. The highest-impact contributions right now:
 2. **Code smell detection** — implementing Fowler's 24 code smells programmatically
 3. **CI/CD integration examples** — GitHub Actions, GitLab CI, etc.
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for details.
+See [CONTRIBUTING.md](https://github.com/NathanKrupa/gaudi/blob/main/CONTRIBUTING.md) for details.
 
 ## License
 
-MIT License. See [LICENSE](LICENSE) for details.
+MIT License. See [LICENSE](https://github.com/NathanKrupa/gaudi/blob/main/LICENSE) for details.
 
 ---
 

@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=68.0", "setuptools-scm>=8.0"]
+requires = ["setuptools>=77.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -7,7 +7,8 @@ name = "gaudi-linter"
 version = "0.1.0"
 description = "Not just structurally sound. Beautiful. An architecture linter for Python projects."
 readme = "README.md"
-license = {text = "MIT"}
+license = "MIT"
+license-files = ["LICENSE"]
 requires-python = ">=3.10"
 authors = [
     {name = "Nathan Krupa", email = "54715560+NathanKrupa@users.noreply.github.com"},
@@ -16,7 +17,6 @@ keywords = ["linter", "architecture", "database", "schema", "ai", "claude", "cod
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
-    "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
