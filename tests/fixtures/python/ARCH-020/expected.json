@@ -1,0 +1,21 @@
+{
+  "rule_id": "ARCH-020",
+  "description": "EnvLeakage -- class methods reading os.getenv directly",
+  "fixtures": {
+    "fail_class_reads_env.py": {
+      "expected_findings": [
+        {
+          "severity": "warn",
+          "line": 8,
+          "message_contains": "fetch"
+        }
+      ]
+    },
+    "pass_class_takes_config.py": {
+      "expected_findings": []
+    },
+    "pass_module_function_reads_env.py": {
+      "expected_findings": []
+    }
+  }
+}

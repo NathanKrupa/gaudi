@@ -1,0 +1,20 @@
+{
+  "rule_id": "ARCH-013",
+  "description": "FatScript -- entry point with too much business logic",
+  "fixtures": {
+    "fail_fat_script.py": {
+      "expected_findings": [
+        {
+          "severity": "warn",
+          "message_contains": "main"
+        }
+      ]
+    },
+    "pass_thin_entry_point.py": {
+      "expected_findings": []
+    },
+    "pass_not_an_entry_point.py": {
+      "expected_findings": []
+    }
+  }
+}

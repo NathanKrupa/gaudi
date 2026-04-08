@@ -1,0 +1,31 @@
+{
+  "rule_id": "ARCH-010",
+  "description": "ImportDirectionViolation -- inner file imports from outer layer",
+  "fixtures": {
+    "fail_imports_cli.py": {
+      "expected_findings": [
+        {
+          "severity": "error",
+          "line": 3,
+          "message_contains": "cli.main"
+        },
+        {
+          "severity": "error",
+          "line": 4,
+          "message_contains": "views.dashboard"
+        },
+        {
+          "severity": "error",
+          "line": 5,
+          "message_contains": "scripts.bootstrap"
+        }
+      ]
+    },
+    "pass_inner_only_imports.py": {
+      "expected_findings": []
+    },
+    "pass_stdlib_imports.py": {
+      "expected_findings": []
+    }
+  }
+}
