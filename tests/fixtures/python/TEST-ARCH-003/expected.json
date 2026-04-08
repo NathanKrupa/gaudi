@@ -1,0 +1,18 @@
+{
+  "rule_id": "TEST-ARCH-003",
+  "description": "TestInProductionCode -- assert statements used as validation in non-test code",
+  "fixtures": {
+    "fail_validation_assert.py": {
+      "expected_findings": [
+        {
+          "severity": "warn",
+          "line": 5,
+          "message_contains": "assert"
+        }
+      ]
+    },
+    "pass_proper_validation.py": {
+      "expected_findings": []
+    }
+  }
+}

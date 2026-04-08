@@ -1,0 +1,30 @@
+{
+  "rule_id": "TEST-ARCH-001",
+  "description": "OverMocking -- a test with 5+ @patch decorators is testing mocks, not code",
+  "fixtures": {
+    "fail_test_overmocked.py": {
+      "expected_findings": [
+        {
+          "severity": "warn",
+          "line": 14,
+          "message_contains": "Over-mocked test"
+        }
+      ]
+    },
+    "fail_boundary_test_five_patches.py": {
+      "expected_findings": [
+        {
+          "severity": "warn",
+          "line": 13,
+          "message_contains": "Over-mocked test"
+        }
+      ]
+    },
+    "pass_boundary_test_four_patches.py": {
+      "expected_findings": []
+    },
+    "pass_test_one_mock.py": {
+      "expected_findings": []
+    }
+  }
+}

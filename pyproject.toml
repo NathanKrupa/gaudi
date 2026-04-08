@@ -67,6 +67,7 @@ line-length = 100
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+norecursedirs = ["fixtures"]
 
 [tool.bandit]
 exclude_dirs = ["tests"]

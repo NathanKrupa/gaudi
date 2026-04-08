@@ -1,0 +1,27 @@
+{
+  "rule_id": "TEST-STRUCT-002",
+  "description": "FixtureDependencyDepth -- pytest fixture depending on 3+ other fixtures",
+  "fixtures": {
+    "fail_conftest_deep.py": {
+      "expected_findings": [
+        {
+          "severity": "info",
+          "line": 27,
+          "message_contains": "composed"
+        }
+      ]
+    },
+    "fail_boundary_conftest_three.py": {
+      "expected_findings": [
+        {
+          "severity": "info",
+          "line": 22,
+          "message_contains": "composed"
+        }
+      ]
+    },
+    "pass_boundary_conftest_two.py": {
+      "expected_findings": []
+    }
+  }
+}
