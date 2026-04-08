@@ -1,0 +1,18 @@
+{
+  "rule_id": "API-004",
+  "description": "NoErrorResponseSchema -- FastAPI route has response_model but no responses kwarg",
+  "fixtures": {
+    "fail_response_model_no_responses.py": {
+      "expected_findings": [
+        {
+          "severity": "info",
+          "line": 14,
+          "message_contains": "responses"
+        }
+      ]
+    },
+    "pass_with_responses.py": {
+      "expected_findings": []
+    }
+  }
+}
