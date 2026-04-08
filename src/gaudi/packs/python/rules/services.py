@@ -258,9 +258,7 @@ class SharedDatabasePattern(Rule):
                     continue
                 for alias in node.names:
                     key = (owner, alias.name)
-                    usages.setdefault(key, []).append(
-                        (fi.relative_path, node.lineno, importer_app)
-                    )
+                    usages.setdefault(key, []).append((fi.relative_path, node.lineno, importer_app))
 
         findings: list[Finding] = []
         for (owner, model), records in usages.items():
