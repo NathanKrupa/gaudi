@@ -54,7 +54,15 @@ def _function_mutates(func: ast.FunctionDef | ast.AsyncFunctionDef, names: set[s
                         return target.value.id
         # name.append(...), name.update(...), name.add(...), name.pop(...)
         if isinstance(child, ast.Call) and isinstance(child.func, ast.Attribute):
-            if child.func.attr in {"append", "extend", "update", "add", "pop", "setdefault", "clear"}:
+            if child.func.attr in {
+                "append",
+                "extend",
+                "update",
+                "add",
+                "pop",
+                "setdefault",
+                "clear",
+            }:
                 if isinstance(child.func.value, ast.Name) and child.func.value.id in names:
                     return child.func.value.id
     return None
@@ -199,7 +207,9 @@ def _collect_async_with_call_lines(tree: ast.Module) -> set[int]:
 # confused -- one of the two will block the other.
 # ---------------------------------------------------------------
 
-_REQUESTS_METHODS = frozenset({"get", "post", "put", "patch", "delete", "head", "options", "request"})
+_REQUESTS_METHODS = frozenset(
+    {"get", "post", "put", "patch", "delete", "head", "options", "request"}
+)
 
 
 class MixedSyncAsyncModule(Rule):
@@ -212,9 +222,7 @@ class MixedSyncAsyncModule(Rule):
     code = "ASYNC-003"
     severity = Severity.WARN
     category = Category.CONCURRENCY
-    message_template = (
-        "Module mixes async def with sync requests.{method}() at line {line}"
-    )
+    message_template = "Module mixes async def with sync requests.{method}() at line {line}"
     recommendation_template = (
         "Pick one: use httpx.AsyncClient/aiohttp throughout the module, or remove the"
         " async def. Sync HTTP inside an async module blocks the event loop."
