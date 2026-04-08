@@ -1,0 +1,17 @@
+{
+  "rule_id": "STRUCT-013",
+  "description": "NoLockFile -- project must ship a dependency lock file",
+  "fixtures": {
+    "fail_no_lock/": {
+      "expected_findings": [
+        {
+          "severity": "info",
+          "message_contains": "lock file"
+        }
+      ]
+    },
+    "pass_with_lock/": {
+      "expected_findings": []
+    }
+  }
+}

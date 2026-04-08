@@ -143,7 +143,14 @@ class TestMultiFileFixtures:
             assert not (project_root / "fail_branched").exists(), (
                 "directory fixture wrapper should not appear in temp project"
             )
-            assert (project_root / "pyproject.toml").exists()
+            # Directory fixtures own their project shape -- the runner does NOT
+            # synthesize a stub pyproject.toml for them. Single-file fixtures
+            # still get one (covered by test_fixture_as_project_single_file).
+            assert not (project_root / "pyproject.toml").exists(), (
+                "directory fixtures must own their project shape; runner must "
+                "not inject stub files (this is what makes STRUCT-011/013 fail "
+                "fixtures expressible)"
+            )
 
     def test_mixed_single_and_multi_in_one_rule(self, tmp_path: Path) -> None:
         rule_dir = _write_rule_dir(

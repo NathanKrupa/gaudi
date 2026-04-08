@@ -1,0 +1,20 @@
+{
+  "rule_id": "STRUCT-021",
+  "description": "MagicStrings -- repeated string literals should be named constants",
+  "fixtures": {
+    "fail_repeated_literal.py": {
+      "expected_findings": [
+        {
+          "severity": "warn",
+          "message_contains": "approved"
+        }
+      ]
+    },
+    "pass_named_constant.py": {
+      "expected_findings": []
+    },
+    "pass_two_uses.py": {
+      "expected_findings": []
+    }
+  }
+}

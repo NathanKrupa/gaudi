@@ -124,26 +124,33 @@ def fixture_as_project(case: FixtureCase) -> Iterator[Path]:
 
     * **Single file** (`fail_xxx.py` / `pass_xxx.py`): copied to the temp project
       root with the `fail_`/`pass_` prefix stripped, so module names look ordinary
-      to rules that key on filenames.
+      to rules that key on filenames. The runner synthesizes a stub `pyproject.toml`
+      and empty `requirements-lock.txt` so unrelated infrastructure rules don't
+      fire on the bare temp project.
     * **Multi-file directory** (`fail_xxx/` / `pass_xxx/`): the entire tree under
       the fixture directory is copied verbatim into the temp project root,
       preserving subdirectories. This lets cross-file rules (alembic head
       divergence, layering, circular imports, ...) be specified declaratively.
+      Directory fixtures own their project shape -- the runner does NOT inject
+      stub files. This is what makes it possible to write fail fixtures for rules
+      whose subject is the *absence* of a project file (e.g. STRUCT-011 missing
+      pyproject.toml, STRUCT-013 missing lock file). If a directory fixture wants
+      a pyproject.toml or lock file, it must include one explicitly.
 
     Many rules deliberately skip paths containing 'tests' or 'fixtures', so
     fixtures cannot be analyzed in place. The temp project gives the engine a
-    realistic root with a `pyproject.toml`.
+    realistic root.
     """
     with tempfile.TemporaryDirectory() as tmpdir:
         tmppath = Path(tmpdir)
-        (tmppath / "pyproject.toml").write_text(_PYPROJECT_STUB, encoding="utf-8")
-        (tmppath / "requirements-lock.txt").write_text("", encoding="utf-8")
         if case.is_directory:
-            # Copy the directory's contents (not the directory itself) into the
-            # temp root, so paths inside the fixture (e.g. alembic/versions/a.py)
-            # land at the project root.
+            # The directory fixture defines its own project shape -- copy verbatim
+            # without synthesizing pyproject.toml / lock files. This is required
+            # for rules that test for the absence of these files.
             shutil.copytree(case.path, tmppath, dirs_exist_ok=True)
         else:
+            (tmppath / "pyproject.toml").write_text(_PYPROJECT_STUB, encoding="utf-8")
+            (tmppath / "requirements-lock.txt").write_text("", encoding="utf-8")
             target_name = _strip_fixture_prefix(case.name)
             shutil.copy(case.path, tmppath / target_name)
         yield tmppath

@@ -1,0 +1,17 @@
+{
+  "rule_id": "STRUCT-011",
+  "description": "MissingPyproject -- project must ship a pyproject.toml",
+  "fixtures": {
+    "fail_no_pyproject/": {
+      "expected_findings": [
+        {
+          "severity": "warn",
+          "message_contains": "pyproject.toml"
+        }
+      ]
+    },
+    "pass_with_pyproject/": {
+      "expected_findings": []
+    }
+  }
+}
