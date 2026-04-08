@@ -1,0 +1,18 @@
+{
+  "rule_id": "SMELL-016",
+  "description": "TemporaryField -- attributes set only in one non-init method",
+  "fixtures": {
+    "fail_temporary_fields.py": {
+      "expected_findings": [
+        {
+          "severity": "warn",
+          "line": 4,
+          "message_contains": "Calculator"
+        }
+      ]
+    },
+    "pass_init_attrs.py": {
+      "expected_findings": []
+    }
+  }
+}

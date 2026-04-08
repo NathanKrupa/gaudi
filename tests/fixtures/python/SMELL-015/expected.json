@@ -1,0 +1,27 @@
+{
+  "rule_id": "SMELL-015",
+  "description": "SpeculativeGenerality -- premature ABCs or unused None-default params",
+  "fixtures": {
+    "fail_unused_params.py": {
+      "expected_findings": [
+        {
+          "severity": "warn",
+          "line": 4,
+          "message_contains": "unused"
+        }
+      ]
+    },
+    "fail_lonely_abstract.py": {
+      "expected_findings": [
+        {
+          "severity": "warn",
+          "line": 1,
+          "message_contains": "Storage"
+        }
+      ]
+    },
+    "pass_used_params.py": {
+      "expected_findings": []
+    }
+  }
+}

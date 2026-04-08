@@ -1,0 +1,18 @@
+{
+  "rule_id": "SMELL-024",
+  "description": "Comments -- function with excessive comment density",
+  "fixtures": {
+    "fail_comment_heavy.py": {
+      "expected_findings": [
+        {
+          "severity": "info",
+          "line": 9,
+          "message_contains": "total"
+        }
+      ]
+    },
+    "pass_clean_code.py": {
+      "expected_findings": []
+    }
+  }
+}
