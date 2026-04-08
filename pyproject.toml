@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "gaudi-linter"
-version = "0.1.0"
+version = "0.1.1"
 description = "Not just structurally sound. Beautiful. An architecture linter for Python projects."
 readme = "README.md"
 license = "MIT"
