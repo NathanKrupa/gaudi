@@ -1,0 +1,18 @@
+{
+  "rule_id": "SMELL-002",
+  "description": "DuplicatedCode -- two functions with identical normalized structure",
+  "fixtures": {
+    "fail_duplicate_funcs.py": {
+      "expected_findings": [
+        {
+          "severity": "warn",
+          "line": 1,
+          "message_contains": "total_"
+        }
+      ]
+    },
+    "pass_distinct_funcs.py": {
+      "expected_findings": []
+    }
+  }
+}

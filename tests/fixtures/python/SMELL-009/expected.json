@@ -1,0 +1,18 @@
+{
+  "rule_id": "SMELL-009",
+  "description": "FeatureEnvy -- method touches another object more than self",
+  "fixtures": {
+    "fail_feature_envy.py": {
+      "expected_findings": [
+        {
+          "severity": "warn",
+          "line": 8,
+          "message_contains": "get_customer_summary"
+        }
+      ]
+    },
+    "pass_uses_self.py": {
+      "expected_findings": []
+    }
+  }
+}
