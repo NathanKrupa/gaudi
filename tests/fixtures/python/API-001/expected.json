@@ -1,0 +1,18 @@
+{
+  "rule_id": "API-001",
+  "description": "MissingPagination -- list endpoint returns unbounded queryset",
+  "fixtures": {
+    "fail_returns_all_no_pagination.py": {
+      "expected_findings": [
+        {
+          "severity": "warn",
+          "line": 12,
+          "message_contains": "list_users"
+        }
+      ]
+    },
+    "pass_paginated.py": {
+      "expected_findings": []
+    }
+  }
+}

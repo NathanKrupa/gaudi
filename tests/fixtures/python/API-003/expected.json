@@ -1,0 +1,18 @@
+{
+  "rule_id": "API-003",
+  "description": "LeakingInternalID -- URL pattern exposes integer PK as sole identifier",
+  "fixtures": {
+    "fail_int_pk_url.py": {
+      "expected_findings": [
+        {
+          "severity": "info",
+          "line": 8,
+          "message_contains": "int:pk"
+        }
+      ]
+    },
+    "pass_uuid_pk_url.py": {
+      "expected_findings": []
+    }
+  }
+}

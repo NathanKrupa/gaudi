@@ -1,0 +1,18 @@
+{
+  "rule_id": "API-002",
+  "description": "InconsistentReturnType -- endpoint mixes dict literal with Response object",
+  "fixtures": {
+    "fail_dict_then_response.py": {
+      "expected_findings": [
+        {
+          "severity": "warn",
+          "line": 10,
+          "message_contains": "get_item"
+        }
+      ]
+    },
+    "pass_consistent_dict.py": {
+      "expected_findings": []
+    }
+  }
+}

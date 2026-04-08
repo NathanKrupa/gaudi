@@ -180,6 +180,20 @@ modules, and missing graceful shutdown.
 | ASYNC-003 | MixedSyncAsyncModule             | Module mixes async def with sync requests calls | FWDOCS (FastAPI)      |
 | ASYNC-004 | NoGracefulShutdown               | asyncio.run() with no signal handler registered | Python asyncio docs   |
 
+### API Design Rules (API) -- Source: REST/OpenAPI/OWASP
+
+Rules covering common API design flaws that span Django, FastAPI, and Flask.
+SVC-003 (NoAPIVersioning) and FAPI-ARCH-001 (NoResponseModel) cover the
+classic mistakes; this family adds pagination, return-type consistency, ID
+leakage, and undocumented error responses.
+
+| Code     | Class Name              | Pattern / Anti-Pattern                              | Source                |
+|----------|-------------------------|-----------------------------------------------------|-----------------------|
+| API-001  | MissingPagination       | List endpoint returns `.all()`/`.filter()` unsliced | REST best practices   |
+| API-002  | InconsistentReturnType  | Endpoint mixes dict literal with Response object    | REST best practices   |
+| API-003  | LeakingInternalID       | URL pattern exposes `<int:pk>` / int PK             | OWASP API (BOLA)      |
+| API-004  | NoErrorResponseSchema   | FastAPI `response_model=` with no `responses=`      | OpenAPI specification |
+
 ### Dependency Graph Rules (DEP) -- Source: MARTIN
 
 Rules mined from *Clean Architecture*. Module-level coupling metrics that
