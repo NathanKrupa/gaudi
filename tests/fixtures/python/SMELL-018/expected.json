@@ -1,0 +1,18 @@
+{
+  "rule_id": "SMELL-018",
+  "description": "MiddleMan -- class mostly delegates to another",
+  "fixtures": {
+    "fail_delegating_proxy.py": {
+      "expected_findings": [
+        {
+          "severity": "warn",
+          "line": 4,
+          "message_contains": "ServiceProxy"
+        }
+      ]
+    },
+    "pass_real_class.py": {
+      "expected_findings": []
+    }
+  }
+}

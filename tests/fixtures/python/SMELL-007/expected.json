@@ -1,0 +1,18 @@
+{
+  "rule_id": "SMELL-007",
+  "description": "DivergentChange -- class methods touch disjoint attribute sets",
+  "fixtures": {
+    "fail_disjoint_groups.py": {
+      "expected_findings": [
+        {
+          "severity": "warn",
+          "line": 4,
+          "message_contains": "UserAndReport"
+        }
+      ]
+    },
+    "pass_cohesive.py": {
+      "expected_findings": []
+    }
+  }
+}

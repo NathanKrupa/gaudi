@@ -1,0 +1,18 @@
+{
+  "rule_id": "SMELL-017",
+  "description": "MessageChains -- attribute chain depth >= 5",
+  "fixtures": {
+    "fail_long_chain.py": {
+      "expected_findings": [
+        {
+          "severity": "info",
+          "line": 5,
+          "message_contains": "depth"
+        }
+      ]
+    },
+    "pass_short_chain.py": {
+      "expected_findings": []
+    }
+  }
+}

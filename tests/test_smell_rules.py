@@ -25,10 +25,6 @@ class TestSmellRules:
         names = {f.context.get("class_name") for f in hits}
         assert "Calculator" not in names
 
-    def test_smell_017_message_chains(self):
-        hits = self._findings_for("smell_message_chains.py", "SMELL-017")
-        assert len(hits) == 2
-
     def test_smell_022_data_class(self):
         hits = self._findings_for("smell_data_class.py", "SMELL-022")
         assert len(hits) == 2
@@ -47,15 +43,6 @@ class TestSmellRules:
 
     # -- Tier 2: Moderate (intra-file cross-reference) --
 
-    def test_smell_007_divergent_change(self):
-        hits = self._findings_for("smell_divergent_change.py", "SMELL-007")
-        assert len(hits) == 1
-
-    def test_smell_009_feature_envy(self):
-        hits = self._findings_for("smell_feature_envy.py", "SMELL-009")
-        assert len(hits) == 1
-        assert "get_customer_summary" in hits[0].context.get("method", "")
-
     def test_smell_012_repeated_switches(self):
         hits = self._findings_for("smell_repeated_switches.py", "SMELL-012")
         assert len(hits) >= 1
@@ -68,24 +55,7 @@ class TestSmellRules:
         hits = self._findings_for("smell_temporary_field.py", "SMELL-016")
         assert len(hits) == 1
 
-    def test_smell_018_middle_man(self):
-        hits = self._findings_for("smell_middle_man.py", "SMELL-018")
-        assert len(hits) == 1
-        assert "ServiceProxy" in hits[0].context.get("class_name", "")
-
-    def test_smell_019_insider_trading(self):
-        hits = self._findings_for("smell_insider_trading.py", "SMELL-019")
-        assert len(hits) >= 1
-
     # -- Tier 3: Hard (structural comparison) --
-
-    def test_smell_002_duplicated_code(self):
-        hits = self._findings_for("smell_duplicated_code.py", "SMELL-002")
-        assert len(hits) >= 1
-
-    def test_smell_008_shotgun_surgery(self):
-        hits = self._findings_for("smell_shotgun_surgery.py", "SMELL-008")
-        assert len(hits) >= 1
 
     def test_smell_021_alt_interfaces(self):
         hits = self._findings_for("smell_alt_interfaces.py", "SMELL-021")

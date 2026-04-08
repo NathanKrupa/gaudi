@@ -1,0 +1,18 @@
+{
+  "rule_id": "SMELL-008",
+  "description": "ShotgunSurgery -- module-level name used in 4+ functions",
+  "fixtures": {
+    "fail_shared_global.py": {
+      "expected_findings": [
+        {
+          "severity": "warn",
+          "line": 1,
+          "message_contains": "CONFIG"
+        }
+      ]
+    },
+    "pass_localized.py": {
+      "expected_findings": []
+    }
+  }
+}

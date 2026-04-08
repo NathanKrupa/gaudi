@@ -1,0 +1,18 @@
+{
+  "rule_id": "SMELL-019",
+  "description": "InsiderTrading -- method writes 2+ attributes on another object",
+  "fixtures": {
+    "fail_writes_to_other.py": {
+      "expected_findings": [
+        {
+          "severity": "warn",
+          "line": 5,
+          "message_contains": "finalize"
+        }
+      ]
+    },
+    "pass_asks_object.py": {
+      "expected_findings": []
+    }
+  }
+}
