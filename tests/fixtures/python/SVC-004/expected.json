@@ -1,0 +1,24 @@
+{
+  "rule_id": "SVC-004",
+  "description": "SharedDatabasePattern -- a model imported by 2+ external Django apps",
+  "fixtures": {
+    "fail_shared_user_model/": {
+      "expected_findings": [
+        {
+          "severity": "warn",
+          "message_contains": "User"
+        },
+        {
+          "severity": "warn",
+          "message_contains": "User"
+        }
+      ]
+    },
+    "pass_single_owner/": {
+      "expected_findings": []
+    },
+    "pass_owning_app_self_use/": {
+      "expected_findings": []
+    }
+  }
+}

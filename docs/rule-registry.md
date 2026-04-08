@@ -257,14 +257,9 @@ anti-patterns detectable within a single Python project.
 | SVC-001   | HardcodedServiceURL   | Service discovery (hardcoded endpoints)      | Ch. 5     |
 | SVC-002   | ChattyIntegration     | Chatty service boundary (N+1 API calls)      | Ch. 4     |
 | SVC-003   | NoAPIVersioning       | API versioning absence                       | Ch. 7     |
-
-### Newman Mining Queue (planned, not yet implemented)
-
-| Planned Code | Newman Pattern                            | Chapter | Detectability | Notes                                    |
-|--------------|-------------------------------------------|---------|---------------|------------------------------------------|
-| SVC-???      | Shared database across services           | Ch. 4   | Low           | Requires multi-repo or monorepo analysis |
-| SVC-???      | Synchronous coupling chains               | Ch. 4   | Medium        | Service-to-service sync HTTP calls       |
-| SVC-???      | Missing contract tests                    | Ch. 7   | Medium        | API routes without corresponding tests   |
+| SVC-004   | SharedDatabasePattern | Shared database coupling across Django apps  | Ch. 4     |
+| SVC-005   | SynchronousCouplingChain | Sync fan-out to multiple upstream services | Ch. 4     |
+| SVC-006   | MissingContractTests  | HTTP client module without paired test       | Ch. 7     |
 
 ### Ousterhout -- *A Philosophy of Software Design*
 

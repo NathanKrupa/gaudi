@@ -1,0 +1,33 @@
+{
+  "rule_id": "SVC-005",
+  "description": "SynchronousCouplingChain -- a sync function fanning out to 2+ distinct services",
+  "fixtures": {
+    "fail_sync_chain_two_services.py": {
+      "expected_findings": [
+        {
+          "severity": "warn",
+          "line": 6,
+          "message_contains": "fetch_user_dashboard"
+        }
+      ]
+    },
+    "fail_sync_chain_three_services.py": {
+      "expected_findings": [
+        {
+          "severity": "warn",
+          "line": 6,
+          "message_contains": "render_order_page"
+        }
+      ]
+    },
+    "pass_single_service.py": {
+      "expected_findings": []
+    },
+    "pass_async_parallel.py": {
+      "expected_findings": []
+    },
+    "pass_single_call.py": {
+      "expected_findings": []
+    }
+  }
+}
