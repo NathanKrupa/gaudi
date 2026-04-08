@@ -103,9 +103,8 @@ Show people how to use Gaudí in their pipelines:
 - New rules use the per-rule fixture corpus under `tests/fixtures/python/<RULE-ID>/`
   with an `expected.json` rubric (see [docs/testing-fixtures.md](docs/testing-fixtures.md))
 - Run the full suite with `pytest`
-- Run `gaudi-fixture-coverage` to see which rules still lack a fixture
-  directory (CI runs this in warn-mode today and will become strict once the
-  migration backlog is drained)
+- Run `gaudi-fixture-coverage --strict` — every rule must have a complete
+  fixture directory; CI enforces this
 - CI enforces a minimum coverage threshold
 
 ## Pull Request Process
