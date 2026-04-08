@@ -1,0 +1,26 @@
+{
+  "rule_id": "STAB-005",
+  "description": "BlockingInAsync -- blocking calls inside an async function freeze the event loop",
+  "fixtures": {
+    "fail_blocking_in_async.py": {
+      "expected_findings": [
+        {
+          "severity": "error",
+          "line": 9,
+          "message_contains": "time.sleep"
+        },
+        {
+          "severity": "error",
+          "line": 10,
+          "message_contains": "requests.get"
+        }
+      ]
+    },
+    "pass_async_alternatives.py": {
+      "expected_findings": []
+    },
+    "pass_blocking_outside_async.py": {
+      "expected_findings": []
+    }
+  }
+}

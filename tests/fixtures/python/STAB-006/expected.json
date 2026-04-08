@@ -1,0 +1,31 @@
+{
+  "rule_id": "STAB-006",
+  "description": "UnmanagedResource -- resources must be managed by a context manager",
+  "fixtures": {
+    "fail_unmanaged_open.py": {
+      "expected_findings": [
+        {
+          "severity": "warn",
+          "line": 7,
+          "message_contains": "open"
+        },
+        {
+          "severity": "warn",
+          "line": 14,
+          "message_contains": "open"
+        },
+        {
+          "severity": "warn",
+          "line": 20,
+          "message_contains": "Session"
+        }
+      ]
+    },
+    "pass_with_block.py": {
+      "expected_findings": []
+    },
+    "pass_session_yield_dependency.py": {
+      "expected_findings": []
+    }
+  }
+}

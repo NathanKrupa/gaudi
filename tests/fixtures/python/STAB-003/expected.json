@@ -1,0 +1,26 @@
+{
+  "rule_id": "STAB-003",
+  "description": "RetryWithoutBackoff -- retry policies must declare backoff",
+  "fixtures": {
+    "fail_retry_no_backoff.py": {
+      "expected_findings": [
+        {
+          "severity": "warn",
+          "line": 7,
+          "message_contains": "backoff"
+        },
+        {
+          "severity": "warn",
+          "line": 13,
+          "message_contains": "backoff"
+        }
+      ]
+    },
+    "pass_retry_with_backoff.py": {
+      "expected_findings": []
+    },
+    "pass_unrelated_retry.py": {
+      "expected_findings": []
+    }
+  }
+}

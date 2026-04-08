@@ -1,0 +1,21 @@
+{
+  "rule_id": "STAB-007",
+  "description": "UnboundedThreadPool -- ThreadPoolExecutor must declare max_workers",
+  "fixtures": {
+    "fail_unbounded_pool.py": {
+      "expected_findings": [
+        {
+          "severity": "warn",
+          "line": 7,
+          "message_contains": "max_workers"
+        }
+      ]
+    },
+    "pass_bounded_pool.py": {
+      "expected_findings": []
+    },
+    "pass_positional_max.py": {
+      "expected_findings": []
+    }
+  }
+}
