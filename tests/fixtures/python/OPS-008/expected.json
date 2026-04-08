@@ -1,0 +1,29 @@
+{
+  "rule_id": "OPS-008",
+  "description": "HardcodedPortOrHost -- service module binds literal host/port",
+  "fixtures": {
+    "fail_app_run_host_port.py": {
+      "expected_findings": [
+        {
+          "severity": "warn",
+          "line": 9,
+          "message_contains": "host"
+        },
+        {
+          "severity": "warn",
+          "line": 9,
+          "message_contains": "port"
+        }
+      ]
+    },
+    "pass_env_lookup.py": {
+      "expected_findings": []
+    },
+    "pass_in_config_module": {
+      "expected_findings": []
+    },
+    "pass_in_test": {
+      "expected_findings": []
+    }
+  }
+}
