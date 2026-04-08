@@ -6,7 +6,7 @@
       "expected_findings": [
         {
           "severity": "warn",
-          "line": 10,
+          "line": 12,
           "message_contains": "list_users"
         }
       ]
