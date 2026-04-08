@@ -1,0 +1,20 @@
+{
+  "rule_id": "SVC-006",
+  "description": "MissingContractTests -- HTTP client module without a paired test file",
+  "fixtures": {
+    "fail_no_tests/": {
+      "expected_findings": [
+        {
+          "severity": "info",
+          "message_contains": "payment_client"
+        }
+      ]
+    },
+    "pass_with_tests/": {
+      "expected_findings": []
+    },
+    "pass_no_external_calls/": {
+      "expected_findings": []
+    }
+  }
+}
