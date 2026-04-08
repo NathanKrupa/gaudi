@@ -5,8 +5,7 @@ from abc import ABC, abstractmethod
 
 class Storage(ABC):
     @abstractmethod
-    def save(self, item):
-        ...
+    def save(self, item): ...
 
 
 class FileStorage(Storage):
