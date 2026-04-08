@@ -157,4 +157,82 @@ class DockerfileAntiPattern(Rule):
         return findings
 
 
-DOCKERFILE_RULES: tuple[Rule, ...] = (DockerfileAntiPattern(),)
+# ---------------------------------------------------------------
+# OPS-007  NoDockerignore
+# ---------------------------------------------------------------
+
+
+class NoDockerignore(Rule):
+    """Detect projects that have a Dockerfile but no .dockerignore.
+
+    Without ``.dockerignore``, every ``COPY .`` ships the entire build context
+    to the daemon -- ``.git``, virtualenvs, ``__pycache__``, secrets, test
+    fixtures, the lot. Image builds get slower and leakier with every
+    untracked file added.
+
+    Principles: #6 (Configuration is a boundary, not a literal),
+    #14 (Build pipelines are part of the architecture).
+    Source: Docker Best Practices.
+    """
+
+    code = "OPS-007"
+    severity = Severity.INFO
+    category = Category.OPERATIONS
+    message_template = "Project has Dockerfile but no .dockerignore"
+    recommendation_template = (
+        "Add .dockerignore at the project root to keep .git, venv,"
+        " __pycache__, tests, and secrets out of the build context."
+        " Without it, every COPY . sends megabytes of noise to the daemon"
+        " and risks leaking files into the image."
+    )
+
+    def check(self, context: OpsContext) -> list[Finding]:
+        if not context.dockerfiles:
+            return []
+        if (context.root / ".dockerignore").exists():
+            return []
+        return [self.finding()]
+
+
+# ---------------------------------------------------------------
+# OPS-009  MissingHealthCheck
+# ---------------------------------------------------------------
+
+
+class MissingHealthCheck(Rule):
+    """Detect Dockerfiles that have no HEALTHCHECK instruction.
+
+    Without a HEALTHCHECK, orchestrators (Docker, Kubernetes, ECS) cannot
+    distinguish a process that is running from one that is healthy. A wedged
+    container with a live PID happily receives traffic until something else
+    notices, which is usually a customer.
+
+    Principles: #11 (The reader is the user -- the orchestrator IS a reader),
+    #14 (Build pipelines are part of the architecture).
+    Source: Nygard *Release It!* Ch. 17, Docker Best Practices.
+    """
+
+    code = "OPS-009"
+    severity = Severity.INFO
+    category = Category.OPERATIONS
+    message_template = "Dockerfile {file} has no HEALTHCHECK instruction"
+    recommendation_template = (
+        "Add a HEALTHCHECK instruction so orchestrators can detect a sick"
+        " container before routing traffic to it. For pure builder stages"
+        " or one-shot CLIs, suppress this rule per file."
+    )
+
+    def check(self, context: OpsContext) -> list[Finding]:
+        findings: list[Finding] = []
+        for dockerfile in context.dockerfiles:
+            if any(instr.instruction == "HEALTHCHECK" for instr in dockerfile.instructions):
+                continue
+            findings.append(self.finding(file=dockerfile.relative_path))
+        return findings
+
+
+DOCKERFILE_RULES: tuple[Rule, ...] = (
+    DockerfileAntiPattern(),
+    NoDockerignore(),
+    MissingHealthCheck(),
+)

@@ -1,0 +1,17 @@
+{
+  "rule_id": "OPS-007",
+  "description": "NoDockerignore -- project has Dockerfile but no .dockerignore",
+  "fixtures": {
+    "fail_no_dockerignore": {
+      "expected_findings": [
+        {
+          "severity": "info",
+          "message_contains": "dockerignore"
+        }
+      ]
+    },
+    "pass_with_dockerignore": {
+      "expected_findings": []
+    }
+  }
+}

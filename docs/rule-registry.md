@@ -95,7 +95,9 @@ All 24 rules map directly to Fowler's smell catalog in *Refactoring* (2nd ed.), 
 | LOG-005    | NoCorrelationID         | Stitch log lines per request                | 12FACT  |
 | OPS-002    | MissingPrecommit        | Pre-commit hooks for quality gates          | Day 6   |
 | OPS-006    | DockerfileAntiPattern   | --no-cache-dir; deps copy before broad copy | 12FACT  |
+| OPS-007    | NoDockerignore          | .dockerignore keeps secrets out of context  | 12FACT  |
 | OPS-008    | HardcodedPortOrHost     | Bind host/port from config, not literals    | 12FACT  |
+| OPS-009    | MissingHealthCheck      | Orchestrators need a health probe           | NYGARD  |
 
 ### Django/ORM Architecture Rules -- Source: FWDOCS + ARCH90
 
