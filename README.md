@@ -47,12 +47,37 @@ gaudi check .
 # Output as JSON (for AI agent consumption)
 gaudi check . --format json
 
+# Output as GitHub Actions annotations (inline on PRs)
+gaudi check . --format github
+
 # Only errors
 gaudi check . --severity error --exit-code
 
 # Check a specific file
 gaudi check models.py
+
+# Generate a Markdown report you can paste into a chat with an LLM
+gaudi report . --output gaudi-report.md
 ```
+
+## LLM-collaborative workflow
+
+Gaudi is designed to be the opening move in a developer ↔ LLM conversation,
+not a list of mechanical autofixes. Most rules are judgment calls — the
+*right* thing to do about a finding depends on the surrounding code and the
+project's priorities.
+
+Two outputs make that conversation cheap to start:
+
+- **`gaudi check --format github`** emits
+  [GitHub Actions workflow commands](https://docs.github.com/en/actions/using-workflows/workflow-commands-for-github-actions#setting-an-error-message)
+  so findings render inline on pull requests, in the Files Changed view, exactly
+  where reviewers (and Copilot/Claude PR reviewers) expect them. See
+  [docs/llm-workflow.md](docs/llm-workflow.md) for a sample workflow.
+- **`gaudi report .`** writes a Markdown report grouped by file. Each finding
+  includes a code snippet, the rule's recommendation, and a pre-written
+  "Discuss with LLM" prompt the developer can paste straight into Claude,
+  ChatGPT, or any other assistant.
 
 ## What It Checks
 
