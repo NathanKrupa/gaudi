@@ -23,20 +23,17 @@ from gaudi.excludes import (
 )
 from gaudi.packs.ops.context import DockerfileInfo, DockerfileLine, OpsContext
 
-# A small set of names we accept as a Dockerfile. Standard `Dockerfile`,
-# environment-suffixed variants (`Dockerfile.prod`), and the lowercase
-# `dockerfile` that some teams use. We deliberately do NOT match arbitrary
-# `*.dockerfile` or `Containerfile` -- if we add those it should be a
-# conscious decision, not surprise inclusion.
-_DOCKERFILE_NAMES: tuple[str, ...] = ("Dockerfile", "dockerfile")
 
-
+# Only the canonical filename ``Dockerfile`` is accepted today. Stage variants
+# (``Dockerfile.prod``, ``app.Dockerfile``) are a real Docker convention but
+# distinguishing them from source files in disguise (``dockerfile.py``,
+# ``Dockerfile.tar.gz``) requires either a denylist or a config-driven
+# allowlist. Both are speculative until a user asks. The earlier
+# ``startswith("dockerfile.")`` check matched ``dockerfile.py`` during dogfood
+# and there is no clean structural rule that distinguishes "stage" from
+# "extension". Stage-variant support is tracked as a follow-up.
 def _is_dockerfile(path: Path) -> bool:
-    name = path.name
-    if name in _DOCKERFILE_NAMES:
-        return True
-    # Suffixed variants like Dockerfile.prod, Dockerfile.dev
-    return name.startswith("Dockerfile.") or name.startswith("dockerfile.")
+    return path.name == "Dockerfile"
 
 
 def _stitch_instructions(source: str) -> list[DockerfileLine]:

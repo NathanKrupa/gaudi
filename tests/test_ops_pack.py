@@ -9,7 +9,7 @@ from pathlib import Path
 from gaudi.engine import Engine
 from gaudi.packs.ops.context import OpsContext
 from gaudi.packs.ops.pack import OpsPack
-from gaudi.packs.ops.parser import _stitch_instructions, parse_project
+from gaudi.packs.ops.parser import _is_dockerfile, _stitch_instructions, parse_project
 from gaudi.packs.python.pack import PythonPack
 
 
@@ -38,6 +38,37 @@ class TestDockerfileParser:
         assert "apt-get install -y curl" in instr.args
         assert "rm -rf /var/lib/apt/lists/*" in instr.args
         assert instr.lineno == 1
+
+
+class TestIsDockerfile:
+    """Filename matching must accept the canonical Dockerfile and nothing else.
+
+    Regression: an earlier ``startswith("dockerfile.")`` check matched
+    ``dockerfile.py`` and made the ops pack's own implementation file look
+    like a Dockerfile during dogfood. The fix is to accept only the canonical
+    filename. Stage-variant support (``Dockerfile.prod``, ``app.Dockerfile``)
+    is a deliberate gap tracked as a follow-up issue.
+    """
+
+    def test_matches_canonical(self) -> None:
+        assert _is_dockerfile(Path("Dockerfile"))
+
+    def test_rejects_python_module_named_dockerfile(self) -> None:
+        # The bug that motivated this tightening.
+        assert not _is_dockerfile(Path("dockerfile.py"))
+        assert not _is_dockerfile(Path("Dockerfile.py"))
+
+    def test_rejects_lowercase_canonical(self) -> None:
+        # Docker docs require capital-D. Lowercase ``dockerfile`` is rare and
+        # ambiguous with source filenames; require the canonical form.
+        assert not _is_dockerfile(Path("dockerfile"))
+
+    def test_rejects_stage_variants_for_now(self) -> None:
+        # Documented gap: stage variants are not supported yet. When a user
+        # asks for them, add a config-driven allowlist or a denylist of source
+        # extensions; do NOT silently widen the regex.
+        assert not _is_dockerfile(Path("Dockerfile.prod"))
+        assert not _is_dockerfile(Path("app.Dockerfile"))
 
 
 class TestOpsPackDiscovery:

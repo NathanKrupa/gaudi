@@ -1,0 +1,17 @@
+{
+  "rule_id": "OPS-009",
+  "description": "MissingHealthCheck -- Dockerfile has no HEALTHCHECK instruction",
+  "fixtures": {
+    "fail_no_healthcheck": {
+      "expected_findings": [
+        {
+          "severity": "info",
+          "message_contains": "HEALTHCHECK"
+        }
+      ]
+    },
+    "pass_with_healthcheck": {
+      "expected_findings": []
+    }
+  }
+}
