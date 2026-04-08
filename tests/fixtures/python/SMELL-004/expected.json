@@ -1,0 +1,30 @@
+{
+  "rule_id": "SMELL-004",
+  "description": "LongParameterList -- > 6 params or >= 3 boolean defaults",
+  "fixtures": {
+    "fail_too_many_params.py": {
+      "expected_findings": [
+        {
+          "severity": "warn",
+          "line": 4,
+          "message_contains": "build_user"
+        }
+      ]
+    },
+    "fail_boolean_flags.py": {
+      "expected_findings": [
+        {
+          "severity": "warn",
+          "line": 4,
+          "message_contains": "render_page"
+        }
+      ]
+    },
+    "pass_few_params.py": {
+      "expected_findings": []
+    },
+    "pass_boundary_six_params.py": {
+      "expected_findings": []
+    }
+  }
+}

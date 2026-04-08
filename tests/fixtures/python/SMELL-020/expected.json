@@ -1,0 +1,21 @@
+{
+  "rule_id": "SMELL-020",
+  "description": "LargeClass -- >= 10 methods or methods+attrs >= 15",
+  "fixtures": {
+    "fail_god_object.py": {
+      "expected_findings": [
+        {
+          "severity": "warn",
+          "line": 4,
+          "message_contains": "GodObject"
+        }
+      ]
+    },
+    "pass_small_class.py": {
+      "expected_findings": []
+    },
+    "pass_boundary_nine_methods.py": {
+      "expected_findings": []
+    }
+  }
+}

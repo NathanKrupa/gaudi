@@ -1,0 +1,23 @@
+{
+  "rule_id": "SMELL-006",
+  "description": "MutableData -- shared module state mutated by 2+ functions",
+  "fixtures": {
+    "fail_shared_mutation.py": {
+      "expected_findings": [
+        {
+          "severity": "error",
+          "line": 3,
+          "message_contains": "store"
+        },
+        {
+          "severity": "error",
+          "line": 3,
+          "message_contains": "clear"
+        }
+      ]
+    },
+    "pass_no_shared_state.py": {
+      "expected_findings": []
+    }
+  }
+}

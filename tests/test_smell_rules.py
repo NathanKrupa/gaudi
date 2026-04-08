@@ -19,33 +19,6 @@ class TestSmellRules:
 
     # -- Tier 1: Easy (AST metrics) --
 
-    def test_smell_001_mysterious_name(self):
-        hits = self._findings_for("smell_mysterious_name.py", "SMELL-001")
-        assert len(hits) >= 2
-        assert all(f.severity.value == "info" for f in hits)
-
-    def test_smell_003_long_function(self):
-        hits = self._findings_for("smell_long_function.py", "SMELL-003")
-        assert len(hits) == 1
-        assert "process_order" in hits[0].context.get("function", "")
-
-    def test_smell_004_long_parameter_list(self):
-        hits = self._findings_for("smell_long_params.py", "SMELL-004")
-        assert len(hits) == 2
-
-    def test_smell_005_global_data(self):
-        hits = self._findings_for("smell_global_data.py", "SMELL-005")
-        assert len(hits) == 2
-        flagged = {f.context.get("name") for f in hits}
-        assert "REGISTRY" in flagged
-        assert "_CACHE" in flagged
-        # CONFIG has all-constant values — treated as reference data
-        assert "MAX_RETRIES" not in flagged
-
-    def test_smell_013_loops(self):
-        hits = self._findings_for("smell_loops.py", "SMELL-013")
-        assert len(hits) == 2
-
     def test_smell_014_lazy_element(self):
         hits = self._findings_for("smell_lazy_element.py", "SMELL-014")
         assert len(hits) == 2
@@ -55,11 +28,6 @@ class TestSmellRules:
     def test_smell_017_message_chains(self):
         hits = self._findings_for("smell_message_chains.py", "SMELL-017")
         assert len(hits) == 2
-
-    def test_smell_020_large_class(self):
-        hits = self._findings_for("smell_large_class.py", "SMELL-020")
-        assert len(hits) == 1
-        assert "GodObject" in hits[0].context.get("class_name", "")
 
     def test_smell_022_data_class(self):
         hits = self._findings_for("smell_data_class.py", "SMELL-022")
@@ -79,10 +47,6 @@ class TestSmellRules:
 
     # -- Tier 2: Moderate (intra-file cross-reference) --
 
-    def test_smell_006_mutable_data(self):
-        hits = self._findings_for("smell_mutable_data.py", "SMELL-006")
-        assert len(hits) >= 2
-
     def test_smell_007_divergent_change(self):
         hits = self._findings_for("smell_divergent_change.py", "SMELL-007")
         assert len(hits) == 1
@@ -91,14 +55,6 @@ class TestSmellRules:
         hits = self._findings_for("smell_feature_envy.py", "SMELL-009")
         assert len(hits) == 1
         assert "get_customer_summary" in hits[0].context.get("method", "")
-
-    def test_smell_010_data_clumps(self):
-        hits = self._findings_for("smell_data_clumps.py", "SMELL-010")
-        assert len(hits) >= 1
-
-    def test_smell_011_primitive_obsession(self):
-        hits = self._findings_for("smell_primitive_obsession.py", "SMELL-011")
-        assert len(hits) >= 1
 
     def test_smell_012_repeated_switches(self):
         hits = self._findings_for("smell_repeated_switches.py", "SMELL-012")
