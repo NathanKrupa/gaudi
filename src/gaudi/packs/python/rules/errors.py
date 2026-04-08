@@ -228,9 +228,7 @@ class InconsistentExceptions(Rule):
     code = "ERR-005"
     severity = Severity.INFO
     category = Category.ERROR_HANDLING
-    message_template = (
-        "module raises {count} unrelated exception types with no shared base"
-    )
+    message_template = "module raises {count} unrelated exception types with no shared base"
     recommendation_template = (
         "Define a module-level base exception (e.g. `class FooError(Exception)`) "
         "and have specific failures inherit from it so callers can catch one type."
@@ -362,16 +360,12 @@ class ExceptionInInit(Rule):
                     if not isinstance(child, ast.Raise):
                         continue
                     if child.exc is None:
-                        findings.append(
-                            self.finding(file=fi.relative_path, line=child.lineno)
-                        )
+                        findings.append(self.finding(file=fi.relative_path, line=child.lineno))
                         continue
                     name = _raise_type_name(child.exc)
                     if name is None or name in _INIT_ALLOWED_EXCEPTIONS:
                         continue
-                    findings.append(
-                        self.finding(file=fi.relative_path, line=child.lineno)
-                    )
+                    findings.append(self.finding(file=fi.relative_path, line=child.lineno))
         return findings
 
 
