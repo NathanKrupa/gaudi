@@ -1,0 +1,18 @@
+{
+  "rule_id": "STAB-010",
+  "description": "SharedResourcePool -- module-level ThreadPoolExecutor used as a shared bulkhead",
+  "fixtures": {
+    "fail_module_pool.py": {
+      "expected_findings": [
+        {
+          "severity": "info",
+          "line": 5,
+          "message_contains": "Module-level"
+        }
+      ]
+    },
+    "pass_function_local_pool.py": {
+      "expected_findings": []
+    }
+  }
+}

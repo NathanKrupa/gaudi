@@ -1,0 +1,30 @@
+{
+  "rule_id": "STAB-008",
+  "description": "IntegrationPointNoFallback -- external HTTP call without try/except fallback",
+  "fixtures": {
+    "fail_no_fallback.py": {
+      "expected_findings": [
+        {
+          "severity": "warn",
+          "line": 7,
+          "message_contains": "without fallback"
+        }
+      ]
+    },
+    "fail_httpx_no_fallback.py": {
+      "expected_findings": [
+        {
+          "severity": "warn",
+          "line": 7,
+          "message_contains": "without fallback"
+        }
+      ]
+    },
+    "pass_with_fallback.py": {
+      "expected_findings": []
+    },
+    "pass_httpx_with_fallback.py": {
+      "expected_findings": []
+    }
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "rule_id": "STAB-009",
+  "description": "FailFastLateValidation -- isinstance/raise validation inside a private helper",
+  "fixtures": {
+    "fail_late_isinstance.py": {
+      "expected_findings": [
+        {
+          "severity": "warn",
+          "line": 9,
+          "message_contains": "validation"
+        }
+      ]
+    },
+    "fail_late_value_check.py": {
+      "expected_findings": [
+        {
+          "severity": "warn",
+          "line": 9,
+          "message_contains": "validation"
+        }
+      ]
+    },
+    "pass_validates_at_entry.py": {
+      "expected_findings": []
+    },
+    "pass_no_private_helpers.py": {
+      "expected_findings": []
+    }
+  }
+}

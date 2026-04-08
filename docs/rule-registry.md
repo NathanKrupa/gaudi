@@ -171,6 +171,10 @@ detectable failure states -- exactly the grammar Gaudi needs.
 | STAB-005  | BlockingInAsync       | Blocked Threads (anti-pattern)               | Ch. 4     |
 | STAB-006  | UnmanagedResource     | Steady State (resource leak, incl. sessions) | Ch. 5     |
 | STAB-007  | UnboundedThreadPool   | Unbalanced Capacities (anti-pattern)         | Ch. 4     |
+| STAB-008  | IntegrationPointNoFallback | Integration Points (no fallback)        | Ch. 4     |
+| STAB-009  | FailFastLateValidation | Fail Fast (validation deep in stack)        | Ch. 5     |
+| STAB-010  | SharedResourcePool    | Bulkheads (single shared pool)               | Ch. 5     |
+| STAB-011  | MissingHealthEndpoint | Handshaking (no health/ready endpoint)       | Ch. 5     |
 
 *STAB-002 (NoCircuitBreaker) removed -- detection too weak (project-level heuristic). Moved to mining queue.*
 
@@ -234,14 +238,10 @@ existing Python linter covers.
 | Planned Code | Nygard Pattern / Anti-Pattern             | Chapter | Detectability | Notes                                    |
 |--------------|-------------------------------------------|---------|---------------|------------------------------------------|
 | STAB-???     | Circuit Breaker (missing pattern)         | Ch. 5   | Low           | Needs call-site wrapping detection, not just import check |
-| STAB-???     | Integration Points (no fallback)          | Ch. 4   | Medium        | External call without except/default     |
 | STAB-???     | Cascading Failures (sync chain depth)     | Ch. 4   | Medium        | 3+ sequential external calls             |
 | STAB-???     | Self-Denial Attacks (cache stampede)      | Ch. 4   | Low           | Cache invalidation without staggering    |
 | STAB-???     | Slow Responses (no deadline propagation)  | Ch. 4   | Low           | Timeout not passed to downstream calls   |
 | STAB-???     | SLA Inversion                             | Ch. 4   | Low           | Requires runtime config, hard to lint    |
-| STAB-???     | Fail Fast (late validation)               | Ch. 5   | Medium        | Validation deep in call chain            |
-| STAB-???     | Bulkhead (shared pool)                    | Ch. 5   | Medium        | Single pool serving multiple concerns    |
-| STAB-???     | Handshaking (no health check)             | Ch. 5   | Medium        | Service without health/ready endpoint    |
 
 ---
 
