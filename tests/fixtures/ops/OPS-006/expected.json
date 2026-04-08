@@ -1,0 +1,30 @@
+{
+  "rule_id": "OPS-006",
+  "description": "DockerfileAntiPattern -- pip without --no-cache-dir, or COPY . . before requirements copy",
+  "fixtures": {
+    "fail_pip_no_cache_dir": {
+      "expected_findings": [
+        {
+          "severity": "warn",
+          "line": 6,
+          "message_contains": "no-cache-dir"
+        }
+      ]
+    },
+    "fail_copy_before_requirements": {
+      "expected_findings": [
+        {
+          "severity": "warn",
+          "line": 5,
+          "message_contains": "cache"
+        }
+      ]
+    },
+    "pass_clean": {
+      "expected_findings": []
+    },
+    "pass_no_pip": {
+      "expected_findings": []
+    }
+  }
+}

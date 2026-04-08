@@ -49,6 +49,7 @@ gaudi-fixture-coverage = "gaudi.tools.fixture_coverage:main"
 
 [project.entry-points."gaudi.packs"]
 python = "gaudi.packs.python:PythonPack"
+ops = "gaudi.packs.ops:OpsPack"
 
 [project.urls]
 Homepage = "https://github.com/NathanKrupa/gaudi"

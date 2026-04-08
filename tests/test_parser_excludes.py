@@ -1,16 +1,13 @@
 # ABOUTME: Tests for the glob-based file-exclusion plumbing in parse_project / PythonPack.
-# ABOUTME: Covers _compile_glob translation, default excludes, and gaudi.toml-driven excludes.
+# ABOUTME: Covers compile_glob translation, default excludes, and gaudi.toml-driven excludes.
 from __future__ import annotations
 
 from pathlib import Path
 
+from gaudi.excludes import compile_glob as _compile_glob
+from gaudi.excludes import is_excluded as _is_excluded
 from gaudi.packs.python.pack import PythonPack
-from gaudi.packs.python.parser import (
-    DEFAULT_EXCLUDE_GLOBS,
-    _compile_glob,
-    _is_excluded,
-    parse_project,
-)
+from gaudi.packs.python.parser import DEFAULT_EXCLUDE_GLOBS, parse_project
 
 
 class TestCompileGlob:

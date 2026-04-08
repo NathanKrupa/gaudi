@@ -1,21 +1,35 @@
 # ABOUTME: Parametrized test runner for the per-rule fixture corpus.
-# ABOUTME: Discovers tests/fixtures/python/<RULE-ID>/ and asserts findings match expected.json.
+# ABOUTME: Discovers tests/fixtures/<lang>/<RULE-ID>/ and asserts findings match expected.json.
 from __future__ import annotations
 
 import pytest
 
 from gaudi.core import Finding
+from gaudi.engine import Engine
+from gaudi.packs.ops.pack import OpsPack
 from gaudi.packs.python.pack import PythonPack
 from tests.fixture_corpus import (
-    DEFAULT_LANGUAGE,
     ExpectedFinding,
     FixtureCase,
-    discover_cases,
+    discover_all_cases,
     fixture_as_project,
 )
 
-_CASES = discover_cases(DEFAULT_LANGUAGE)
+_CASES = discover_all_cases()
 _MISMATCH = "{test_id}: {field} mismatch -- expected {expected}, got {actual}"
+
+
+def _make_engine() -> Engine:
+    """Engine wired with every pack a fixture might need.
+
+    The corpus runner registers packs explicitly rather than relying on
+    entry-point discovery, so the test suite is hermetic and does not depend
+    on the active install state of gaudi-linter.
+    """
+    engine = Engine()
+    engine.register_pack(PythonPack())
+    engine.register_pack(OpsPack())
+    return engine
 
 
 def _assert_finding_matches(finding: Finding, expectation: ExpectedFinding, test_id: str) -> None:
@@ -43,9 +57,9 @@ def test_fixture_case(case: FixtureCase) -> None:
     fixture incidentally tripping unrelated rules won't fail this assertion. The
     fixture corpus rubric is: each fixture proves something about *one* rule.
     """
-    pack = PythonPack()
+    engine = _make_engine()
     with fixture_as_project(case) as project_root:
-        all_findings = pack.check(project_root)
+        all_findings = engine.check(project_root)
     findings = [f for f in all_findings if f.code == case.rule_id]
 
     assert len(findings) == len(case.expected), (
