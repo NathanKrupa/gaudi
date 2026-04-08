@@ -83,7 +83,11 @@ All 24 rules map directly to Fowler's smell catalog in *Refactoring* (2nd ed.), 
 | ARCH-020   | EnvLeakage              | Config injection, not direct env reads      | Day 4   |
 | ARCH-022   | ScatteredConfig         | Centralize configuration                    | Day 4   |
 | ERR-001    | BareExcept              | Catch specific exceptions                   | Day 5   |
+| ERR-002    | BroadTryBlock           | Narrow try blocks (>10 stmts)               | Nygard  |
 | ERR-003    | ErrorSwallowing         | Don't log-and-forget errors                 | Day 5   |
+| ERR-004    | ExceptPass              | `except: pass` silently swallows errors     | Nygard  |
+| ERR-005    | InconsistentExceptions  | Module raises 4+ unrelated exception types  | Nygard  |
+| ERR-006    | ExceptionInInit         | Don't raise non-validation errors in __init__ | Nygard  |
 | LOG-001    | UnstructuredLogging     | Lazy %-formatting in logger calls           | Day 5   |
 | OPS-002    | MissingPrecommit        | Pre-commit hooks for quality gates          | Day 6   |
 
