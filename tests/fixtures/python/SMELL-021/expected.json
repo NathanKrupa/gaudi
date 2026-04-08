@@ -1,0 +1,18 @@
+{
+  "rule_id": "SMELL-021",
+  "description": "AlternativeInterfaces -- similar classes with different method names",
+  "fixtures": {
+    "fail_alt_interfaces.py": {
+      "expected_findings": [
+        {
+          "severity": "info",
+          "line": 1,
+          "message_contains": "Store"
+        }
+      ]
+    },
+    "pass_unified_interface.py": {
+      "expected_findings": []
+    }
+  }
+}

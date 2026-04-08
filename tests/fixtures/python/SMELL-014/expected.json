@@ -1,0 +1,18 @@
+{
+  "rule_id": "SMELL-014",
+  "description": "LazyElement -- class with one trivial return method",
+  "fixtures": {
+    "fail_lazy_class.py": {
+      "expected_findings": [
+        {
+          "severity": "info",
+          "line": 4,
+          "message_contains": "Greeter"
+        }
+      ]
+    },
+    "pass_real_class.py": {
+      "expected_findings": []
+    }
+  }
+}

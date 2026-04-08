@@ -1,0 +1,18 @@
+{
+  "rule_id": "SMELL-023",
+  "description": "RefusedBequest -- subclass refuses inherited methods",
+  "fixtures": {
+    "fail_refused_bequest.py": {
+      "expected_findings": [
+        {
+          "severity": "warn",
+          "line": 15,
+          "message_contains": "LimitedHandler"
+        }
+      ]
+    },
+    "pass_full_override.py": {
+      "expected_findings": []
+    }
+  }
+}

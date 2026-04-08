@@ -1,0 +1,18 @@
+{
+  "rule_id": "SMELL-012",
+  "description": "RepeatedSwitches -- same switch pattern in 2+ functions",
+  "fixtures": {
+    "fail_repeated_switch.py": {
+      "expected_findings": [
+        {
+          "severity": "warn",
+          "line": 1,
+          "message_contains": "pending"
+        }
+      ]
+    },
+    "pass_dispatch_table.py": {
+      "expected_findings": []
+    }
+  }
+}
