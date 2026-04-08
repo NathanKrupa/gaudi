@@ -1,0 +1,17 @@
+{
+  "rule_id": "TEST-ARCH-002",
+  "description": "NoTestCoverage -- src/<module>.py with no matching tests/test_<module>.py",
+  "fixtures": {
+    "fail_missing_test/": {
+      "expected_findings": [
+        {
+          "severity": "info",
+          "message_contains": "widget.py"
+        }
+      ]
+    },
+    "pass_with_test/": {
+      "expected_findings": []
+    }
+  }
+}

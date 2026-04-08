@@ -1,0 +1,30 @@
+{
+  "rule_id": "TEST-STRUCT-003",
+  "description": "TestMethodTooLong -- a test function whose body exceeds 30 lines",
+  "fixtures": {
+    "fail_test_long_method.py": {
+      "expected_findings": [
+        {
+          "severity": "warn",
+          "line": 6,
+          "message_contains": "test_long_method"
+        }
+      ]
+    },
+    "fail_boundary_test_thirty_one.py": {
+      "expected_findings": [
+        {
+          "severity": "warn",
+          "line": 6,
+          "message_contains": "test_thirty_one_lines"
+        }
+      ]
+    },
+    "pass_boundary_test_thirty.py": {
+      "expected_findings": []
+    },
+    "pass_test_short.py": {
+      "expected_findings": []
+    }
+  }
+}
