@@ -1,0 +1,26 @@
+{
+  "rule_id": "STAB-001",
+  "description": "UnboundedResultSet -- ORM queries must have a bound",
+  "fixtures": {
+    "fail_unbounded_query.py": {
+      "expected_findings": [
+        {
+          "severity": "warn",
+          "line": 5,
+          "message_contains": "all"
+        },
+        {
+          "severity": "warn",
+          "line": 9,
+          "message_contains": "filter"
+        }
+      ]
+    },
+    "pass_first_or_get.py": {
+      "expected_findings": []
+    },
+    "pass_non_orm_call.py": {
+      "expected_findings": []
+    }
+  }
+}

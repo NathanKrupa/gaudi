@@ -1,0 +1,26 @@
+{
+  "rule_id": "STAB-004",
+  "description": "UnboundedCache -- functools caches must declare a maxsize",
+  "fixtures": {
+    "fail_unbounded_cache.py": {
+      "expected_findings": [
+        {
+          "severity": "warn",
+          "line": 6,
+          "message_contains": "Unbounded cache"
+        },
+        {
+          "severity": "warn",
+          "line": 11,
+          "message_contains": "Unbounded cache"
+        }
+      ]
+    },
+    "pass_bounded_cache.py": {
+      "expected_findings": []
+    },
+    "pass_no_cache_decorator.py": {
+      "expected_findings": []
+    }
+  }
+}
