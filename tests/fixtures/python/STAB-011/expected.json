@@ -1,0 +1,20 @@
+{
+  "rule_id": "STAB-011",
+  "description": "MissingHealthEndpoint -- web service without /health or /ready route",
+  "fixtures": {
+    "fail_fastapi_no_health/": {
+      "expected_findings": [
+        {
+          "severity": "info",
+          "message_contains": "health"
+        }
+      ]
+    },
+    "pass_fastapi_with_health/": {
+      "expected_findings": []
+    },
+    "pass_flask_with_ready/": {
+      "expected_findings": []
+    }
+  }
+}

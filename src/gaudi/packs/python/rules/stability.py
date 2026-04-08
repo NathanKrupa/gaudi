@@ -412,6 +412,289 @@ class UnboundedThreadPool(Rule):
 
 
 # ---------------------------------------------------------------
+# STAB-008  IntegrationPointNoFallback
+# Nygard Ch. 4: "Integration Points" -- every integration must degrade
+# ---------------------------------------------------------------
+
+_HTTP_MODULES = frozenset({"requests", "httpx"})
+_HTTP_METHODS = frozenset({"get", "post", "put", "patch", "delete", "request", "head", "options"})
+
+
+class IntegrationPointNoFallback(Rule):
+    """Detect external HTTP calls that have no try/except fallback path.
+
+    Principles: #4 (Failure must be named).
+    Source: NYGARD Ch. 4 -- Integration Points are the leading source of cracks.
+    """
+
+    code = "STAB-008"
+    severity = Severity.WARN
+    category = Category.STABILITY
+    message_template = "External call '{call}' without fallback at line {line}"
+    recommendation_template = (
+        "Wrap external HTTP calls in try/except so the caller can degrade."
+        " An integration point with no fallback propagates every upstream failure."
+    )
+
+    def check(self, context: PythonContext) -> list[Finding]:
+        findings: list[Finding] = []
+        for fi in context.files:
+            tree = _parse_safe(fi.source)
+            if tree is None:
+                continue
+            try_lines = self._collect_try_body_lines(tree)
+            for node in ast.walk(tree):
+                if not isinstance(node, ast.Call):
+                    continue
+                call_name = self._get_http_call(node)
+                if call_name is None:
+                    continue
+                if node.lineno in try_lines:
+                    continue
+                findings.append(
+                    self.finding(file=fi.relative_path, line=node.lineno, call=call_name)
+                )
+        return findings
+
+    @staticmethod
+    def _get_http_call(node: ast.Call) -> str | None:
+        func = node.func
+        if not isinstance(func, ast.Attribute):
+            return None
+        if func.attr not in _HTTP_METHODS:
+            return None
+        val = func.value
+        if isinstance(val, ast.Name) and val.id in _HTTP_MODULES:
+            return f"{val.id}.{func.attr}"
+        return None
+
+    @staticmethod
+    def _collect_try_body_lines(tree: ast.Module) -> set[int]:
+        lines: set[int] = set()
+        for node in ast.walk(tree):
+            if not isinstance(node, ast.Try):
+                continue
+            if not node.handlers:
+                continue
+            for stmt in node.body:
+                for child in ast.walk(stmt):
+                    if hasattr(child, "lineno"):
+                        lines.add(child.lineno)
+        return lines
+
+
+# ---------------------------------------------------------------
+# STAB-009  FailFastLateValidation
+# Nygard Ch. 5: "Fail Fast" -- validate at entry, not deep in helpers
+# ---------------------------------------------------------------
+
+_VALIDATION_EXCEPTIONS = frozenset({"TypeError", "ValueError"})
+
+
+class FailFastLateValidation(Rule):
+    """Detect argument validation hidden inside private helper functions.
+
+    Principles: #4 (Failure must be named).
+    Source: NYGARD Ch. 5 -- Fail Fast: validate at the boundary, not down the stack.
+    """
+
+    code = "STAB-009"
+    severity = Severity.WARN
+    category = Category.STABILITY
+    message_template = "Late argument validation inside private helper '{function}' at line {line}"
+    recommendation_template = (
+        "Move isinstance/value-range checks to the public entry point."
+        " Validation in private helpers means callers fail deep in the stack instead of at the boundary."
+    )
+
+    def check(self, context: PythonContext) -> list[Finding]:
+        findings: list[Finding] = []
+        for fi in context.files:
+            tree = _parse_safe(fi.source)
+            if tree is None:
+                continue
+            for node in ast.walk(tree):
+                if not isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                    continue
+                if not self._is_private_helper(node.name):
+                    continue
+                hit = self._find_validation(node)
+                if hit is not None:
+                    findings.append(
+                        self.finding(file=fi.relative_path, line=hit, function=node.name)
+                    )
+        return findings
+
+    @staticmethod
+    def _is_private_helper(name: str) -> bool:
+        return name.startswith("_") and not (name.startswith("__") and name.endswith("__"))
+
+    @staticmethod
+    def _find_validation(func: ast.FunctionDef | ast.AsyncFunctionDef) -> int | None:
+        for node in ast.walk(func):
+            if not isinstance(node, ast.If):
+                continue
+            if not FailFastLateValidation._test_uses_isinstance(node.test):
+                continue
+            for stmt in node.body:
+                if isinstance(stmt, ast.Raise) and FailFastLateValidation._raises_validation(stmt):
+                    return node.lineno
+        return None
+
+    @staticmethod
+    def _test_uses_isinstance(test: ast.expr) -> bool:
+        for child in ast.walk(test):
+            if isinstance(child, ast.Call):
+                func = child.func
+                if isinstance(func, ast.Name) and func.id == "isinstance":
+                    return True
+        return False
+
+    @staticmethod
+    def _raises_validation(stmt: ast.Raise) -> bool:
+        exc = stmt.exc
+        if exc is None:
+            return False
+        if isinstance(exc, ast.Call):
+            exc = exc.func
+        if isinstance(exc, ast.Name) and exc.id in _VALIDATION_EXCEPTIONS:
+            return True
+        if isinstance(exc, ast.Attribute) and exc.attr in _VALIDATION_EXCEPTIONS:
+            return True
+        return False
+
+
+# ---------------------------------------------------------------
+# STAB-010  SharedResourcePool
+# Nygard Ch. 5: "Bulkheads" -- partition resource pools by concern
+# ---------------------------------------------------------------
+
+
+class SharedResourcePool(Rule):
+    """Detect module-level ThreadPoolExecutor instances (no bulkhead).
+
+    Principles: #4 (Failure must be named).
+    Source: NYGARD Ch. 5 -- Bulkheads: partition pools so one failure can't sink the ship.
+    """
+
+    code = "STAB-010"
+    severity = Severity.INFO
+    category = Category.STABILITY
+    message_template = "Module-level ThreadPoolExecutor at line {line} -- shared by all callers"
+    recommendation_template = (
+        "Scope ThreadPoolExecutors to a single concern, or partition by workload."
+        " A single shared pool means a slow consumer can starve every other caller."
+    )
+
+    def check(self, context: PythonContext) -> list[Finding]:
+        findings: list[Finding] = []
+        for fi in context.files:
+            tree = _parse_safe(fi.source)
+            if tree is None:
+                continue
+            for node in tree.body:
+                target = self._extract_assigned_call(node)
+                if target is None:
+                    continue
+                if self._is_thread_pool_call(target):
+                    findings.append(self.finding(file=fi.relative_path, line=target.lineno))
+        return findings
+
+    @staticmethod
+    def _extract_assigned_call(node: ast.stmt) -> ast.Call | None:
+        if isinstance(node, ast.Assign) and isinstance(node.value, ast.Call):
+            return node.value
+        if isinstance(node, ast.AnnAssign) and isinstance(node.value, ast.Call):
+            return node.value
+        return None
+
+    @staticmethod
+    def _is_thread_pool_call(call: ast.Call) -> bool:
+        func = call.func
+        if isinstance(func, ast.Name) and func.id == "ThreadPoolExecutor":
+            return True
+        if isinstance(func, ast.Attribute) and func.attr == "ThreadPoolExecutor":
+            return True
+        return False
+
+
+# ---------------------------------------------------------------
+# STAB-011  MissingHealthEndpoint
+# Nygard Ch. 5: "Handshaking" -- services must advertise health
+# ---------------------------------------------------------------
+
+_WEB_LIBRARIES = frozenset({"fastapi", "flask", "django"})
+_ROUTE_DECORATOR_ATTRS = frozenset({"get", "post", "put", "patch", "delete", "route"})
+_HEALTH_TOKENS = ("health", "ready", "live", "ping")
+
+
+class MissingHealthEndpoint(Rule):
+    """Detect web services with routes but no /health or /ready endpoint.
+
+    Principles: #4 (Failure must be named), #5 (State must be visible).
+    Source: NYGARD Ch. 5 -- Handshaking: services must advertise their state.
+    """
+
+    code = "STAB-011"
+    severity = Severity.INFO
+    category = Category.STABILITY
+    message_template = "Web service has no health or ready endpoint"
+    recommendation_template = (
+        "Add a /health or /ready route so orchestrators and load balancers"
+        " can detect failure. A service with no health endpoint is invisible to its operators."
+    )
+
+    def check(self, context: PythonContext) -> list[Finding]:
+        if not (context.detected_libraries & _WEB_LIBRARIES):
+            return []
+        any_route = False
+        has_health = False
+        first_route_file: str | None = None
+        for fi in context.files:
+            tree = _parse_safe(fi.source)
+            if tree is None:
+                continue
+            for path in self._iter_route_paths(tree):
+                any_route = True
+                if first_route_file is None:
+                    first_route_file = fi.relative_path
+                if any(token in path.lower() for token in _HEALTH_TOKENS):
+                    has_health = True
+        if not any_route or has_health:
+            return []
+        return [self.finding(file=first_route_file, line=1)]
+
+    @staticmethod
+    def _iter_route_paths(tree: ast.Module) -> list[str]:
+        paths: list[str] = []
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Call):
+                if MissingHealthEndpoint._is_route_call(node):
+                    literal = MissingHealthEndpoint._first_string_arg(node)
+                    if literal is not None:
+                        paths.append(literal)
+        return paths
+
+    @staticmethod
+    def _is_route_call(call: ast.Call) -> bool:
+        func = call.func
+        if isinstance(func, ast.Attribute) and func.attr in _ROUTE_DECORATOR_ATTRS:
+            return True
+        if isinstance(func, ast.Name) and func.id in {"path", "re_path", "url"}:
+            return True
+        return False
+
+    @staticmethod
+    def _first_string_arg(call: ast.Call) -> str | None:
+        if not call.args:
+            return None
+        first = call.args[0]
+        if isinstance(first, ast.Constant) and isinstance(first.value, str):
+            return first.value
+        return None
+
+
+# ---------------------------------------------------------------
 # Exported rule list
 # ---------------------------------------------------------------
 
@@ -422,4 +705,8 @@ STABILITY_RULES = (
     BlockingInAsync(),
     UnmanagedResource(),
     UnboundedThreadPool(),
+    IntegrationPointNoFallback(),
+    FailFastLateValidation(),
+    SharedResourcePool(),
+    MissingHealthEndpoint(),
 )
