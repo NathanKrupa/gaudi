@@ -1,0 +1,18 @@
+{
+  "rule_id": "ASYNC-004",
+  "description": "NoGracefulShutdown -- asyncio.run() without signal.signal() registration",
+  "fixtures": {
+    "fail_no_signal_handler.py": {
+      "expected_findings": [
+        {
+          "severity": "info",
+          "line": 11,
+          "message_contains": "asyncio.run"
+        }
+      ]
+    },
+    "pass_with_signal_handler.py": {
+      "expected_findings": []
+    }
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "rule_id": "ASYNC-003",
+  "description": "MixedSyncAsyncModule -- module mixes async def with sync requests calls",
+  "fixtures": {
+    "fail_mixed_sync_async.py": {
+      "expected_findings": [
+        {
+          "severity": "warn",
+          "message_contains": "sync"
+        }
+      ]
+    },
+    "pass_only_async.py": {
+      "expected_findings": []
+    }
+  }
+}

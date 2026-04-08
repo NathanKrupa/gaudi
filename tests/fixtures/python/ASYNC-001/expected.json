@@ -1,0 +1,18 @@
+{
+  "rule_id": "ASYNC-001",
+  "description": "SharedMutableStateAcrossThreads -- module-level mutable mutated inside thread pool worker",
+  "fixtures": {
+    "fail_shared_dict_in_pool.py": {
+      "expected_findings": [
+        {
+          "severity": "error",
+          "line": 8,
+          "message_contains": "CACHE"
+        }
+      ]
+    },
+    "pass_local_dict_in_pool.py": {
+      "expected_findings": []
+    }
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "rule_id": "ASYNC-002",
+  "description": "MissingAsyncContextManager -- aiohttp/httpx async client created without async with",
+  "fixtures": {
+    "fail_unmanaged_aiohttp_session.py": {
+      "expected_findings": [
+        {
+          "severity": "warn",
+          "line": 7,
+          "message_contains": "ClientSession"
+        }
+      ]
+    },
+    "pass_async_with_session.py": {
+      "expected_findings": []
+    }
+  }
+}
