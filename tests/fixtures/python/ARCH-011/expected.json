@@ -1,0 +1,20 @@
+{
+  "rule_id": "ARCH-011",
+  "description": "ConnectorLogicLeak -- branching business logic in a data-layer file",
+  "fixtures": {
+    "fail_db_with_branching.py": {
+      "expected_findings": [
+        {
+          "severity": "warn",
+          "message_contains": "data-layer"
+        }
+      ]
+    },
+    "pass_db_translator_only.py": {
+      "expected_findings": []
+    },
+    "pass_service_with_branching.py": {
+      "expected_findings": []
+    }
+  }
+}

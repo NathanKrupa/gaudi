@@ -74,17 +74,6 @@ class TestRules:
         """Should find multiple architectural issues in the sample."""
         assert len(findings) > 0
 
-    def test_arch_001_no_tenant_isolation(self, findings):
-        """Should flag missing tenant isolation."""
-        arch_001 = [f for f in findings if f.code == "ARCH-001"]
-        assert len(arch_001) == 1
-
-    def test_arch_002_god_model(self, findings):
-        """Should flag the Donor model as having too many fields."""
-        arch_002 = [f for f in findings if f.code == "ARCH-002"]
-        assert len(arch_002) >= 1
-        assert any("Donor" in f.message for f in arch_002)
-
     def test_struct_001_too_many_models(self, findings):
         """Should flag single file with 9 models."""
         struct_001 = [f for f in findings if f.code == "STRUCT-001"]

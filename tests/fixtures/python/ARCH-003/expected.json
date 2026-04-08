@@ -1,0 +1,20 @@
+{
+  "rule_id": "ARCH-003",
+  "description": "NullableForeignKeySprawl -- model with multiple nullable ForeignKeys",
+  "fixtures": {
+    "fail_nullable_fk_sprawl.py": {
+      "expected_findings": [
+        {
+          "severity": "info",
+          "message_contains": "Activity"
+        }
+      ]
+    },
+    "pass_required_fks.py": {
+      "expected_findings": []
+    },
+    "pass_one_nullable_fk.py": {
+      "expected_findings": []
+    }
+  }
+}

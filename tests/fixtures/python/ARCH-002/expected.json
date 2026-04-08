@@ -1,0 +1,20 @@
+{
+  "rule_id": "ARCH-002",
+  "description": "GodModel -- model with too many fields",
+  "fixtures": {
+    "fail_god_model.py": {
+      "expected_findings": [
+        {
+          "severity": "warn",
+          "message_contains": "Customer"
+        }
+      ]
+    },
+    "pass_normal_model.py": {
+      "expected_findings": []
+    },
+    "pass_at_threshold.py": {
+      "expected_findings": []
+    }
+  }
+}

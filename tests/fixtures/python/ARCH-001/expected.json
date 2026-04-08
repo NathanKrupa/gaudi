@@ -1,0 +1,20 @@
+{
+  "rule_id": "ARCH-001",
+  "description": "NoTenantIsolation -- multi-model project without a tenant FK",
+  "fixtures": {
+    "fail_no_tenant/": {
+      "expected_findings": [
+        {
+          "severity": "warn",
+          "message_contains": "tenant isolation"
+        }
+      ]
+    },
+    "pass_with_tenant/": {
+      "expected_findings": []
+    },
+    "pass_too_few_models/": {
+      "expected_findings": []
+    }
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "rule_id": "ARCH-022",
+  "description": "ScatteredConfig -- env reads spread across many files",
+  "fixtures": {
+    "fail_scattered/": {
+      "expected_findings": [
+        {
+          "severity": "warn",
+          "message_contains": "scattered"
+        }
+      ]
+    },
+    "pass_centralized/": {
+      "expected_findings": []
+    }
+  }
+}
