@@ -1,0 +1,23 @@
+{
+  "rule_id": "SMELL-005",
+  "description": "GlobalData -- mutable module-level variables",
+  "fixtures": {
+    "fail_mutable_registry.py": {
+      "expected_findings": [
+        {
+          "severity": "error",
+          "line": 3,
+          "message_contains": "REGISTRY"
+        },
+        {
+          "severity": "error",
+          "line": 4,
+          "message_contains": "_CACHE"
+        }
+      ]
+    },
+    "pass_constants_only.py": {
+      "expected_findings": []
+    }
+  }
+}

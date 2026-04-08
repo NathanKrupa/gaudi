@@ -1,0 +1,21 @@
+{
+  "rule_id": "SMELL-003",
+  "description": "LongFunction -- functions exceeding 25 lines",
+  "fixtures": {
+    "fail_long_function.py": {
+      "expected_findings": [
+        {
+          "severity": "warn",
+          "line": 4,
+          "message_contains": "process_order"
+        }
+      ]
+    },
+    "pass_short_function.py": {
+      "expected_findings": []
+    },
+    "pass_boundary_25_lines.py": {
+      "expected_findings": []
+    }
+  }
+}

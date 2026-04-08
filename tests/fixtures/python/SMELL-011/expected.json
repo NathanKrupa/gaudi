@@ -1,0 +1,21 @@
+{
+  "rule_id": "SMELL-011",
+  "description": "PrimitiveObsession -- attribute compared to >= 3 string literals",
+  "fixtures": {
+    "fail_status_strings.py": {
+      "expected_findings": [
+        {
+          "severity": "warn",
+          "line": 1,
+          "message_contains": "order.status"
+        }
+      ]
+    },
+    "pass_uses_enum.py": {
+      "expected_findings": []
+    },
+    "pass_two_strings.py": {
+      "expected_findings": []
+    }
+  }
+}

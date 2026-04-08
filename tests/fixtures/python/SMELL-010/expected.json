@@ -1,0 +1,18 @@
+{
+  "rule_id": "SMELL-010",
+  "description": "DataClumps -- same 3+ params in 3+ functions",
+  "fixtures": {
+    "fail_data_clumps.py": {
+      "expected_findings": [
+        {
+          "severity": "info",
+          "line": 1,
+          "message_contains": "city"
+        }
+      ]
+    },
+    "pass_distinct_params.py": {
+      "expected_findings": []
+    }
+  }
+}

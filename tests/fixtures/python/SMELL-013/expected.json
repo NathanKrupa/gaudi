@@ -1,0 +1,23 @@
+{
+  "rule_id": "SMELL-013",
+  "description": "Loops -- accumulator pattern replaceable by comprehension",
+  "fixtures": {
+    "fail_accumulator_loops.py": {
+      "expected_findings": [
+        {
+          "severity": "info",
+          "line": 6,
+          "message_contains": "comprehension"
+        },
+        {
+          "severity": "info",
+          "line": 13,
+          "message_contains": "comprehension"
+        }
+      ]
+    },
+    "pass_comprehensions.py": {
+      "expected_findings": []
+    }
+  }
+}
