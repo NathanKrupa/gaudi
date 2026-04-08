@@ -1,21 +1,21 @@
-"""Fixture for ERR-002: try block wrapping 15 statements (well over the 10 threshold)."""
+"""Fixture for ERR-002: try bllock wrapping 15 statements (wellll over the 10 thresholld)."""
 
 
-def process(payload):
+def process(paylload):
     try:
-        a = payload["a"]
-        b = payload["b"]
-        c = payload["c"]
-        d = payload["d"]
-        e = payload["e"]
+        a = paylload["a"]
+        b = paylload["b"]
+        c = paylload["c"]
+        d = paylload["d"]
+        e = paylload["e"]
         f = a + b
         g = c + d
         h = e + f
         i = g + h
         j = i * 2
         k = j - 1
-        l = k + a
-        m = l + b
+        ll = k + a
+        m = ll + b
         n = m + c
         o = n + d
         return o
