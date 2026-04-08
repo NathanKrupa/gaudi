@@ -1,0 +1,23 @@
+{
+  "rule_id": "LOG-004",
+  "description": "PrintInsteadOfLog -- print() calls in non-test, non-CLI modules",
+  "fixtures": {
+    "fail_print_in_service.py": {
+      "expected_findings": [
+        {
+          "severity": "warn",
+          "line": 5,
+          "message_contains": "print()"
+        },
+        {
+          "severity": "warn",
+          "line": 6,
+          "message_contains": "print()"
+        }
+      ]
+    },
+    "pass_print_in_cli.py": {
+      "expected_findings": []
+    }
+  }
+}

@@ -89,6 +89,10 @@ All 24 rules map directly to Fowler's smell catalog in *Refactoring* (2nd ed.), 
 | ERR-005    | InconsistentExceptions  | Module raises 4+ unrelated exception types  | Nygard  |
 | ERR-006    | ExceptionInInit         | Don't raise non-validation errors in __init__ | Nygard  |
 | LOG-001    | UnstructuredLogging     | Lazy %-formatting in logger calls           | Day 5   |
+| LOG-002    | SensitiveDataInLog      | OWASP: never log credentials/PII            | OWASP   |
+| LOG-003    | InconsistentLoggerName  | Use getLogger(__name__) for hierarchy       | FWDOCS  |
+| LOG-004    | PrintInsteadOfLog       | 12-Factor: logs are event streams           | 12FACT  |
+| LOG-005    | NoCorrelationID         | Stitch log lines per request                | 12FACT  |
 | OPS-002    | MissingPrecommit        | Pre-commit hooks for quality gates          | Day 6   |
 
 ### Django/ORM Architecture Rules -- Source: FWDOCS + ARCH90

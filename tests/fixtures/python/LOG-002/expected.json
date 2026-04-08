@@ -1,0 +1,28 @@
+{
+  "rule_id": "LOG-002",
+  "description": "SensitiveDataInLog -- logger calls referencing password/secret/token/api_key variables",
+  "fixtures": {
+    "fail_password_in_log.py": {
+      "expected_findings": [
+        {
+          "severity": "warn",
+          "line": 9,
+          "message_contains": "sensitive"
+        },
+        {
+          "severity": "warn",
+          "line": 11,
+          "message_contains": "sensitive"
+        },
+        {
+          "severity": "warn",
+          "line": 12,
+          "message_contains": "sensitive"
+        }
+      ]
+    },
+    "pass_safe_logging.py": {
+      "expected_findings": []
+    }
+  }
+}

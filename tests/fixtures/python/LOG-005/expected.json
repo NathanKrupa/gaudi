@@ -1,0 +1,18 @@
+{
+  "rule_id": "LOG-005",
+  "description": "NoCorrelationID -- endpoint handler logs without request/correlation id in extra",
+  "fixtures": {
+    "fail_endpoint_no_correlation.py": {
+      "expected_findings": [
+        {
+          "severity": "info",
+          "line": 13,
+          "message_contains": "correlation"
+        }
+      ]
+    },
+    "pass_endpoint_with_request_id.py": {
+      "expected_findings": []
+    }
+  }
+}
