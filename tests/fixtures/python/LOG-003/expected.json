@@ -1,0 +1,23 @@
+{
+  "rule_id": "LOG-003",
+  "description": "InconsistentLoggerName -- getLogger called with hardcoded string instead of __name__",
+  "fixtures": {
+    "fail_hardcoded_logger_name.py": {
+      "expected_findings": [
+        {
+          "severity": "info",
+          "line": 5,
+          "message_contains": "hardcoded"
+        },
+        {
+          "severity": "info",
+          "line": 6,
+          "message_contains": "hardcoded"
+        }
+      ]
+    },
+    "pass_dunder_name_logger.py": {
+      "expected_findings": []
+    }
+  }
+}
