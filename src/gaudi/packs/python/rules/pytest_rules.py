@@ -222,9 +222,7 @@ class PytestNoTestCoverage(Rule):
             stem = f.path.stem
             expected_test = f"test_{stem}"
             if expected_test not in test_stems:
-                findings.append(
-                    self.finding(file=f.relative_path, stem=stem)
-                )
+                findings.append(self.finding(file=f.relative_path, stem=stem))
         return findings
 
 
@@ -278,9 +276,7 @@ class PytestFixtureDependencyDepth(Rule):
     severity = Severity.INFO
     category = Category.STRUCTURE
     requires_library = "pytest"
-    message_template = (
-        "Fixture '{name}' depends on {count} other fixtures (threshold {threshold})"
-    )
+    message_template = "Fixture '{name}' depends on {count} other fixtures (threshold {threshold})"
     recommendation_template = (
         "Flatten the fixture graph: inline trivial dependencies, or compose explicit setup "
         "objects in a single fixture. Deep fixture chains make failure diagnosis painful."
@@ -300,9 +296,7 @@ class PytestFixtureDependencyDepth(Rule):
                     continue
                 if not self._is_pytest_fixture(node):
                     continue
-                deps = [
-                    a.arg for a in node.args.args if a.arg not in {"self", "cls", "request"}
-                ]
+                deps = [a.arg for a in node.args.args if a.arg not in {"self", "cls", "request"}]
                 if len(deps) >= _FIXTURE_DEPENDENCY_THRESHOLD:
                     findings.append(
                         self.finding(
@@ -341,9 +335,7 @@ class PytestTestMethodTooLong(Rule):
     severity = Severity.WARN
     category = Category.STRUCTURE
     requires_library = "pytest"
-    message_template = (
-        "Test '{name}' body is {length} lines (limit {limit}) -- split it"
-    )
+    message_template = "Test '{name}' body is {length} lines (limit {limit}) -- split it"
     recommendation_template = (
         "A test should exercise one behaviour. Split the function along its arrange/act/"
         "assert seams, or extract setup into a fixture."
