@@ -134,7 +134,9 @@ class MissingContribGuide(Rule):
 # ---------------------------------------------------------------
 
 
-_HOST_LITERALS = frozenset({"0.0.0.0", "127.0.0.1", "localhost", "::", "::1"})
+# nosec B104: this set is the rule's *detection target*, not an actual bind.
+# Gaudi never opens a socket; these strings are matched against user code.
+_HOST_LITERALS = frozenset({"0.0.0.0", "127.0.0.1", "localhost", "::", "::1"})  # nosec B104
 _EXEMPT_FILENAMES = frozenset({"config.py", "settings.py", "conftest.py"})
 _EXEMPT_DIR_NAMES = frozenset({"config", "settings", "tests", "test"})
 
@@ -169,9 +171,7 @@ class HardcodedPortOrHost(Rule):
     code = "OPS-008"
     severity = Severity.WARN
     category = Category.OPERATIONS
-    message_template = (
-        "Hardcoded {kind} {value!r} passed to {call}() at line {line}"
-    )
+    message_template = "Hardcoded {kind} {value!r} passed to {call}() at line {line}"
     recommendation_template = (
         "Read host and port from configuration (env var, settings module),"
         " not from a literal. Hardcoded binds resist deployment to staging,"
@@ -197,9 +197,7 @@ class HardcodedPortOrHost(Rule):
                         findings.append(finding)
         return findings
 
-    def _check_keyword(
-        self, relative_path: str, call_name: str, kw: ast.keyword
-    ) -> Finding | None:
+    def _check_keyword(self, relative_path: str, call_name: str, kw: ast.keyword) -> Finding | None:
         if kw.arg not in {"host", "port"}:
             return None
         value_node = kw.value
