@@ -138,6 +138,10 @@ All 24 rules map directly to Fowler's smell catalog in *Refactoring* (2nd ed.), 
 | AWS-SCALE-001   | UnpaginatedList          | boto3       | FWDOCS: boto3 pagination                |
 | DRF-SEC-001     | DRFNoPermissionClass     | DRF         | FWDOCS: DRF permissions                 |
 | DRF-SCALE-001   | DRFNoThrottling          | DRF         | FWDOCS: DRF throttling                  |
+| DJ-ARCH-001     | BusinessLogicInSerializer| DRF         | Two Scoops of Django; ARCH90            |
+| DJ-ARCH-002     | BusinessLogicInSignal    | Django      | Two Scoops of Django; ARCH90            |
+| DJ-ARCH-003     | ModelCallsExternalService| Django      | ARCH90: inner layer never reaches out   |
+| DJ-ARCH-004     | TransactionBoundaryViolation | Django  | Django docs: atomic + network I/O       |
 
 ### Python 3.14 Compatibility -- Source: PY314
 
