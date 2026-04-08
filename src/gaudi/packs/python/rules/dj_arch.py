@@ -161,16 +161,20 @@ def _is_receiver_decorator(dec: ast.expr) -> bool:
     if not isinstance(dec, ast.Call):
         return False
     func = dec.func
-    name = func.id if isinstance(func, ast.Name) else (
-        func.attr if isinstance(func, ast.Attribute) else None
+    name = (
+        func.id
+        if isinstance(func, ast.Name)
+        else (func.attr if isinstance(func, ast.Attribute) else None)
     )
     if name != "receiver":
         return False
     if not dec.args:
         return False
     first = dec.args[0]
-    first_name = first.id if isinstance(first, ast.Name) else (
-        first.attr if isinstance(first, ast.Attribute) else None
+    first_name = (
+        first.id
+        if isinstance(first, ast.Name)
+        else (first.attr if isinstance(first, ast.Attribute) else None)
     )
     return first_name in _SIGNAL_NAMES
 
