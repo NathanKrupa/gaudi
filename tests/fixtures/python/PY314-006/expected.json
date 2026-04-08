@@ -1,0 +1,26 @@
+{
+  "rule_id": "PY314-006",
+  "description": "TarfileNoFilter -- tarfile.extract/extractall must declare an explicit filter",
+  "fixtures": {
+    "fail_extract_no_filter.py": {
+      "expected_findings": [
+        {
+          "severity": "warn",
+          "line": 8,
+          "message_contains": "filter"
+        },
+        {
+          "severity": "warn",
+          "line": 13,
+          "message_contains": "filter"
+        }
+      ]
+    },
+    "pass_extract_with_filter.py": {
+      "expected_findings": []
+    },
+    "pass_no_tarfile.py": {
+      "expected_findings": []
+    }
+  }
+}
