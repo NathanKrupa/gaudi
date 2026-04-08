@@ -8,9 +8,13 @@ and general Python project layout using AST parsing.
 from __future__ import annotations
 
 import ast
-import re
 from pathlib import Path
 
+from gaudi.excludes import (
+    CORE_EXCLUDE_GLOBS,
+    compile_exclude_patterns,
+    is_excluded,
+)
 from gaudi.packs.python.context import (
     ColumnInfo,
     FileInfo,
@@ -99,69 +103,15 @@ DJANGO_FIELD_TYPES = frozenset(
 DJANGO_IMPORTS = frozenset({"django.db", "django.db.models", "models.Model"})
 SQLALCHEMY_IMPORTS = frozenset({"sqlalchemy", "sqlalchemy.orm"})
 
-# Built-in glob patterns excluded from analysis on every project. Stored in the
-# same gitignore-ish format as user-supplied excludes from gaudi.toml so a single
-# code path applies them. ``migrations`` is here for parity with the previous
-# hardcoded set; removing it is tracked as a follow-up.
+# Built-in glob patterns excluded from analysis on every Python project.
+# Layered on top of the universal CORE_EXCLUDE_GLOBS from gaudi.excludes.
+# ``migrations`` is here because Django auto-generates that directory and
+# it never reflects intentional architecture; removing it is tracked as
+# a follow-up.
 DEFAULT_EXCLUDE_GLOBS: tuple[str, ...] = (
-    "**/venv/**",
-    "**/.venv/**",
-    "**/env/**",
-    "**/.env/**",
-    "**/node_modules/**",
-    "**/__pycache__/**",
-    "**/.git/**",
+    *CORE_EXCLUDE_GLOBS,
     "**/migrations/**",
 )
-
-
-def _compile_glob(pattern: str) -> re.Pattern[str]:
-    """Translate a gitignore-ish glob into an anchored regex.
-
-    Supported syntax:
-      ``**`` -- match any number of path segments (including zero)
-      ``*``  -- match any characters except ``/``
-      ``?``  -- match a single character except ``/``
-
-    Patterns are matched against POSIX-style relative paths.
-    """
-    out: list[str] = ["^"]
-    i = 0
-    while i < len(pattern):
-        c = pattern[i]
-        if c == "*" and i + 1 < len(pattern) and pattern[i + 1] == "*":
-            i += 2
-            if i < len(pattern) and pattern[i] == "/":
-                # ``**/`` matches zero or more leading directories.
-                out.append("(?:.*/)?")
-                i += 1
-            else:
-                # Trailing ``**`` matches anything (including ``/``).
-                out.append(".*")
-        elif c == "*":
-            out.append("[^/]*")
-            i += 1
-        elif c == "?":
-            out.append("[^/]")
-            i += 1
-        elif c in r".+()|^${}\\":
-            out.append("\\" + c)
-            i += 1
-        else:
-            out.append(c)
-            i += 1
-    out.append("$")
-    return re.compile("".join(out))
-
-
-def _compile_exclude_patterns(patterns: list[str] | tuple[str, ...]) -> list[re.Pattern[str]]:
-    return [_compile_glob(p) for p in patterns]
-
-
-def _is_excluded(relpath: str, compiled: list[re.Pattern[str]]) -> bool:
-    """Return True if the POSIX-normalized relative path matches any pattern."""
-    posix = relpath.replace("\\", "/")
-    return any(rx.match(posix) for rx in compiled)
 
 
 def parse_project(path: Path, extra_excludes: list[str] | None = None) -> PythonContext:
@@ -180,9 +130,9 @@ def parse_project(path: Path, extra_excludes: list[str] | None = None) -> Python
         py_files = [path]
     else:
         all_patterns = list(DEFAULT_EXCLUDE_GLOBS) + list(extra_excludes or [])
-        compiled = _compile_exclude_patterns(all_patterns)
+        compiled = compile_exclude_patterns(all_patterns)
         candidates = sorted(path.rglob("*.py"))
-        py_files = [f for f in candidates if not _is_excluded(str(f.relative_to(path)), compiled)]
+        py_files = [f for f in candidates if not is_excluded(str(f.relative_to(path)), compiled)]
 
     # Detect project-level files
     if path.is_dir():

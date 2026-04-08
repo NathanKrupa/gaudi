@@ -27,6 +27,7 @@ class Pack:
     name: str = ""
     description: str = ""
     extensions: tuple[str, ...] = ()  # File extensions this pack handles
+    filenames: tuple[str, ...] = ()  # Bare filenames (no extension) this pack handles
 
     def __init__(self) -> None:
         self._rules: list[Rule] = []
@@ -36,12 +37,22 @@ class Pack:
         return list(self._rules)
 
     def can_handle(self, path: Path) -> bool:
-        """Check if this pack can handle files at the given path."""
+        """Check if this pack can handle files at the given path.
+
+        A pack matches by file extension (``extensions``) or by bare filename
+        (``filenames``). Filename matching exists for files with no extension —
+        Dockerfile, Makefile, CODEOWNERS — that a pack still wants to claim.
+        """
         if path.is_file():
-            return path.suffix in self.extensions
+            if path.suffix in self.extensions:
+                return True
+            return path.name in self.filenames
         if path.is_dir():
             for ext in self.extensions:
                 if next(path.rglob(f"*{ext}"), None) is not None:
+                    return True
+            for name in self.filenames:
+                if next(path.rglob(name), None) is not None:
                     return True
         return False
 

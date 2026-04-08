@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import Any, Iterator
 
 DEFAULT_LANGUAGE = "python"
+KNOWN_LANGUAGES: tuple[str, ...] = ("python", "ops")
 CORPUS_ROOT = Path(__file__).parent / "fixtures"
 PYTHON_CORPUS = CORPUS_ROOT / DEFAULT_LANGUAGE
 
@@ -102,10 +103,22 @@ def _cases_for_rule_dir(rule_dir: Path) -> list[FixtureCase]:
 
 
 def discover_cases(language: str = DEFAULT_LANGUAGE) -> list[FixtureCase]:
-    """Discover every (rule, fixture) case in the corpus for parametrized tests."""
+    """Discover every (rule, fixture) case in the corpus for one language tree."""
     cases: list[FixtureCase] = []
     for rule_dir in discover_rule_dirs(language):
         cases.extend(_cases_for_rule_dir(rule_dir))
+    return cases
+
+
+def discover_all_cases() -> list[FixtureCase]:
+    """Discover cases across every known fixture tree (python, ops, ...).
+
+    This is what the parametrized corpus test uses. Each tree is walked
+    independently; the engine sorts out which pack handles which rule.
+    """
+    cases: list[FixtureCase] = []
+    for language in KNOWN_LANGUAGES:
+        cases.extend(discover_cases(language))
     return cases
 
 

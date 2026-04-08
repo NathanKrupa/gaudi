@@ -1,9 +1,9 @@
-# ABOUTME: Reports which Python pack rules have / lack a fixture directory under tests/fixtures/python/.
+# ABOUTME: Reports which pack rules have / lack a fixture directory under tests/fixtures/<pack>/.
 # ABOUTME: Wired as the `gaudi-fixture-coverage` console entry point in pyproject.toml.
 """Fixture coverage reporter for the Gaudi rule corpus.
 
-Walks every Rule registered in the Python pack and checks whether
-``tests/fixtures/python/<RULE-ID>/`` exists with the minimum required
+Walks every Rule registered across every pack and checks whether
+``tests/fixtures/<pack-name>/<RULE-ID>/`` exists with the minimum required
 artifacts (one fail file, one pass file, one expected.json).
 
 Default exit code is 0 even when rules are uncovered: this is the warn-mode
@@ -18,7 +18,9 @@ import json
 from dataclasses import dataclass
 from pathlib import Path
 
-from gaudi.packs.python.rules import ALL_RULES
+from gaudi.core import Rule
+from gaudi.packs.ops.rules import ALL_RULES as OPS_RULES
+from gaudi.packs.python.rules import ALL_RULES as PYTHON_RULES
 
 
 # Resolve the project root by walking up until we find pyproject.toml. This lets
@@ -31,7 +33,14 @@ def _find_repo_root(start: Path) -> Path:
 
 
 REPO_ROOT = _find_repo_root(Path.cwd())
-PYTHON_FIXTURES = REPO_ROOT / "tests" / "fixtures" / "python"
+FIXTURES_ROOT = REPO_ROOT / "tests" / "fixtures"
+
+# Each entry maps a pack name (= subdirectory under tests/fixtures/) to its
+# rule list. Adding a new pack means adding one row here.
+_PACK_RULES: tuple[tuple[str, tuple[Rule, ...]], ...] = (
+    ("python", tuple(PYTHON_RULES)),
+    ("ops", tuple(OPS_RULES)),
+)
 
 _COL_RULE = "<14"
 _COL_STATUS = "<8"
@@ -82,8 +91,8 @@ def _count_fixtures(rule_dir: Path, prefix: str) -> int:
     return files + dirs
 
 
-def _inspect_rule_dir(rule_id: str) -> RuleCoverage:
-    rule_dir = PYTHON_FIXTURES / rule_id
+def _inspect_rule_dir(pack_name: str, rule_id: str) -> RuleCoverage:
+    rule_dir = FIXTURES_ROOT / pack_name / rule_id
     if not rule_dir.exists():
         return RuleCoverage(rule_id, False, 0, 0, False, False)
 
@@ -102,11 +111,12 @@ def _inspect_rule_dir(rule_id: str) -> RuleCoverage:
 def collect_coverage() -> list[RuleCoverage]:
     seen: set[str] = set()
     coverage: list[RuleCoverage] = []
-    for rule in ALL_RULES:
-        if rule.code in seen:
-            continue
-        seen.add(rule.code)
-        coverage.append(_inspect_rule_dir(rule.code))
+    for pack_name, rules in _PACK_RULES:
+        for rule in rules:
+            if rule.code in seen:
+                continue
+            seen.add(rule.code)
+            coverage.append(_inspect_rule_dir(pack_name, rule.code))
     return sorted(coverage, key=lambda c: c.rule_id)
 
 
