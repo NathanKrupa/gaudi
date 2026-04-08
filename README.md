@@ -179,9 +179,17 @@ severity = "warn"          # minimum severity to report
 exclude = ["migrations/"]  # paths to skip
 
 [gaudi.rules]
-"ARCH-001" = "error"       # override severity
-"IDX-003" = "off"          # disable specific rule
+"ARCH-001" = "error"       # override severity (planned, see Known Limitations)
+"IDX-003" = "off"          # disable specific rule (planned, see Known Limitations)
 ```
+
+## Known Limitations (v0.1.0 alpha)
+
+- **Per-rule severity overrides and disabling are not wired yet.** The `[gaudi.rules]` section in `gaudi.toml` is parsed but not enforced. Path exclusions via `[gaudi].exclude` work as documented.
+- Some library-specific rules use regex on raw text instead of full AST analysis, which can produce false positives.
+- Severity assignments across the catalog have not yet been audited against the doctrine in [docs/principles.md](https://github.com/NathanKrupa/gaudi/blob/main/docs/principles.md). They are not wrong; they are unaudited.
+
+These limitations are tracked in the [issue tracker](https://github.com/NathanKrupa/gaudi/issues) and will be addressed in v0.2.
 
 ## Philosophy
 
