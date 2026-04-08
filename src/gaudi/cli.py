@@ -21,6 +21,7 @@ from rich.text import Text
 from gaudi.config import load_config
 from gaudi.core import Severity
 from gaudi.engine import Engine
+from gaudi.formats import format_github, format_markdown_report
 
 console = Console()
 
@@ -39,9 +40,9 @@ def main():
     "--format",
     "-f",
     "output_format",
-    type=click.Choice(["text", "json"]),
+    type=click.Choice(["text", "json", "github"]),
     default="text",
-    help="Output format.",
+    help="Output format. 'github' emits GitHub Actions workflow commands.",
 )
 @click.option(
     "--severity",
@@ -97,6 +98,8 @@ def check(
             "summary": engine.format_summary(findings),
         }
         click.echo(json.dumps(output, indent=2))
+    elif output_format == "github":
+        click.echo(format_github(findings, project_path=project_path))
     else:
         if not findings:
             console.print()
@@ -139,6 +142,70 @@ def check(
     if exit_code and findings:
         has_errors = any(f.severity == Severity.ERROR for f in findings)
         sys.exit(1 if has_errors else 0)
+
+
+@main.command()
+@click.argument("path", type=click.Path(exists=True), default=".")
+@click.option("--pack", "-p", multiple=True, help="Specific language pack(s) to use.")
+@click.option(
+    "--output",
+    "-o",
+    type=click.Path(),
+    default=None,
+    help="Write the report to this file instead of stdout.",
+)
+@click.option(
+    "--severity",
+    "-s",
+    type=click.Choice(["error", "warn", "info"]),
+    default="info",
+    help="Minimum severity to include in the report.",
+)
+@click.option(
+    "--snippet-context",
+    type=int,
+    default=2,
+    help="Lines of context to show above/below each finding's line.",
+)
+def report(
+    path: str,
+    pack: tuple[str, ...],
+    output: str | None,
+    severity: str,
+    snippet_context: int,
+):
+    """Generate a Markdown findings report for developer/LLM collaboration.
+
+    The report groups findings by file, embeds a code snippet around each
+    finding, and includes a pre-written discussion prompt the developer can
+    paste into a conversation with an LLM. It is intentionally not an
+    autofix — Gaudi's rules are judgment calls, and the report is the
+    opening move in a conversation, not a patch.
+    """
+    project_path = Path(path).resolve()
+
+    config = load_config(project_path)
+    min_severity = Severity(severity or config.get("severity", "info"))
+
+    engine = Engine()
+    engine.discover_packs()
+
+    pack_names = list(pack) if pack else (config["packs"] or None)
+    if pack_names:
+        missing = [p for p in pack_names if p not in engine.packs]
+        if missing:
+            console.print(f"[red]Unknown pack(s): {', '.join(missing)}[/red]")
+            console.print(f"Available packs: {', '.join(engine.packs.keys()) or 'none installed'}")
+            sys.exit(1)
+
+    findings = engine.check(project_path, pack_names=pack_names, min_severity=min_severity)
+    markdown = format_markdown_report(findings, project_path, snippet_context=snippet_context)
+
+    if output:
+        Path(output).write_text(markdown, encoding="utf-8")
+        console.print(f"[green]Wrote report to {output}[/green]")
+    else:
+        click.echo(markdown)
 
 
 @main.command(name="list-packs")
