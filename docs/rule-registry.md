@@ -166,6 +166,20 @@ detectable failure states -- exactly the grammar Gaudi needs.
 
 *STAB-002 (NoCircuitBreaker) removed -- detection too weak (project-level heuristic). Moved to mining queue.*
 
+### Concurrency / Async Rules (ASYNC) -- Source: NYGARD + FWDOCS
+
+Rules covering Python's async ecosystem and thread-pool concurrency. STAB-005
+(BlockingInAsync) catches the single most common mistake; this family expands
+coverage to shared mutable state, missing async context managers, mixed sync/async
+modules, and missing graceful shutdown.
+
+| Code      | Class Name                       | Pattern / Anti-Pattern                          | Source                |
+|-----------|----------------------------------|-------------------------------------------------|-----------------------|
+| ASYNC-001 | SharedMutableStateAcrossThreads  | Module-level mutable mutated inside thread pool | NYGARD Ch. 4          |
+| ASYNC-002 | MissingAsyncContextManager       | aiohttp/httpx async client without async with   | FWDOCS (aiohttp/httpx)|
+| ASYNC-003 | MixedSyncAsyncModule             | Module mixes async def with sync requests calls | FWDOCS (FastAPI)      |
+| ASYNC-004 | NoGracefulShutdown               | asyncio.run() with no signal handler registered | Python asyncio docs   |
+
 ### Dependency Graph Rules (DEP) -- Source: MARTIN
 
 Rules mined from *Clean Architecture*. Module-level coupling metrics that

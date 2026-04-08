@@ -29,6 +29,7 @@ from gaudi.packs.python.rules.errors import ERRORS_RULES
 from gaudi.packs.python.rules.logging_rules import LOGGING_RULES
 from gaudi.packs.python.rules.ops import OPS_RULES
 from gaudi.packs.python.rules.stability import STABILITY_RULES
+from gaudi.packs.python.rules.async_rules import ASYNC_RULES
 from gaudi.packs.python.rules.services import SERVICE_RULES
 from gaudi.packs.python.rules.anthropic_rules import ANTHROPIC_RULES
 from gaudi.packs.python.rules.alembic import ALEMBIC_RULES
@@ -65,6 +66,7 @@ ALL_RULES = (
     *LOGGING_RULES,
     *OPS_RULES,
     *STABILITY_RULES,
+    *ASYNC_RULES,
     *SERVICE_RULES,
     *ANTHROPIC_RULES,
     *ALEMBIC_RULES,
