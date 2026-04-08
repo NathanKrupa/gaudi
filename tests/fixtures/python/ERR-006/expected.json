@@ -1,0 +1,30 @@
+{
+  "rule_id": "ERR-006",
+  "description": "ExceptionInInit -- __init__ raising non-validation exceptions leaves partially constructed objects",
+  "fixtures": {
+    "fail_runtime_in_init.py": {
+      "expected_findings": [
+        {
+          "severity": "warn",
+          "line": 8,
+          "message_contains": "__init__"
+        }
+      ]
+    },
+    "fail_bare_reraise_in_init.py": {
+      "expected_findings": [
+        {
+          "severity": "warn",
+          "line": 9,
+          "message_contains": "__init__"
+        }
+      ]
+    },
+    "pass_value_error.py": {
+      "expected_findings": []
+    },
+    "pass_type_error.py": {
+      "expected_findings": []
+    }
+  }
+}

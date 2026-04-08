@@ -1,0 +1,30 @@
+{
+  "rule_id": "ERR-002",
+  "description": "BroadTryBlock -- try blocks wrapping more than 10 statements mask which operation failed",
+  "fixtures": {
+    "fail_huge_try.py": {
+      "expected_findings": [
+        {
+          "severity": "warn",
+          "line": 5,
+          "message_contains": "try block"
+        }
+      ]
+    },
+    "fail_boundary_eleven.py": {
+      "expected_findings": [
+        {
+          "severity": "warn",
+          "line": 5,
+          "message_contains": "try block"
+        }
+      ]
+    },
+    "pass_small_try.py": {
+      "expected_findings": []
+    },
+    "pass_boundary_ten.py": {
+      "expected_findings": []
+    }
+  }
+}

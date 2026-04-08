@@ -1,0 +1,21 @@
+{
+  "rule_id": "ERR-005",
+  "description": "InconsistentExceptions -- modules raising 4+ unrelated exception types are unpredictable for callers",
+  "fixtures": {
+    "fail_unrelated_exceptions.py": {
+      "expected_findings": [
+        {
+          "severity": "info",
+          "line": 1,
+          "message_contains": "unrelated exception types"
+        }
+      ]
+    },
+    "pass_shared_base.py": {
+      "expected_findings": []
+    },
+    "pass_few_exceptions.py": {
+      "expected_findings": []
+    }
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "rule_id": "ERR-004",
+  "description": "ExceptPass -- except handler whose body is just `pass` silently swallows the error",
+  "fixtures": {
+    "fail_except_pass.py": {
+      "expected_findings": [
+        {
+          "severity": "warn",
+          "line": 7,
+          "message_contains": "silently swallows"
+        }
+      ]
+    },
+    "pass_handled.py": {
+      "expected_findings": []
+    }
+  }
+}
