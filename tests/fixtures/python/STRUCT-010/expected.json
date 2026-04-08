@@ -1,0 +1,26 @@
+{
+  "rule_id": "STRUCT-010",
+  "description": "PathHacks -- sys.path manipulation",
+  "fixtures": {
+    "fail_path_hack.py": {
+      "expected_findings": [
+        {
+          "severity": "error",
+          "line": 5,
+          "message_contains": "sys.path"
+        },
+        {
+          "severity": "error",
+          "line": 6,
+          "message_contains": "sys.path"
+        }
+      ]
+    },
+    "pass_no_path_manipulation.py": {
+      "expected_findings": []
+    },
+    "pass_unrelated_append.py": {
+      "expected_findings": []
+    }
+  }
+}

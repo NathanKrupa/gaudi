@@ -1,0 +1,26 @@
+{
+  "rule_id": "STRUCT-020",
+  "description": "MissingReturnTypes -- public functions must declare a return type",
+  "fixtures": {
+    "fail_no_return_type.py": {
+      "expected_findings": [
+        {
+          "severity": "info",
+          "line": 4,
+          "message_contains": "total"
+        },
+        {
+          "severity": "info",
+          "line": 8,
+          "message_contains": "greeting"
+        }
+      ]
+    },
+    "pass_with_return_types.py": {
+      "expected_findings": []
+    },
+    "pass_private_functions.py": {
+      "expected_findings": []
+    }
+  }
+}

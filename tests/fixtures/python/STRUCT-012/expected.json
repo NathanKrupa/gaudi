@@ -1,0 +1,20 @@
+{
+  "rule_id": "STRUCT-012",
+  "description": "NoEntryPoint -- script with CLI logic must register a console_scripts entry point",
+  "fixtures": {
+    "fail_cli_no_entry.py": {
+      "expected_findings": [
+        {
+          "severity": "warn",
+          "message_contains": "entry point"
+        }
+      ]
+    },
+    "pass_no_main_guard.py": {
+      "expected_findings": []
+    },
+    "pass_no_cli_imports.py": {
+      "expected_findings": []
+    }
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "rule_id": "STRUCT-001",
+  "description": "SingleFileModels -- too many models in one file",
+  "fixtures": {
+    "fail_too_many_models.py": {
+      "expected_findings": [
+        {
+          "severity": "warn",
+          "message_contains": "models"
+        }
+      ]
+    },
+    "pass_few_models.py": {
+      "expected_findings": []
+    },
+    "pass_seven_models.py": {
+      "expected_findings": []
+    }
+  }
+}
