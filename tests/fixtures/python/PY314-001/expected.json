@@ -1,0 +1,31 @@
+{
+  "rule_id": "PY314-001",
+  "description": "RemovedIn314Import -- imports removed in Python 3.14",
+  "fixtures": {
+    "fail_removed_imports.py": {
+      "expected_findings": [
+        {
+          "severity": "error",
+          "line": 3,
+          "message_contains": "Num"
+        },
+        {
+          "severity": "error",
+          "line": 4,
+          "message_contains": "set_child_watcher"
+        },
+        {
+          "severity": "error",
+          "line": 5,
+          "message_contains": "version"
+        }
+      ]
+    },
+    "pass_modern_imports.py": {
+      "expected_findings": []
+    },
+    "pass_unrelated_imports.py": {
+      "expected_findings": []
+    }
+  }
+}

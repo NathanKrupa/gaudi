@@ -1,0 +1,26 @@
+{
+  "rule_id": "PY314-003",
+  "description": "DeferredAnnotationAccess -- direct __annotations__ access is unsafe under PEP 649",
+  "fixtures": {
+    "fail_direct_annotations.py": {
+      "expected_findings": [
+        {
+          "severity": "warn",
+          "line": 5,
+          "message_contains": "__annotations__"
+        },
+        {
+          "severity": "warn",
+          "line": 9,
+          "message_contains": "__annotations__"
+        }
+      ]
+    },
+    "pass_get_type_hints.py": {
+      "expected_findings": []
+    },
+    "pass_no_annotations_access.py": {
+      "expected_findings": []
+    }
+  }
+}

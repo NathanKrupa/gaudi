@@ -1,0 +1,31 @@
+{
+  "rule_id": "PY314-002",
+  "description": "DeprecatedIn314Import -- imports deprecated in Python 3.14",
+  "fixtures": {
+    "fail_deprecated_imports.py": {
+      "expected_findings": [
+        {
+          "severity": "warn",
+          "line": 3,
+          "message_contains": "pty"
+        },
+        {
+          "severity": "warn",
+          "line": 4,
+          "message_contains": "iscoroutinefunction"
+        },
+        {
+          "severity": "warn",
+          "line": 5,
+          "message_contains": "getdefaultlocale"
+        }
+      ]
+    },
+    "pass_modern_imports.py": {
+      "expected_findings": []
+    },
+    "pass_unrelated_imports.py": {
+      "expected_findings": []
+    }
+  }
+}

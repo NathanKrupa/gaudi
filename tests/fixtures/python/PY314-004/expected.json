@@ -1,0 +1,26 @@
+{
+  "rule_id": "PY314-004",
+  "description": "FinallyControlFlow -- return/break/continue in finally silently swallow exceptions",
+  "fixtures": {
+    "fail_finally_control_flow.py": {
+      "expected_findings": [
+        {
+          "severity": "warn",
+          "line": 8,
+          "message_contains": "return"
+        },
+        {
+          "severity": "warn",
+          "line": 16,
+          "message_contains": "break"
+        }
+      ]
+    },
+    "pass_finally_cleanup_only.py": {
+      "expected_findings": []
+    },
+    "pass_no_finally.py": {
+      "expected_findings": []
+    }
+  }
+}

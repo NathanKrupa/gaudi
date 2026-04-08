@@ -1,0 +1,26 @@
+{
+  "rule_id": "PY314-005",
+  "description": "NotImplementedBoolContext -- using NotImplemented in if/while raises TypeError in 3.14",
+  "fixtures": {
+    "fail_notimplemented_bool.py": {
+      "expected_findings": [
+        {
+          "severity": "error",
+          "line": 5,
+          "message_contains": "NotImplemented"
+        },
+        {
+          "severity": "error",
+          "line": 11,
+          "message_contains": "NotImplemented"
+        }
+      ]
+    },
+    "pass_is_check.py": {
+      "expected_findings": []
+    },
+    "pass_return_only.py": {
+      "expected_findings": []
+    }
+  }
+}
