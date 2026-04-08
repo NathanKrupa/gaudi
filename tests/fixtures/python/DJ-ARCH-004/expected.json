@@ -1,0 +1,18 @@
+{
+  "rule_id": "DJ-ARCH-004",
+  "description": "TransactionBoundaryViolation -- HTTP call inside @transaction.atomic block",
+  "fixtures": {
+    "fail_http_inside_atomic.py": {
+      "expected_findings": [
+        {
+          "severity": "error",
+          "line": 11,
+          "message_contains": "requests.post"
+        }
+      ]
+    },
+    "pass_http_outside_atomic.py": {
+      "expected_findings": []
+    }
+  }
+}

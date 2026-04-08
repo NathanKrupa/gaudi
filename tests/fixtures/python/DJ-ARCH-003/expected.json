@@ -1,0 +1,18 @@
+{
+  "rule_id": "DJ-ARCH-003",
+  "description": "ModelCallsExternalService -- model method mixing persistence with side effects",
+  "fixtures": {
+    "fail_model_calls_external_service.py": {
+      "expected_findings": [
+        {
+          "severity": "warn",
+          "line": 10,
+          "message_contains": "Order.notify_warehouse"
+        }
+      ]
+    },
+    "pass_model_pure_method.py": {
+      "expected_findings": []
+    }
+  }
+}

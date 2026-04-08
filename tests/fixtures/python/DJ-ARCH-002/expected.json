@@ -1,0 +1,18 @@
+{
+  "rule_id": "DJ-ARCH-002",
+  "description": "BusinessLogicInSignal -- post_save / pre_save handler with complex orchestration",
+  "fixtures": {
+    "fail_signal_with_orchestration.py": {
+      "expected_findings": [
+        {
+          "severity": "warn",
+          "line": 10,
+          "message_contains": "order_post_save"
+        }
+      ]
+    },
+    "pass_signal_thin.py": {
+      "expected_findings": []
+    }
+  }
+}

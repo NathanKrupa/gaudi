@@ -1,0 +1,18 @@
+{
+  "rule_id": "DJ-ARCH-001",
+  "description": "BusinessLogicInSerializer -- DRF serializer create()/update() carrying domain logic",
+  "fixtures": {
+    "fail_serializer_create_business_logic.py": {
+      "expected_findings": [
+        {
+          "severity": "warn",
+          "line": 11,
+          "message_contains": "OrderSerializer.create"
+        }
+      ]
+    },
+    "pass_serializer_thin_create.py": {
+      "expected_findings": []
+    }
+  }
+}
