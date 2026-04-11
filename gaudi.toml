@@ -5,4 +5,10 @@
 # like venv/ and __pycache__/). The fixture corpus under tests/fixtures/
 # contains deliberately broken sample code that exists to drive the rule
 # tests; running rules against it produces noise, not signal.
-exclude = ["tests/fixtures/**"]
+exclude = [
+    "tests/fixtures/**",
+    # Philosophy exemplar seed data is intentionally structured as repeated
+    # dict keys and SKU literals. STRUCT-021 (magic strings) treats this as
+    # noise; the file is test data, not production code.
+    "tests/philosophy/seed_data.py",
+]
