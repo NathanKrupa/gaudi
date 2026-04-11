@@ -276,3 +276,178 @@ anti-patterns detectable within a single Python project.
 | DOM-001 | AnemicDomainModel    | WARN     | Yes         | Domain class with 5+ fields and zero behavior methods           |
 | DOM-002 | WrongLayerPlacement  | WARN     | Yes         | View function with a 4+ branch if/elif chain (business logic)   |
 | DOM-003 | ActiveRecordMisuse   | INFO     | Yes         | Model method calls requests / send_mail / celery / boto3 / smtp |
+
+---
+
+## Philosophy Scope Audit
+
+**Status:** Phase 0b. Editorial only; no engine wiring yet.
+
+Every implemented rule in this registry carries, in addition to its source
+provenance, a **philosophy scope**: the set of architectural schools under
+which the rule is defensible. The scope is either `universal` (the rule
+descends from Gaudi's three pillars and holds in every school) or a
+specific list of schools (the rule depends on axioms that not every school
+accepts).
+
+The eight schools are defined in [docs/philosophy/](philosophy/). Each
+non-universal tag below appeals to the axiom sheet that justifies the
+scope decision.
+
+### Methodology
+
+A rule is **universal** if and only if removing it would make at least one
+of the three pillars (Truthfulness, Economy, Cost-honesty) less defensible
+in *every* school. A rule is **scoped** if at least one school's prime
+axiom actively contradicts it — not merely declines to emphasize it, but
+would label the rule wrong when applied to an exemplary codebase of that
+school.
+
+The test is strict: tolerance is not contradiction. A Pragmatic codebase
+may not care about interface segregation, but it does not consider the
+rule *wrong* on a Classical codebase. That is tolerance, and the rule
+remains universal. A Data-Oriented codebase actively rejects
+"replace loop with pipeline" because fused manual loops are cache-coherent
+and pipelines allocate — that is contradiction, and the rule is scoped
+away from Data-Oriented.
+
+### Summary
+
+Of the ~124 currently implemented rules:
+
+- **~102 (82%) are universal** — they descend from the three pillars and
+  hold in every school.
+- **~22 (18%) are scoped** — they depend on school-specific axioms.
+
+This result is load-bearing: it validates the prediction that philosophy
+scoping needs only a small amount of machinery, because the catalog is
+already mostly universal. The engine change (Phase 1) can be small
+because the audit is small.
+
+### Scoped Rules (the 22)
+
+These rules have non-universal scope. Each entry names the schools under
+which the rule remains defensible and cites the axiom sheet that justifies
+the exclusion. Rules not listed here are universal.
+
+| Rule | Scoped to (schools) | Excluded from | Justification |
+|---|---|---|---|
+| **SMELL-009** FeatureEnvy | classical, convention | functional, data-oriented, unix, event-sourced | Method-envy is an OOP smell about data ownership. Under [functional.md](philosophy/functional.md) and [data-oriented.md](philosophy/data-oriented.md), functions do not own data at all — the concept does not translate. Unix modules are namespaces, not owners. |
+| **SMELL-011** PrimitiveObsession | classical, functional, convention, event-sourced | unix, data-oriented | [unix.md](philosophy/unix.md) uses plain dicts/tuples at module boundaries as a virtue; [data-oriented.md](philosophy/data-oriented.md) prefers packed primitives for cache locality. Wrapping primitives in domain types is contrary to both axioms. |
+| **SMELL-013** Loops | classical, pragmatic, functional, unix, resilient, convention, event-sourced | data-oriented | Fowler's smell advocates pipeline operations; [data-oriented.md](philosophy/data-oriented.md) prefers manual fused loops because pipelines allocate intermediate collections and thrash cache. Direct contradiction of the Data-Oriented catechism. |
+| **SMELL-014** LazyElement | pragmatic, unix, functional, data-oriented | classical, convention, resilient, event-sourced | Pragmatic and Unix aggressively remove pass-through abstractions; Classical and Convention often want the thin seam "for future extensibility" — exactly the speculative generality [pragmatic.md](philosophy/pragmatic.md) refuses. Resilient/Event-Sourced sometimes need the seam for supervision or aggregate boundaries. |
+| **SMELL-015** SpeculativeGenerality | pragmatic, unix, functional, data-oriented | classical, convention, resilient, event-sourced | The canonical Pragmatic rule — see [pragmatic.md](philosophy/pragmatic.md) catechism #1. Classical and Convention both permit (even encourage) extensibility hooks that Pragmatic rejects until a second caller materializes. |
+| **SMELL-018** MiddleMan | pragmatic, unix, functional | classical, convention, resilient, data-oriented, event-sourced | Similar to LazyElement but specifically about delegation wrappers. Classical sometimes wants the indirection for decoupling. Resilient uses wrapper layers for circuit breakers and instrumentation. Event-Sourced uses them around aggregates. |
+| **SMELL-020** LargeClass | classical, pragmatic, functional, unix, resilient, data-oriented, event-sourced | convention | [convention.md](philosophy/convention.md) explicitly embraces fat models as the blessed Django/Rails pattern (see catechism #1 and the DJ-ARCH-001/002 rules enforcing the same). A "large class" in Django is a correctly-populated ActiveRecord, not a smell. |
+| **SMELL-022** DataClassSmell | classical, convention | functional, data-oriented, event-sourced, unix | Fowler treats "classes that are just data" as anemic. [functional.md](philosophy/functional.md) catechism #1 makes frozen dataclasses the *primary* building block. [data-oriented.md](philosophy/data-oriented.md) treats pure data as the entire point. [event-sourced.md](philosophy/event-sourced.md) requires events to be exactly this shape. Direct axiom conflict. |
+| **SMELL-023** RefusedBequest | classical, convention | functional, data-oriented, unix, event-sourced | Inheritance-specific smell. Schools that reject inheritance as a reuse mechanism have no bequest to refuse. See [functional.md](philosophy/functional.md) rejected alternative #4. |
+| **LOG-004** PrintInsteadOfLog | classical, pragmatic, functional, resilient, data-oriented, convention, event-sourced | unix | [unix.md](philosophy/unix.md) catechism #2: text flowing through stdout *is* the universal interface. A Unix program that logs to stderr and emits data on stdout is correct; forcing it to use a structured logger for its data stream is the antithesis of the axiom. |
+| **LOG-005** NoCorrelationID | classical, pragmatic, functional, resilient, convention, event-sourced | unix, data-oriented | Correlation IDs matter for request-serving long-lived systems. [unix.md](philosophy/unix.md) one-shot scripts and [data-oriented.md](philosophy/data-oriented.md) batch jobs are neither. Firing this rule on a `gaudi check` run is a false positive. |
+| **OPS-009** MissingHealthCheck | classical, pragmatic, functional, resilient, convention, event-sourced | unix, data-oriented | Same reasoning as LOG-005: health checks are a concept for long-lived services. One-shot scripts and batch jobs do not have a meaningful "health" to check. |
+| **ARCH-002** GodModel | classical, pragmatic, functional, unix, resilient, data-oriented, event-sourced | convention | Same as SMELL-020: Convention explicitly blesses fat models. |
+| **SCHEMA-001** MissingTimestamps | classical, convention | functional, unix, data-oriented, event-sourced, pragmatic, resilient | Pragmatic refuses premature timestamps until a requirement demands them. [event-sourced.md](philosophy/event-sourced.md) notes that events have timestamps; current-state rows in a projection do not need them because the log already carries time. |
+| **STRUCT-001** SingleFileModels | classical, pragmatic, functional, unix, resilient, data-oriented, event-sourced | convention | Convention's `models.py` is load-bearing — it is exactly where the framework expects models to live. Splitting them because the file grew large is fighting the framework, which [convention.md](philosophy/convention.md) explicitly forbids. |
+| **FLASK-STRUCT-001** NoAppFactory | classical, convention | others | Framework-specific best practice. Only meaningful under Classical (testability via factory) and Convention (framework idiom). |
+| **DRF-SCALE-001** NoThrottling | classical, resilient, convention | pragmatic, functional, unix, data-oriented, event-sourced | Throttling is a resilience pattern for public APIs. Pragmatic adds it when abuse materializes, not speculatively. Unix/Data-Oriented/Event-Sourced systems typically have different trust boundaries. |
+| **STAB-008** IntegrationPointNoFallback | classical, resilient, convention, event-sourced | pragmatic, unix, functional, data-oriented | Fallbacks are Resilient's catechism #5. [pragmatic.md](philosophy/pragmatic.md) considers adding fallbacks before an outage materializes to be speculative generality. Unix's "worse is better" tolerates partial failure; Data-Oriented treats this as out-of-scope entirely. |
+| **STAB-010** SharedResourcePool | classical, resilient, event-sourced | pragmatic, functional, unix, data-oriented, convention | Bulkheading is Nygard's canonical pattern and Resilient's catechism #4. The schools listed as excluded either do not operate at the scale where bulkheads matter or consider the pattern premature. |
+| **STAB-011** MissingHealthEndpoint | classical, pragmatic, functional, resilient, convention, event-sourced | unix, data-oriented | Same as OPS-009. |
+| **ASYNC-004** NoGracefulShutdown | classical, pragmatic, functional, resilient, convention, event-sourced | unix, data-oriented | Graceful shutdown matters for long-lived processes. One-shot Unix scripts and batch Data-Oriented jobs terminate by completing, not by receiving a signal. |
+| **DOM-001** AnemicDomainModel | classical, convention | functional, data-oriented, event-sourced, unix, pragmatic | Fowler's DDD-era critique of data-without-behavior. Every school listed as excluded uses anemic records deliberately: [functional.md](philosophy/functional.md) catechism #1, [data-oriented.md](philosophy/data-oriented.md) catechism #7, [event-sourced.md](philosophy/event-sourced.md) catechism #1. Pragmatic considers the extraction-of-behavior-into-methods premature until a caller needs it. |
+
+### Universal Rules (the ~102)
+
+All other implemented rules are universal. A rule is universal if it
+descends directly from the three pillars and the fourteen principles of
+[principles.md](principles.md) in a form every school would defend. The
+universal rules include:
+
+- **All of SMELL** except 009, 011, 013, 014, 015, 018, 020, 022, 023. The
+  remaining Fowler smells (mysterious names, long functions, long
+  parameter lists, global data, duplicated code, shotgun surgery, data
+  clumps, repeated switches, temporary field, message chains, alternative
+  interfaces, comments) appeal directly to Truthfulness #3 and Economy #6
+  and hold in every school.
+- **All of STRUCT** (010–013, 020–021) except 001. Packaging, pyproject,
+  entry points, lockfiles, return types, and magic strings are universal
+  infrastructure concerns.
+- **All of ARCH** (010, 011, 013, 020, 022) except 002. Import direction,
+  connector-logic leakage, fat scripts, env leakage, and scattered config
+  are Principle #1, #5, #9, and #10 applied directly.
+- **All of ERR** (001–006). Principle #4 (failure must be named) is a
+  three-pillar claim; no school denies it.
+- **All of LOG** (001–003) except 004 and 005. Structured logging,
+  sensitive-data-in-log, and logger-naming hierarchy are Principle #13
+  applied directly.
+- **All of OPS** (002, 006–008) except 009. Pre-commit, Docker hygiene,
+  host/port config are Principle #14 (reversibility) and Principle #5
+  (state must be visible).
+- **ARCH-001 NoTenantIsolation** and **ARCH-003 NullableForeignKeySprawl**.
+  Multi-tenant isolation is a security concern; nullable-FK sprawl is a
+  data-modeling concern that survives translation.
+- **All of IDX** (001–002). Missing indexes are Principle #4 (unbounded
+  result sets are a form of unnamed failure).
+- **SCHEMA-002, SCHEMA-003**. Schema-level bounds concerns.
+- **SEC-001**. Security is universal.
+- **DJ-SEC-001**, **DJ-SEC-002**, **DJ-STRUCT-001**, **FAPI-ARCH-001**,
+  **FAPI-SCALE-001**, **SA-SCALE-001**, **CELERY-ARCH-001**,
+  **CELERY-SCALE-001**, **PD-ARCH-001**, **PD-SCALE-001**,
+  **HTTP-SCALE-001**, **PYD-ARCH-001**. Library-specific rules that
+  enforce the target library's own best practices; no school contradicts
+  the library's own documentation of itself.
+- **All of TEST** (STRUCT-001/002/003, SCALE-001, ARCH-001/002/003).
+  Principle #12 (tests are the specification) is universal.
+- **All of AWS** (ARCH-001, ERR-001, SCALE-001). Cloud infrastructure
+  rules grounded in Principle #4 and #5.
+- **DRF-SEC-001**. Security.
+- **DJ-ARCH-001, 002, 003, 004**. Business logic in the wrong layer is a
+  Principle #9 / #10 concern that every school defends.
+- **All of PY314** (001–006). Language compatibility; not philosophical.
+- **All of STAB** (001, 003–007, 009) except 008, 010, 011. Principle #4
+  applied to resource exhaustion and retry discipline; every school
+  defends the bounded loop and the owned resource.
+- **ASYNC-001, 002, 003**. Shared mutable state, async context managers,
+  and sync/async mixing are Principle #5 and #4.
+- **All of API** (001–004). Pagination, consistent return types, ID
+  leakage, and error schemas are Principle #4 and #11 (reader is user).
+- **All of DEP** (001–004). Dependency direction and stability are
+  Principle #9 applied to the import graph.
+- **All of CPLX** (001–004). Ousterhout's module-shape heuristics are
+  Principle #7 (layers must earn their existence).
+- **DOM-002 WrongLayerPlacement**, **DOM-003 ActiveRecordMisuse**.
+  Business logic in views and models calling external services are
+  Principle #9 and #10.
+
+### What the audit tells us
+
+Three observations worth recording:
+
+1. **Universality is the rule, scope is the exception.** ~82% universal
+   validates the approach of treating the principles as the core and the
+   schools as material expressions. If the audit had come back 50/50, the
+   engine change would have been a much larger project. Because it did
+   not, the engine change can be a one-field addition to `Rule`.
+
+2. **Two schools do most of the work of scoping.** Convention and
+   Data-Oriented account for the majority of the exclusions. Convention
+   blesses patterns (fat models, single-file models, blessed timestamps)
+   that other schools treat as smells. Data-Oriented refuses abstractions
+   (pipelines, wrapped primitives, health checks on batch jobs) that
+   other schools assume. These are the two schools a Gaudi engine change
+   most urgently needs to respect.
+
+3. **The hardest cases are Pragmatic-vs-Classical on extensibility.**
+   SMELL-014, SMELL-015, and SMELL-018 are the places where the two
+   schools genuinely disagree about whether a thin layer is a smell or
+   a seam. The audit resolves them in favor of Pragmatic (the rules are
+   Pragmatic-scoped), which is consistent with Gaudi's own doctrine —
+   [principles.md](principles.md) Principle #6 explicitly favors "the
+   best line is the one not written" over preemptive extensibility.
+
+The audit is a snapshot, not a verdict. As the canonical-task exemplars
+are written (Phase 0d+), a cross-fixture test may reveal that a rule
+tagged as universal actually fires incorrectly on a faithful exemplar
+of some school. When that happens, the audit updates, the engine's scope
+table updates, and a new fixture goes into the test matrix to enforce
+the correction. The audit is the first draft of a living specification,
+not the final word.
