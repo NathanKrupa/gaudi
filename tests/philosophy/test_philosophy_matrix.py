@@ -61,6 +61,39 @@ class ExemplarExpectation:
 #   classes those schools treat as dead weight.
 CLASSICAL_EXEMPLAR = "classical/canonical"
 
+# The Pragmatic reference exemplar — the structural opposite of the
+# Classical one. It is a single straight-through function with no
+# classes, no protocols, and no scaffolding. Its gaudi findings are
+# entirely universal rules (SMELL-003 LongFunction, SMELL-004
+# LongParameterList, STRUCT-021 MagicStrings) that fire identically
+# under every school. That stability is *itself* the matrix
+# assertion: universal rules must not shift based on scope, and the
+# Pragmatic exemplar is the clean control condition that proves it.
+PRAGMATIC_EXEMPLAR = "pragmatic/canonical"
+
+# Under every school, the Pragmatic exemplar must trip SMELL-003
+# (long function) and SMELL-004 (long parameter list). These are
+# the deliberate trade-offs the Pragmatic discipline accepts as the
+# honest cost of refusing premature abstraction.
+PRAGMATIC_REQUIRES_EVERYWHERE: frozenset[str] = frozenset({"SMELL-003", "SMELL-004"})
+
+# Under every school, the Pragmatic exemplar must NOT trip any of
+# the anti-extensibility or OOP-specific rules, because it has no
+# classes at all to trip them on. If one of these ever fires on
+# the Pragmatic exemplar, something has regressed: either the
+# implementation grew a class or the scope filter broke.
+PRAGMATIC_FORBIDS_EVERYWHERE: frozenset[str] = frozenset(
+    {
+        "SMELL-014",  # no single-method classes
+        "SMELL-018",  # no middle-man wrappers
+        "SMELL-020",  # no large classes (no classes at all)
+        "SMELL-022",  # no pure-data classes
+        "SMELL-023",  # no inheritance
+        "ARCH-002",  # no models
+        "DOM-001",  # no domain classes
+    }
+)
+
 CLASSICAL_FORBIDS_UNDER_CLASSICAL: frozenset[str] = frozenset(
     {
         # These are the six audit-predicted false positives from
@@ -149,6 +182,30 @@ EXEMPLAR_EXPECTATIONS: list[ExemplarExpectation] = [
         required_rules=frozenset(),
         forbidden_rules=frozenset({"SMELL-014", "SMELL-015", "SMELL-022", "DOM-001", "SMELL-018"}),
     ),
+    # --- Pragmatic exemplar rows ---------------------------------------
+    # Eight rows, one per school. Every row asserts the same universal
+    # findings fire and the same OOP-specific findings stay silent.
+    # The stability across schools is the control-condition assertion.
+    *[
+        ExemplarExpectation(
+            exemplar=PRAGMATIC_EXEMPLAR,
+            school=school,
+            required_rules=PRAGMATIC_REQUIRES_EVERYWHERE,
+            forbidden_rules=PRAGMATIC_FORBIDS_EVERYWHERE,
+        )
+        for school in sorted(
+            {
+                "classical",
+                "pragmatic",
+                "functional",
+                "unix",
+                "resilient",
+                "data-oriented",
+                "convention",
+                "event-sourced",
+            }
+        )
+    ],
 ]
 
 
@@ -209,6 +266,43 @@ class TestPhilosophyMatrix:
         covered = {e.school for e in EXEMPLAR_EXPECTATIONS if e.exemplar == CLASSICAL_EXEMPLAR}
         missing = VALID_SCHOOLS - covered
         assert not missing, f"Classical exemplar matrix is missing schools: {sorted(missing)}"
+
+    def test_pragmatic_exemplar_covered_by_every_school(self) -> None:
+        """The pragmatic exemplar should also run under every school.
+
+        Same drift-catcher as the classical version. Every new
+        reference exemplar earns its own coverage check so the
+        matrix never silently shrinks.
+        """
+        covered = {e.school for e in EXEMPLAR_EXPECTATIONS if e.exemplar == PRAGMATIC_EXEMPLAR}
+        missing = VALID_SCHOOLS - covered
+        assert not missing, f"Pragmatic exemplar matrix is missing schools: {sorted(missing)}"
+
+    def test_pragmatic_exemplar_findings_are_scope_invariant(self) -> None:
+        """Universal rules must not shift based on the active school.
+
+        The Pragmatic exemplar has no classes, so it trips only
+        universal rules (SMELL-003 LongFunction, SMELL-004
+        LongParameterList, STRUCT-021 MagicStrings, plus infra rules
+        like STRUCT-011 and the OPS-00x family). Running it under
+        every valid school must produce the same set of rule codes.
+        If the set diverges, a rule is accidentally leaking a scope
+        decision into a rule the audit classified as universal.
+        """
+        observed = {}
+        for school in VALID_SCHOOLS:
+            findings = _run_exemplar(PRAGMATIC_EXEMPLAR, school)
+            observed[school] = frozenset(f.code for f in findings)
+
+        baseline_school = next(iter(VALID_SCHOOLS))
+        baseline = observed[baseline_school]
+        for school, codes in observed.items():
+            assert codes == baseline, (
+                f"Pragmatic exemplar finding set shifted: under {school!r} "
+                f"got {sorted(codes)}, but under {baseline_school!r} got "
+                f"{sorted(baseline)}. Universal rules must be scope-invariant; "
+                f"a shift indicates an accidentally-scoped rule."
+            )
 
     def test_classical_exemplar_false_positives_resolved_under_classical(self) -> None:
         """The load-bearing regression test for the Phase 1 engine change.
