@@ -55,6 +55,14 @@ dev = [
     # Django cannot be imported, so CI on 3.14 stays green even if
     # pip resolution leaves Django uninstalled.
     "django>=5.0,<6.0; python_version<'3.14'",
+    # Test-only. Used exclusively by the Data-Oriented reference exemplar
+    # under tests/philosophy/data_oriented/canonical/ to demonstrate a
+    # faithful Struct-of-Arrays implementation of the canonical order-
+    # processing task. Gaudi itself has NO runtime dependency on numpy
+    # — the exemplar uses numpy ndarrays as the honest Python expression
+    # of data-oriented memory layout. The Data-Oriented tests are skipped
+    # automatically when numpy cannot be imported (via pytest.importorskip).
+    "numpy>=1.26",
 ]
 
 [project.scripts]

@@ -136,6 +136,27 @@ CONVENTION_EXEMPLAR = "convention/canonical"
 # pipeline with concurrency primitives).
 RESILIENT_EXEMPLAR = "resilient/canonical"
 
+# The Data-Oriented reference exemplar — Struct-of-Arrays numpy
+# columns on a frozen-slots World dataclass, processed in batches
+# stage-by-stage by a single free function. Classes are refused
+# (the World is a record holder with zero methods); virtual
+# dispatch in the inner loop is refused (every stage inlines a
+# concrete numpy op); Decimal in the hot path is refused (money is
+# int64 cents). The exemplar's process_order entry point is a
+# thin adapter that wraps a single order in a batch of one. See
+# ``tests/philosophy/data_oriented/canonical/README.md`` for the
+# rubric (10/10) and findings triage.
+#
+# Unlike the scope-invariant exemplars above, the Data-Oriented
+# exemplar's finding set is NOT identical across every school: the
+# ``LOG-004`` rule (print() calls in bench.py) is scoped away from
+# ``unix``, producing a four-rule delta between the unix row and
+# every other school's row. That delta is a pre-existing rule-
+# level decision and not a Data-Oriented axiom claim, so the
+# exemplar does not join SCOPE_INVARIANT_EXEMPLARS; its matrix
+# rows pin required/forbidden sets directly.
+DATA_ORIENTED_EXEMPLAR = "data_oriented/canonical"
+
 # Exemplars whose finding set is expected to be identical under
 # every valid school. These are the "control conditions" for the
 # matrix: universal rules must be scope-invariant, and a divergence
@@ -305,6 +326,40 @@ CONVENTION_REQUIRES_EVERYWHERE: frozenset[str] = frozenset({"SMELL-003", "STRUCT
 # but with Django Managers as the seam).
 CONVENTION_SMELL_014_FIRES_UNDER: frozenset[str] = frozenset(
     {"pragmatic", "functional", "unix", "data-oriented"}
+)
+
+# The Data-Oriented exemplar's universal required findings. Both
+# are honest costs of the SoA batch discipline:
+#
+# - ``SMELL-003`` on the ~230-line ``process_orders_batch`` and the
+#   ~67-line ``build_world``. Inlining the eight stages into one
+#   function is a deliberate choice so the shared per-batch scratch
+#   arrays (cust_idx, order_rejected, order_subtotal_cents,
+#   order_discount_pct) are visible at one reading. The axiom's
+#   §4 catechism #2 ("data layout precedes algorithm") says the
+#   length is the right trade for the access pattern legibility.
+# - ``STRUCT-021`` on repeated plain-dict keys like ``'sku'``,
+#   ``'order_id'``, ``'name'``. The alternative is a dataclass per
+#   entity, which would defeat the SoA layout the exemplar exists
+#   to demonstrate.
+DATA_ORIENTED_REQUIRES_EVERYWHERE: frozenset[str] = frozenset({"SMELL-003", "STRUCT-021"})
+
+# The Data-Oriented exemplar's forbidden findings — the OOP-
+# specific rules that presuppose classes with behavior. The
+# ``World`` frozen-slots dataclass has zero methods and is not a
+# domain aggregate; none of these should ever fire. A regression
+# on any of them means either the exemplar grew a class it
+# shouldn't have, or a scope filter broke.
+DATA_ORIENTED_FORBIDS_EVERYWHERE: frozenset[str] = frozenset(
+    {
+        "SMELL-014",  # no single-method classes
+        "SMELL-018",  # no middle-man wrappers
+        "SMELL-020",  # no large classes
+        "SMELL-022",  # no pure-data classes with behavior elsewhere
+        "SMELL-023",  # no inheritance
+        "ARCH-002",  # no models
+        "DOM-001",  # no domain classes
+    }
 )
 
 
@@ -509,6 +564,38 @@ EXEMPLAR_EXPECTATIONS: list[ExemplarExpectation] = [
             }
         )
     ],
+    # --- Data-Oriented exemplar rows -----------------------------------
+    # Eight rows, one per school. The Data-Oriented exemplar's
+    # required/forbidden sets are stable across every school: the
+    # universal ``SMELL-003`` (long stage-inlined function) and
+    # ``STRUCT-021`` (plain-dict keys) fire everywhere, and the
+    # OOP-specific rules stay silent everywhere because the
+    # ``World`` record holder has zero methods. The one pre-
+    # existing scope delta (``LOG-004`` scoped away from ``unix``)
+    # is not pinned here because it is a rule-level decision about
+    # ``print()`` in scripts, not a Data-Oriented axiom claim — it
+    # would fire on any exemplar with print() calls regardless of
+    # discipline.
+    *[
+        ExemplarExpectation(
+            exemplar=DATA_ORIENTED_EXEMPLAR,
+            school=school,
+            required_rules=DATA_ORIENTED_REQUIRES_EVERYWHERE,
+            forbidden_rules=DATA_ORIENTED_FORBIDS_EVERYWHERE,
+        )
+        for school in sorted(
+            {
+                "classical",
+                "pragmatic",
+                "functional",
+                "unix",
+                "resilient",
+                "data-oriented",
+                "convention",
+                "event-sourced",
+            }
+        )
+    ],
     # --- Unix exemplar rows --------------------------------------------
     # Under the Unix home school: ARCH-013 must NOT fire (scoped away).
     # The universal findings (SMELL-003, STRUCT-012, STRUCT-021) fire.
@@ -636,6 +723,12 @@ class TestPhilosophyMatrix:
         covered = {e.school for e in EXEMPLAR_EXPECTATIONS if e.exemplar == RESILIENT_EXEMPLAR}
         missing = VALID_SCHOOLS - covered
         assert not missing, f"Resilient exemplar matrix is missing schools: {sorted(missing)}"
+
+    def test_data_oriented_exemplar_covered_by_every_school(self) -> None:
+        """The data-oriented exemplar should also run under every school."""
+        covered = {e.school for e in EXEMPLAR_EXPECTATIONS if e.exemplar == DATA_ORIENTED_EXEMPLAR}
+        missing = VALID_SCHOOLS - covered
+        assert not missing, f"Data-oriented exemplar matrix is missing schools: {sorted(missing)}"
 
     def test_convention_managers_trip_smell_014_outside_convention(self) -> None:
         """The Convention-flavored same-code-different-verdict pin.
