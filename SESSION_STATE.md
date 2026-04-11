@@ -1,168 +1,161 @@
 # Session State — Gaudi
 
 ## Last Updated
-2026-04-11 (end of Phase 0g session — 5 of 8 reference exemplars landed)
+2026-04-11 (end of Phase 0jk session — Phase 0 reference exemplars 8/8 complete)
 
 ## Current Status
 Alpha (v0.1.1). Python-only architecture linter.
 ~124 implemented rules, 23 scoped to specific schools, ~101 universal.
 **Phase 1 engine complete.** Rule.philosophy_scope + [philosophy].school
 in gaudi.toml filter rules per school.
-**Phase 0 exemplars: 5 of 8 complete.** Classical, Pragmatic,
-Functional, Unix, Convention all on main. Resilient, Data-Oriented,
-Event-Sourced remaining.
+**Phase 0 exemplars: 8 of 8 COMPLETE.** Classical, Pragmatic, Functional,
+Unix, Convention, Resilient, Data-Oriented, Event-Sourced. Every school
+in the philosophy matrix now has a faithful reference exemplar.
 
-Test suite: **625 passed**, 3 warnings. Ruff clean.
+Test suite: **711 passed**, 3 warnings. Ruff clean.
 
 ---
 
 ## What Changed This Session
 
-This session picked up from Phase 1 completion and shipped five
-reference exemplars plus one audit revision. Ten PRs merged, all
-green via CI, none bypassed.
+This session picked up from Phase 0h (Resilient exemplar already merged
+on main at session start) and shipped the final two reference
+exemplars, closing out Phase 0.
 
 ### Reference exemplars shipped
 
 | PR | Exemplar | Files | Distinctive shape |
 |---|---|---|---|
-| #158 (prior session) | Classical | 8 across 4 layers | OOP tree with Repository Protocol |
-| #164 | Pragmatic | 1 | Single straight-through function, honest duplication |
-| #165 | Functional | 3 | Pure transformations, frozen records, Ok/Err return |
-| #166 | Unix | 4 | Independent programs, JSON-lines on stdio, real subprocess pipeline test |
-| **#167** | **Convention (Django)** | 8 Django files | Manager method composition root, admin + migrations |
+| #170 | **Data-Oriented** | 3 impl + 1 bench | SoA numpy columns (int64 cents, uint8 standing), batch pipeline stage-by-stage, np.add.at scatter-reduce, frozen-slots World, measured benchmark at N ∈ {1..10k} |
+| #171 | **Event-Sourced** | 6 files | 11 frozen event types (incl. 6 intent-carrying rejections), in-process append-only store, pure aggregate command handler, 2 projections with rebuild, time-travel query |
 
-Each exemplar passes the same 12 acceptance tests against the same
-shared seed data at [tests/philosophy/seed_data.py](tests/philosophy/seed_data.py).
-What differs is where the complexity lives.
+Both shipped with full rubric READMEs and 10/10 rubric scores against
+their respective axiom sheets. Both merged via CI without `--admin`.
 
-### Audit revisions driven by the exemplars
+### The matrix has reached its intended shape
 
-The exemplar workflow is designed to be a forcing function: writing
-a faithful implementation of a school surfaces rules that fire
-incorrectly, and the evidence justifies scope revisions. This
-session produced two audit revisions:
+With all eight exemplars landed, the matrix now pins:
 
-1. **#166 (Unix)** moved `ARCH-013 FatScript` from universal to
-   scoped-away-from-`unix`. Evidence: the Unix stages tripped it on
-   `main()` functions that were pure argparse + stdin loop + atomic
-   write plumbing. Under Unix catechism #1, the script IS the
-   service — there is no "service elsewhere" to extract to.
+**Three same-code-different-verdict demonstrations** (the scoped-rule
+proofs):
+- Classical SMELL-014 (clean under classical, dirty under pragmatic/
+  unix/functional/data-oriented)
+- Unix ARCH-013 (clean under unix, dirty under every other school)
+- Convention SMELL-014 (clean under convention/classical, dirty under
+  pragmatic/unix/functional/data-oriented)
 
-2. **#167 (Convention)** did NOT add new scope tags but surfaced
-   **six detector precision issues** (the richest single-exemplar
-   yield so far), documented in
-   [tests/philosophy/convention/canonical/README.md](tests/philosophy/convention/canonical/README.md)
-   as follow-up work for a fresh session. Listed below under
-   "Things To Know."
+**Four scope-invariant control conditions** (the universal-rule proofs):
+- Pragmatic — single function, no classes
+- Functional — frozen records, Ok/Err
+- Resilient — timeouts + retries + breaker, stdlib only
+- **Event-Sourced** — frozen events + replay + time-travel (this session)
 
-### The matrix now pins three independent same-code-different-verdict demonstrations
+Data-Oriented is *nearly* scope-invariant (LOG-004 on print() in bench.py
+is scoped away from unix, producing a 4-rule delta between the unix row
+and every other school's row). Not a Data-Oriented axiom claim, so the
+exemplar does not join SCOPE_INVARIANT_EXEMPLARS; its matrix rows pin
+required/forbidden sets directly.
 
-Before this session the matrix had one: the Classical exemplar
-tripped `SMELL-014 LazyElement` under pragmatic/unix/functional/
-data-oriented but stayed silent under classical. This session added
-two more:
+### Audit revisions surfaced this session
 
-| Exemplar | Rule | Fires under | Silent under |
-|---|---|---|---|
-| Classical | `SMELL-014` | pragmatic, unix, functional, data-oriented | **classical**, convention, resilient, event-sourced |
-| Unix | `ARCH-013` | everywhere except unix | **unix** |
-| Convention | `SMELL-014` | pragmatic, unix, functional, data-oriented | **convention**, classical, resilient, event-sourced |
+**None.** Both exemplars trip only universal-cost rules. No new
+forcing-function revisions were justified by the Data-Oriented or
+Event-Sourced evidence.
 
-The Classical and Convention demonstrations are symmetric — both are
-"clean at home, dirty abroad" for the same rule on different kinds
-of framework seams (Repository Protocols vs Django Managers).
-
-Two exemplars are **scope-invariant** control conditions (Pragmatic
-and Functional): their finding sets are bit-identical under every
-valid school, pinning the property that universal rules must not
-shift. `test_scope_invariant_exemplar_is_stable_across_schools`
-parametrizes over both.
+The Convention exemplar (prior session) remains the richest detector-
+fuzzer for the Django-aware rule family, with six documented precision
+issues in `tests/philosophy/convention/canonical/README.md` still
+awaiting fix PRs.
 
 ### Test matrix size
 
 - Classical acceptance: 12 tests
 - Pragmatic acceptance: 12 tests
 - Functional acceptance: 14 tests (+ 4 rubric-enforcing)
-- Unix acceptance: 15 tests (including real subprocess pipeline + 2 AST rubric tests)
-- Convention acceptance: 14 tests (+ admin-registration and migration-drift tests)
-- Matrix rows: 40 parametrized + 11 dedicated regression assertions
+- Unix acceptance: 15 tests (+ subprocess pipeline + AST rubric)
+- Convention acceptance: 14 tests (+ admin + migration-drift)
+- Resilient acceptance: 20 tests (incl. retry/breaker/idempotency)
+- **Data-Oriented acceptance: 18 tests** (incl. 6 SoA rubric tests,
+  1 np.add.at scatter test, dtype pinning)
+- **Event-Sourced acceptance: 19 tests** (incl. frozen events,
+  aggregate purity, projection rebuild matches live, time-travel
+  with negative history, new-projection-without-writes, intent-
+  carrying names, OrderPlaced-always-first)
+- Matrix rows: ~72 parametrized expectations + 14 dedicated regression
+  assertions (scope-invariance, same-code-different-verdict pairs,
+  one-per-exemplar-covers-every-school drift catchers)
 
-Total philosophy suite: **120 tests**. Total project suite: **625**.
+Total philosophy suite: **206 tests**. Total project suite: **711**.
 
 ---
 
 ## Dependencies Added
 
-**`django>=5.0,<6.0; python_version<'3.14'`** in
-`[project.optional-dependencies].dev`.
+**`numpy>=1.26`** added to `[project.optional-dependencies].dev`
+this session (PR #170), symmetric to the Django decision from the
+Convention exemplar in the prior session.
 
 - **Test-only.** Never installed for end users via `pip install gaudi-linter`.
-- Pinned to 5.x LTS for CI predictability across Python 3.10-3.13.
-- Python 3.14 guard: `pytest.importorskip('django')` in the
-  Convention test module skips cleanly when Django isn't installed.
-- Gaudi has **zero runtime dependency** on Django. Every `DJ-*`,
-  `DRF-*`, and Django-aware rule lints user projects via AST
-  inspection, not by importing their code. The dep is exclusively
-  for writing the Convention reference exemplar.
+- Gaudi has **zero runtime dependency** on numpy. Every rule lints
+  user projects via AST inspection, never by executing their code.
+- The Data-Oriented test module uses `pytest.importorskip("numpy")`
+  so CI on any environment where numpy cannot be installed still
+  stays green; in practice numpy installs cleanly on every Python
+  3.10–3.14 wheel we target.
+
+Both optional dev deps now live side by side:
+
+```toml
+"django>=5.0,<6.0; python_version<'3.14'",
+"numpy>=1.26",
+```
 
 ---
 
 ## Phase Roadmap
 
-### Phase 0 — reference exemplars (5/8 complete)
+### Phase 0 — reference exemplars (8/8 COMPLETE)
 
-- [x] **0a-0d**: Axiom sheets, rule audit, canonical task statement, Classical exemplar (prior session)
-- [x] **0e**: Pragmatic exemplar (#164)
-- [x] **0f**: Functional exemplar (#165)
-- [x] **0i**: Unix exemplar (#166) — reordered ahead of 0g
-- [x] **0g**: Convention (Django) exemplar (#167)
-- [ ] **0h**: Resilience-First exemplar — stdlib-only, should surface `STAB-*` forcing-function evidence
-- [ ] **0j**: Data-Oriented exemplar — may want numpy as optional dep, symmetric to the Django dep decision
-- [ ] **0k**: Event-Sourced exemplar — stdlib-only, most conceptually complex
+- [x] **0a-0d**: Axiom sheets, rule audit, canonical task, Classical
+- [x] **0e**: Pragmatic (#164)
+- [x] **0f**: Functional (#165)
+- [x] **0i**: Unix + ARCH-013 scope revision (#166)
+- [x] **0g**: Convention/Django (#167)
+- [x] **0h**: Resilience-First (#169)
+- [x] **0j**: Data-Oriented (#170, this session)
+- [x] **0k**: Event-Sourced (#171, this session)
 
-### Phase 1 — engine change (complete in prior session, PRs #160-162)
+### Phase 1 — engine change (complete)
 
-### Phase 2 — detector precision fixes (new, forced by this session)
+### Phase 2 — detector precision fixes (still pending)
 
-The Convention exemplar surfaced six detector precision issues. All
-are documented in
-[tests/philosophy/convention/canonical/README.md](tests/philosophy/convention/canonical/README.md)
-Category B with specific fix recommendations:
+The Convention exemplar (prior session) surfaced six documented
+detector precision issues in `tests/philosophy/convention/canonical/README.md`
+Category B:
 
-1. **DOM-001 AnemicDomainModel** doesn't recognize Django Managers
-   as business-logic carriers. A model with an
-   `objects = CustomerManager()` assignment and a Manager subclass
-   with domain-named query methods should not count as anemic.
-2. **SCHEMA-001 MissingTimestamps** should be aware of
-   reference-vs-transactional shape. Reference data (`Product`,
-   `PromoCode`) doesn't need audit columns; only mutable tables do.
-3. **SEC-001 NoMetaPermissions** fires on every Django model despite
-   Django auto-creating add/change/delete/view permissions. Should
-   only fire on models without the four auto-generated permissions
-   OR on models in security-sensitive locations.
-4. **STAB-001 UnboundedResultSet** fires on `.filter(...).first()`.
-   `.first()` is the opposite of unbounded. Should walk the full
-   attribute chain and skip filter chains that terminate in
-   `.first()`, `.get()`, or `[offset:]`.
-5. **DJ-SEC-001 DjangoSecretKeyExposed** fires on labeled test
-   settings. Should skip `settings.py` files under `test/` /
-   `tests/` / `conftest.py`, OR respect `# noqa: DJ-SEC-001`, OR
-   detect obvious test placeholders ("test" / "example" / "dummy").
-6. **SEC-003 NoDefaultManager** fires despite `objects = CustomerManager()`
-   — the custom manager assignment satisfies the "default manager
-   exists" requirement but the detector doesn't see it.
+1. DOM-001 AnemicDomainModel — not aware of Django Managers as
+   business-logic carriers.
+2. SCHEMA-001 MissingTimestamps — fires on reference data; should
+   distinguish reference-vs-transactional.
+3. SEC-001 NoMetaPermissions — fires on every Django model despite
+   auto-created add/change/delete/view permissions.
+4. STAB-001 UnboundedResultSet — fires on `.filter(...).first()`.
+5. DJ-SEC-001 DjangoSecretKeyExposed — fires on labeled test settings.
+6. SEC-003 NoDefaultManager — not seeing `objects = CustomerManager()`.
 
-Also noted in earlier exemplar READMEs (prior session):
+Plus from earlier exemplars:
 
-- **SMELL-007 DivergentChange** over-fires on Classical service
-  classes with multiple methods serving one responsibility.
-- **SMELL-023 RefusedBequest** confuses `Protocol` classes with
-  real inheritance.
-- **SMELL-008 ShotgunSurgery** fires on Functional `ResolvedLines`
-  type alias (addressed by inlining, not by fixing the detector).
+- SMELL-007 DivergentChange over-fires on Classical service classes.
+- SMELL-023 RefusedBequest confuses Protocol classes with real
+  inheritance.
+- SMELL-008 ShotgunSurgery fired on Functional ResolvedLines type
+  alias (addressed by inlining, not by detector fix).
 
-Total: **9 detector precision issues** documented as follow-up.
+**Total: 9 detector precision issues documented as follow-up work.**
+These are the highest-value next PRs — every one of them has a
+specific fix recommendation, a reference exemplar that will
+regression-test the fix, and a concrete test of "same code, cleaner
+finding set" to pin the before/after.
 
 ### Phase 3 — polish (deferred)
 
@@ -172,92 +165,99 @@ Total: **9 detector precision issues** documented as follow-up.
   dependencies
 - Website audit: run `gaudi check` against Nathan's real Django
   website, categorize findings, surface audit gaps driven by
-  production evidence (not an exemplar fixture)
+  production evidence
 
 ---
 
 ## Things To Know Before Next Session
 
-1. **PRs merged this session (10 total)** — all on main:
-   - #160 engine wiring (Phase 1A)
-   - #161 scope tags (Phase 1B)
-   - #162 matrix test (Phase 1C)
-   - #163 SESSION_STATE for Phase 1
-   - #164 Pragmatic exemplar (Phase 0e)
-   - #165 Functional exemplar (Phase 0f)
-   - #166 Unix exemplar + ARCH-013 scope revision (Phase 0i)
-   - #167 Convention exemplar (Phase 0g)
-   - Plus this SESSION_STATE update
+1. **PRs merged this session (2 total)** — both on main:
+   - #170 Data-Oriented exemplar + matrix rows + numpy dev dep
+   - #171 Event-Sourced exemplar + matrix rows
 
 2. **The RFC file** `gaudi-architectural-philosophies.md` in the
    repo root is still untracked. It has been fully distilled into
    the axiom sheets, the rule audit, the Phase 1 implementation,
-   and the five exemplars.
+   and now all eight exemplars. Safe to delete or move to docs/.
 
-3. **Django is installed in both conda envs** I used:
-   - `Oversteward` (the primary conda env per project config)
-   - `ai-assistants` (the env pytest actually uses — this was
-     discovered during the Functional exemplar debugging; pytest
-     was finding tests via src/ layout but importing Python from
-     a different env)
+3. **Python environment note** (carryover from prior session): the
+   `Oversteward` conda env is the canonical dev env per project
+   config, but pytest in this codebase actually runs via the
+   `ai-assistants` conda env because of the src/ layout and sys.path
+   interaction. Both envs have the dev dependencies installed. Any
+   `conda run -n Oversteward pytest` command works; so does running
+   pytest directly from `ai-assistants`. Standalone python scripts
+   that `import gaudi` must set `PYTHONPATH=src` to get the dev
+   source instead of the installed wheel.
 
-4. **CI install time impact**: adding Django added ~3 seconds to
-   the install step, unchanged test runtime. No pip-audit hits.
+4. **Windows conda gotcha** (still true): `conda run -n Oversteward
+   python -c` rejects newlines in the argument. For multi-line
+   Python, write a script under `scripts/_probe_*.py` and delete it
+   before committing. Every probe script this session was built and
+   deleted that way.
 
-5. **My session-weight recommendation** was to stop here and start
-   fresh for the remaining three exemplars and the detector
-   precision fixes. This session's context carries every axiom
-   sheet, every exemplar, every probe output, and the full Phase 1
-   engine implementation. A fresh session will read SESSION_STATE,
-   read the Convention README for the detector issue list, and
-   work from that without the session-history overhead.
+5. **Reservation id shape** — the Event-Sourced exemplar derives
+   reservation ids deterministically from order_id + first sku
+   (`RES-<6char>`) rather than a monotonic counter, so replay
+   produces the same ids as the original run. The other exemplars
+   use a counter (`RES-000001`, `RES-000002`). Both shapes satisfy
+   the acceptance tests' `startswith('RES-')` check.
 
-6. **The highest-value next session** would be one of:
-   - **Option A: Resilience-First exemplar.** Stdlib-only,
-     well-scoped, one PR. Good if you want to continue the Phase 0
-     exemplar series linearly.
-   - **Option B: Detector precision fixes (batch of 3-4).** The
-     Convention README has six with specific fix recommendations;
-     a single PR could address the top three (DOM-001 Manager
-     awareness, STAB-001 `.first()` handling, DJ-SEC-001 test-file
-     skip). Good if you want to tighten the audit before the
-     remaining exemplars.
-   - **Option C: Website audit.** Run `gaudi check` against Nathan's
-     real Django website, categorize findings, triage with Nathan
-     in the loop. Highest leverage but needs Nathan present.
+6. **The Data-Oriented benchmark** (`tests/philosophy/data_oriented/
+   canonical/bench.py`) has measured numbers in its docstring for
+   N ∈ {1..10k}. Rerun the script if you change the pipeline and
+   update the docstring if the per-order cost drifts materially
+   (say, >30%). The benchmark does not claim "numpy beats Python";
+   it reports the actual per-order cost as a function of batch
+   size and names the degenerate zone (N < ~100).
 
-7. **Gotchas that bit me this session:**
-   - Conda run on Windows rejects newline characters in `python -c`
-     arguments; I wrote throwaway `scripts/_probe_*.py` files
-     instead and deleted them before committing.
-   - The Classical `@property` on `InventoryLevel`/`PromoCode` was
-     originally a single-method class under the Functional exemplar's
-     strict reading and tripped SMELL-014 under functional. I
-     refactored the dataclasses to have zero methods and moved
-     helpers to free functions in `pipeline.py`. This is a lesson
-     about how strict the Functional axiom actually is.
-   - Writing PR B (scope tags) from a branch that was pre-PR-A
-     (engine wiring) meant the tags had no runtime effect until I
-     rebased after PR A merged. The tags compose correctly across
-     commits but the tests for scope-awareness only fire once the
-     engine change lands.
+7. **The highest-value next session** is one of:
+   - **Option A: Detector precision fixes.** Nine documented issues
+     with specific fix recommendations. Ship in batches of 2–4 per
+     PR. Highest leverage because every exemplar can regression-
+     test the fix. Recommended ordering: start with DOM-001 Manager
+     awareness and STAB-001 `.first()` handling (both Convention-
+     surfaced) because the Convention exemplar is the richest
+     fuzzer and Django is the most widely-linted framework.
+   - **Option B: Phase 3 polish** — CLI attribution, philosophy
+     `--explain`, website audit.
+   - **Option C: Clean up the RFC file** — delete or move
+     `gaudi-architectural-philosophies.md` to `docs/` now that its
+     content is fully distributed across axiom sheets and exemplars.
 
-8. **The Convention exemplar is the richest detector fuzzer** for
-   the Django-aware rule family. Running `gaudi check` against any
-   real Django project will surface the same six precision issues
-   — but the exemplar is a clean, isolated, tested, reviewable
-   reference case for each of them.
+8. **Gotchas that bit me this session:**
+   - First cut of the Data-Oriented benchmark claimed "2.3x faster
+     than naive baseline" against a baseline that was deliberately
+     too minimal. The numbers were false, not in direction but in
+     magnitude, and the comparison wasn't meaningful because the
+     two code paths did different amounts of work. Rewrote to scan
+     batch sizes instead and report the honest per-N costs; no
+     baseline comparison. Lesson: any benchmark that compares
+     against a "naive baseline" must verify the baseline does
+     equivalent work, or the comparison is noise pretending to be
+     signal. When in doubt, report absolute numbers and let the
+     reader decide.
+   - `conda run -n Oversteward python -c` with newlines produced
+     the Windows conda crash report again. Every probe in this
+     session went through a throwaway `scripts/_probe_*.py` file
+     and was deleted before commit (same workflow as prior sessions).
+   - numpy wasn't installed in Oversteward on session start; had to
+     `pip install numpy` directly via the env's Python. ai-assistants
+     already had numpy 2.4.1. Both envs now have numpy.
 
 ---
 
 ## Test Suite / Build Status
 
 - `ruff check .` — clean
-- `ruff format --check .` — 559 files formatted
-- `pytest --tb=short -q` — **625 passed**, 3 warnings
-- `pytest tests/philosophy/ -q` — 120 passed (5 exemplars × ~20-24 tests each + 51 matrix rows/assertions)
-- `gaudi check` on the Gaudí project itself — stable baseline,
-  findings on the exemplars match matrix expectations per school
+- `ruff format --check .` — clean
+- `pytest --tb=short -q` — **711 passed**, 3 warnings
+- `pytest tests/philosophy/ -q` — **206 passed** (8 exemplars × 12–20
+  acceptance tests each + 72 parametrized matrix rows + 14 dedicated
+  regression assertions)
+- `gaudi check` on the Gaudí project itself — 1 pre-existing error
+  (DJ-SEC-001 on `tests/philosophy/convention/canonical/settings.py:15`,
+  the labeled test settings module; documented as detector issue #5)
 - CI: every PR this session merged green without `--admin`
 
 ---
@@ -265,15 +265,8 @@ Total: **9 detector precision issues** documented as follow-up.
 ## Commits Landed (this session, in order)
 
 ```
-50bafeb test(philosophy): add Convention (Django) reference exemplar + matrix rows (#167)
-57d87a2 test(philosophy): add Unix reference exemplar + scope ARCH-013 away from unix (#166)
-72eefcf test(philosophy): add Functional reference exemplar + matrix rows (#165)
-f2711e8 test(philosophy): add Pragmatic reference exemplar + matrix rows (#164)
-9289def chore(session): update SESSION_STATE with overnight multi-philosophy work (#159)
-0795447 chore(session): update SESSION_STATE for Phase 1 completion (#163)
-63ca682 test(philosophy): add cross-school matrix test for scope filtering (#162)
-2129031 feat(rules): tag 22 scoped rules per the philosophy audit (#161)
-bdc0af6 feat(engine): Rule.philosophy_scope and [philosophy].school wiring (#160)
+510e8e7 test(philosophy): add Event-Sourced reference exemplar + matrix rows (#171)
+80179a8 test(philosophy): add Data-Oriented reference exemplar + matrix rows (#170)
 ```
 
 Branch tip: `main`. No open PRs after this SESSION_STATE update
