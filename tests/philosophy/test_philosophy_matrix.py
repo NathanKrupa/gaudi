@@ -110,12 +110,78 @@ UNIX_EXEMPLAR = "unix/canonical"
 # the audit correctly flags.
 CONVENTION_EXEMPLAR = "convention/canonical"
 
+# The Resilience-First reference exemplar — a single-process order
+# pipeline with explicit timeouts, bounded retries with exponential
+# backoff, a Nygard-style three-state circuit breaker, idempotency
+# keys on every state-mutating call, structured logging with
+# correlation-ID propagation into worker threads, and a health check
+# that tests real capability. Stdlib-only. See
+# ``tests/philosophy/resilient/canonical/README.md`` for the rubric
+# and findings triage.
+#
+# Like Pragmatic and Functional, the Resilient exemplar is
+# scope-invariant across every valid school: its finding set is
+# identical under ``resilient``, ``pragmatic``, ``unix``,
+# ``functional``, ``classical``, ``convention``, ``data-oriented``,
+# and ``event-sourced``. This is deliberate — the resilience
+# machinery (timeouts, retries, breaker, idempotency) is built from
+# universal building blocks that no school's axiom rejects. The
+# STAB-* family that this exemplar would stress is AST-pattern
+# matched against third-party HTTP/queue library calls, which this
+# stdlib-only exemplar does not use, so no STAB rule fires and no
+# audit revision surfaces. The exemplar's contribution to the
+# matrix is a third scope-invariant control condition spanning the
+# three most structurally different disciplines (Pragmatic: one
+# function; Functional: pure records; Resilient: seven-file
+# pipeline with concurrency primitives).
+RESILIENT_EXEMPLAR = "resilient/canonical"
+
 # Exemplars whose finding set is expected to be identical under
 # every valid school. These are the "control conditions" for the
 # matrix: universal rules must be scope-invariant, and a divergence
 # on one of these exemplars means a supposedly-universal rule has
 # accidentally leaked a scope decision.
-SCOPE_INVARIANT_EXEMPLARS: tuple[str, ...] = (PRAGMATIC_EXEMPLAR, FUNCTIONAL_EXEMPLAR)
+SCOPE_INVARIANT_EXEMPLARS: tuple[str, ...] = (
+    PRAGMATIC_EXEMPLAR,
+    FUNCTIONAL_EXEMPLAR,
+    RESILIENT_EXEMPLAR,
+)
+
+# Under every school, the Resilient exemplar must trip this set of
+# universal rules. These are the honest costs of the resilience
+# discipline — the long stage functions needed to make timeouts and
+# retries legible, the ``world`` dict threaded through the pipeline
+# stages, the module-level circuit-breaker singleton referenced from
+# multiple functions, the magic strings in plain-dict wire format,
+# and the process_order parameter list that grows with the
+# dependencies it coordinates.
+RESILIENT_REQUIRES_EVERYWHERE: frozenset[str] = frozenset(
+    {
+        "SMELL-003",  # long stage functions
+        "SMELL-008",  # module-level NOTIFICATION_BREAKER in multiple funcs
+        "STRUCT-021",  # magic strings in plain-dict wire format
+        "CPLX-002",  # world threaded through 9 functions
+        "CPLX-003",  # process_order parameter count
+    }
+)
+
+# Under every school, the Resilient exemplar must NOT trip these
+# OOP-specific or classical-layering rules. The exemplar has only
+# two classes (CircuitBreaker and the FlakySwitch dataclass used by
+# tests), neither of which is a single-method wrapper, a
+# middle-man, a lazy element, or a pure-data holder with behavior
+# elsewhere. If one of these fires, either the exemplar grew a
+# class it shouldn't have, or a scope decision leaked.
+RESILIENT_FORBIDS_EVERYWHERE: frozenset[str] = frozenset(
+    {
+        "SMELL-014",  # no single-method classes (CircuitBreaker has 3)
+        "SMELL-018",  # no middle-man wrappers
+        "SMELL-020",  # no large classes
+        "SMELL-023",  # no inheritance besides Exception hierarchy
+        "ARCH-002",  # no models
+        "DOM-001",  # no domain classes
+    }
+)
 
 # Under every school, the Pragmatic exemplar must trip SMELL-003
 # (long function) and SMELL-004 (long parameter list). These are
@@ -413,6 +479,36 @@ EXEMPLAR_EXPECTATIONS: list[ExemplarExpectation] = [
         )
         for school in ("resilient", "event-sourced")
     ],
+    # --- Resilient exemplar rows ---------------------------------------
+    # Eight rows, one per school. The Resilient exemplar is fully
+    # scope-invariant (like Pragmatic and Functional): its finding
+    # set does not shift when the school changes. Every row asserts
+    # the same universal findings fire and the same OOP/layered
+    # findings stay silent. The scope-invariance itself is the
+    # matrix assertion for this exemplar — any divergence means a
+    # supposedly-universal rule accidentally leaked a scope
+    # decision, or a STAB-* rule started pattern-matching against
+    # the stdlib-only resilience primitives the exemplar uses.
+    *[
+        ExemplarExpectation(
+            exemplar=RESILIENT_EXEMPLAR,
+            school=school,
+            required_rules=RESILIENT_REQUIRES_EVERYWHERE,
+            forbidden_rules=RESILIENT_FORBIDS_EVERYWHERE,
+        )
+        for school in sorted(
+            {
+                "classical",
+                "pragmatic",
+                "functional",
+                "unix",
+                "resilient",
+                "data-oriented",
+                "convention",
+                "event-sourced",
+            }
+        )
+    ],
     # --- Unix exemplar rows --------------------------------------------
     # Under the Unix home school: ARCH-013 must NOT fire (scoped away).
     # The universal findings (SMELL-003, STRUCT-012, STRUCT-021) fire.
@@ -534,6 +630,12 @@ class TestPhilosophyMatrix:
         covered = {e.school for e in EXEMPLAR_EXPECTATIONS if e.exemplar == CONVENTION_EXEMPLAR}
         missing = VALID_SCHOOLS - covered
         assert not missing, f"Convention exemplar matrix is missing schools: {sorted(missing)}"
+
+    def test_resilient_exemplar_covered_by_every_school(self) -> None:
+        """The resilient exemplar should also run under every school."""
+        covered = {e.school for e in EXEMPLAR_EXPECTATIONS if e.exemplar == RESILIENT_EXEMPLAR}
+        missing = VALID_SCHOOLS - covered
+        assert not missing, f"Resilient exemplar matrix is missing schools: {sorted(missing)}"
 
     def test_convention_managers_trip_smell_014_outside_convention(self) -> None:
         """The Convention-flavored same-code-different-verdict pin.
