@@ -430,6 +430,10 @@ class IntegrationPointNoFallback(Rule):
     code = "STAB-008"
     severity = Severity.WARN
     category = Category.STABILITY
+    # Fallbacks are Resilient catechism #5. Pragmatic adds them when
+    # abuse materializes; Unix "worse is better" tolerates partial
+    # failure; Functional/Data-Oriented treat this as out of scope.
+    philosophy_scope = frozenset({"classical", "resilient", "convention", "event-sourced"})
     message_template = "External call '{call}' without fallback at line {line}"
     recommendation_template = (
         "Wrap external HTTP calls in try/except so the caller can degrade."
@@ -580,6 +584,10 @@ class SharedResourcePool(Rule):
     code = "STAB-010"
     severity = Severity.INFO
     category = Category.STABILITY
+    # Bulkheads (Nygard Ch. 5) are Resilient catechism #4. Schools
+    # that do not operate at the scale where bulkheads matter, or
+    # that consider the pattern premature, are excluded.
+    philosophy_scope = frozenset({"classical", "resilient", "event-sourced"})
     message_template = "Module-level ThreadPoolExecutor at line {line} -- shared by all callers"
     recommendation_template = (
         "Scope ThreadPoolExecutors to a single concern, or partition by workload."
@@ -638,6 +646,18 @@ class MissingHealthEndpoint(Rule):
     code = "STAB-011"
     severity = Severity.INFO
     category = Category.STABILITY
+    # Health checks are a long-lived-service concept. One-shot Unix
+    # scripts and Data-Oriented batch jobs have no meaningful health.
+    philosophy_scope = frozenset(
+        {
+            "classical",
+            "pragmatic",
+            "functional",
+            "resilient",
+            "convention",
+            "event-sourced",
+        }
+    )
     message_template = "Web service has no health or ready endpoint"
     recommendation_template = (
         "Add a /health or /ready route so orchestrators and load balancers"

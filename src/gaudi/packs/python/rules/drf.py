@@ -72,6 +72,10 @@ class DRFNoThrottling(Rule):
     severity = Severity.INFO
     category = Category.SCALABILITY
     requires_library = "drf"
+    # Throttling is a resilience pattern for public APIs. Pragmatic
+    # adds it when abuse materializes; schools that do not serve
+    # untrusted public traffic consider it out of scope.
+    philosophy_scope = frozenset({"classical", "resilient", "convention"})
     message_template = "API view without throttle_classes in '{file}'"
     recommendation_template = (
         "Add throttle_classes to prevent abuse. Public APIs without rate limiting "

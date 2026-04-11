@@ -105,6 +105,11 @@ class AnemicDomainModel(Rule):
     code = "DOM-001"
     severity = Severity.WARN
     category = Category.DOMAIN_MODEL
+    # Fowler's DDD-era critique of data-without-behavior. Functional,
+    # Data-Oriented, Event-Sourced, Unix, and Pragmatic all use
+    # anemic records deliberately — frozen dataclasses, parallel
+    # arrays, events. See docs/philosophy/functional.md catechism #1.
+    philosophy_scope = frozenset({"classical", "convention"})
     message_template = (
         "Domain model '{class_name}' has {field_count} fields and zero "
         "behavior methods — anemic data bag"

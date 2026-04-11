@@ -123,6 +123,19 @@ class LargeClass(Rule):
     code = "SMELL-020"
     severity = Severity.WARN
     category = Category.CODE_SMELL
+    # Scoped away from Convention: fat models and fat controllers are
+    # the blessed Django/Rails pattern. See docs/philosophy/convention.md.
+    philosophy_scope = frozenset(
+        {
+            "classical",
+            "pragmatic",
+            "functional",
+            "unix",
+            "resilient",
+            "data-oriented",
+            "event-sourced",
+        }
+    )
     message_template = "Class '{class_name}' has {methods} methods and {attrs} attributes"
     recommendation_template = (
         "Large classes have too many responsibilities. "
@@ -300,6 +313,10 @@ class PrimitiveObsession(Rule):
     code = "SMELL-011"
     severity = Severity.WARN
     category = Category.CODE_SMELL
+    # Scoped away from Unix/Data-Oriented: Unix embraces plain strings
+    # at module boundaries; Data-Oriented prefers packed primitives
+    # for cache locality.
+    philosophy_scope = frozenset({"classical", "functional", "convention", "event-sourced"})
     message_template = "Attribute '{attr}' compared to {count} string literals — consider an enum"
     recommendation_template = (
         "Replace string comparisons with an Enum. Enums catch typos at definition time."

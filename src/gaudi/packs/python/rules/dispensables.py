@@ -28,6 +28,12 @@ class LazyElement(Rule):
     code = "SMELL-014"
     severity = Severity.INFO
     category = Category.CODE_SMELL
+    # Scoped away from Classical/Convention/Resilient/Event-Sourced:
+    # single-method classes are how Classical wires Protocols and
+    # Repositories; Convention builds them for framework seams;
+    # Resilient wraps for circuit breakers; Event-Sourced wraps
+    # aggregates. See docs/philosophy/classical.md rubric #3.
+    philosophy_scope = frozenset({"pragmatic", "unix", "functional", "data-oriented"})
     message_template = "Class '{class_name}' has only one method — consider inlining"
     recommendation_template = (
         "A class with a single method that just returns is "
@@ -74,6 +80,11 @@ class SpeculativeGenerality(Rule):
     code = "SMELL-015"
     severity = Severity.WARN
     category = Category.CODE_SMELL
+    # Scoped away from Classical/Convention/Resilient/Event-Sourced:
+    # extensibility seams are a Classical virtue. See
+    # docs/philosophy/pragmatic.md catechism #1 — this is the
+    # canonical Pragmatic rule.
+    philosophy_scope = frozenset({"pragmatic", "unix", "functional", "data-oriented"})
     message_template = "{detail}"
     recommendation_template = "{advice}"
 
@@ -273,6 +284,10 @@ class DataClassSmell(Rule):
     code = "SMELL-022"
     severity = Severity.INFO
     category = Category.CODE_SMELL
+    # Scoped to Classical/Convention only: Functional, Data-Oriented,
+    # Event-Sourced, and Unix treat pure data as the primary building
+    # block. Frozen dataclasses and events are the point, not a smell.
+    philosophy_scope = frozenset({"classical", "convention"})
     message_template = "Class '{class_name}' is a pure data holder — consider using a dataclass"
     recommendation_template = (
         "Use @dataclass or a NamedTuple for pure data "

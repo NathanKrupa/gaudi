@@ -215,6 +215,18 @@ class MissingHealthCheck(Rule):
     code = "OPS-009"
     severity = Severity.INFO
     category = Category.OPERATIONS
+    # Health checks are a long-lived-service concept. One-shot Unix
+    # containers and Data-Oriented batch jobs terminate by completing.
+    philosophy_scope = frozenset(
+        {
+            "classical",
+            "pragmatic",
+            "functional",
+            "resilient",
+            "convention",
+            "event-sourced",
+        }
+    )
     message_template = "Dockerfile {file} has no HEALTHCHECK instruction"
     recommendation_template = (
         "Add a HEALTHCHECK instruction so orchestrators can detect a sick"

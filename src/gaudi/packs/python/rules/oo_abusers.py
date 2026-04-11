@@ -235,6 +235,10 @@ class RefusedBequest(Rule):
     code = "SMELL-023"
     severity = Severity.WARN
     category = Category.CODE_SMELL
+    # Inheritance-specific smell. Schools that reject inheritance as
+    # a reuse mechanism have no bequest to refuse. See
+    # docs/philosophy/functional.md rejected alternative #4.
+    philosophy_scope = frozenset({"classical", "convention"})
     message_template = "Class '{class_name}' refuses {count} of {total} inherited methods"
     recommendation_template = (
         "If a subclass doesn't want parent behavior, prefer composition over inheritance."

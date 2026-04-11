@@ -294,6 +294,19 @@ class NoGracefulShutdown(Rule):
     code = "ASYNC-004"
     severity = Severity.INFO
     category = Category.CONCURRENCY
+    # Graceful shutdown matters for long-lived processes. One-shot
+    # Unix scripts and batch Data-Oriented jobs terminate by
+    # completing, not by receiving a signal.
+    philosophy_scope = frozenset(
+        {
+            "classical",
+            "pragmatic",
+            "functional",
+            "resilient",
+            "convention",
+            "event-sourced",
+        }
+    )
     message_template = "asyncio.run() at line {line} without signal handler registration"
     recommendation_template = (
         "Register a signal.signal(SIGTERM, ...) handler before asyncio.run() so the"
