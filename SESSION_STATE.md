@@ -1,144 +1,114 @@
 # Session State — Gaudi
 
 ## Last Updated
-2026-04-11 (overnight session)
+2026-04-11 (Phase 1 engine change landed)
 
 ## Current Status
 Alpha (v0.1.1). Python-only architecture linter.
-~124 implemented rules, ~82% universal / ~18% scoped-to-a-philosophy
-(per the new rule audit).
+~124 implemented rules, with **philosophy-scope filtering active**:
+22 rules tagged as scoped to specific schools, ~102 remain universal.
 
-Multi-philosophy work Phase 0 is **complete**. Phase 1 (engine wiring
-for `Rule.philosophy_scope`) is the next logical step and has concrete
-forcing-function evidence ready to drive it.
-
----
-
-## What Changed This Session (Overnight)
-
-Four PRs planned, all merged. In order:
-
-1. **PR #155** — `docs(philosophy): axiom sheets for eight architectural schools`
-   - New directory `docs/philosophy/` with eight axiom sheets + a README index.
-   - Schools: Classical, Pragmatic, Functional, Unix, Resilience-First,
-     Data-Oriented, Convention, **Event-Sourced** (added after review
-     because it generates rules that contradict other schools, not
-     merely stack).
-   - Strict eight-section format per sheet: prime axiom, rejected
-     alternative, canonical citations, catechism, rule shape,
-     degenerate case, exemplar temptation, ten-item rubric.
-
-2. **PR #156** — `docs(registry): philosophy scope audit for all implemented rules`
-   - New "Philosophy Scope Audit" section in `docs/rule-registry.md`.
-   - Tagged every implemented rule as either `universal` or scoped
-     to specific schools, with one-sentence justifications that
-     appeal to the relevant axiom sheet.
-   - **Result: ~102 of ~124 rules (82%) universal; ~22 (18%) scoped.**
-     This validates the hypothesis that the engine change needed to
-     support multi-philosophy scoping is small rather than sprawling.
-   - Two schools do most of the scoping work: **Convention**
-     (blesses patterns other schools smell — fat models, single-file
-     models) and **Data-Oriented** (refuses abstractions other
-     schools assume — pipelines, wrapped primitives).
-
-3. **PR #157** — `docs(philosophy): canonical task statement`
-   - New `docs/philosophy/canonical-task.md`.
-   - Defines the domain problem every school's reference
-     implementation will solve: order processing pipeline
-     (validation, pricing, inventory reservation, notification).
-   - Seven enforceable invariants, shared domain (Customer, Product,
-     Inventory, PromoCode, Order), acceptance criteria, out-of-scope
-     exclusions, scoring procedure, and the planned implementation
-     order (Classical → Pragmatic → Functional → Convention →
-     Resilience-First → Unix → Data-Oriented → Event-Sourced).
-
-4. **PR #158** — `test(philosophy): Classical reference exemplar`
-   - New `tests/philosophy/` package.
-   - `seed_data.py` with 10 test-case orders covering every
-     acceptance criterion.
-   - `classical/canonical/` directory: full three-layer Classical
-     implementation of the order pipeline (domain/,
-     infrastructure/, services/, pipeline.py).
-   - `classical/test_canonical.py`: 12 new end-to-end tests.
-   - `classical/canonical/README.md`: rubric-by-rubric score (10/10)
-     with evidence column, plus categorized analysis of the
-     remaining `gaudi check` findings.
-   - Total project test suite: **494 → 506 passing** (+12 new).
-   - Added `tests/philosophy/seed_data.py` to `gaudi.toml` excludes.
+**Phase 1 is complete.** The engine respects `Rule.philosophy_scope`
+and `[philosophy].school` in `gaudi.toml`. Phase 0 remaining (reference
+exemplars for the other seven schools) is now the natural next step.
 
 ---
 
-## The Load-Bearing Result
+## What Changed This Session
 
-Running `gaudi check` against the new Classical exemplar produces
-**six `SMELL-014 LazyElement` findings** on Repository implementations,
-Clock, FixedClock, and ReservationIdGenerator.
+Four PRs this session, all merged green without `--admin`:
 
-The audit in `docs/rule-registry.md` already tags `SMELL-014` as scoped
-to `{pragmatic, unix, functional, data-oriented}` — **explicitly not
-Classical**. These six findings are exactly what the audit predicted
-would be false positives on a faithful Classical exemplar.
+1. **PR #160** — `feat(engine): Rule.philosophy_scope and [philosophy].school wiring`
+   - `core.py`: `UNIVERSAL_SCOPE`, `VALID_SCHOOLS`, `VALID_SCOPE_TOKENS`,
+     `DEFAULT_SCHOOL = "classical"`, and
+     `Rule.philosophy_scope: frozenset[str] = UNIVERSAL_SCOPE`
+     as a class attribute.
+   - `config.py`: `[philosophy]` TOML table parsed, defaulted,
+     validated. `get_school(config)` helper. `ValueError` on typo.
+   - `pack.py`: `rule_applies_to_school(rule, school)` — the one
+     predicate the base `Pack.check()` uses to filter rules.
+   - Both Python and Ops packs plumb `school` through their `check()`
+     and honor the filter.
+   - 11 new unit tests (`tests/test_philosophy_scope.py`) including
+     the guardrail that every registered rule's scope is a
+     non-empty frozenset of known tokens.
+   - **Behavior-preserving by design**: all rules default to
+     `{"universal"}` via the class attribute.
 
-**This is the single clearest forcing-function evidence that Phase 1
-(the `Rule.philosophy_scope` engine change) is needed.** When the
-engine respects philosophy scope, these false positives disappear on
-this exemplar while continuing to fire correctly on Pragmatic/Unix
-exemplars where single-method wrapper classes would indicate real
-overengineering.
+2. **PR #161** — `feat(rules): tag 22 scoped rules per the philosophy audit`
+   - Walked the Philosophy Scope Audit in
+     [docs/rule-registry.md](docs/rule-registry.md) and attached
+     `philosophy_scope` to every rule flagged as non-universal.
+   - 22 rules tagged. Every tag carries an inline comment citing
+     the axiom sheet that justifies the exclusion.
+   - Updated `tests/test_fixture_corpus.py` so the per-rule fixture
+     runner selects a school in which the rule under test actually
+     runs — the fixture corpus is a per-rule specification and
+     must run regardless of project-level scoping.
+   - **End-to-end forcing-function validated**: under the default
+     `classical` school, the six `SMELL-014` false positives on the
+     Classical exemplar (documented in
+     `tests/philosophy/classical/canonical/README.md`) disappeared
+     entirely. `SMELL-018` also dropped to zero.
+
+3. **PR #162** — `test(philosophy): cross-school matrix test for scope filtering`
+   - New `tests/philosophy/test_philosophy_matrix.py` with 12 tests.
+   - Classical reference exemplar exercised under **every one of
+     the eight valid schools** with explicit required/forbidden
+     rule sets.
+   - Two load-bearing regression assertions:
+     - `test_classical_exemplar_false_positives_resolved_under_classical`
+       pins SMELL-014 as **not firing** under `classical`.
+     - `test_classical_exemplar_under_pragmatic_does_fire_smell_014`
+       pins SMELL-014 as **still firing** under `pragmatic`, proving
+       the "same code, different verdict" property — the scope
+       system filters per-school, it does not globally silence.
+   - Two drift-catching guardrails:
+     `test_every_school_in_matrix_is_valid` and
+     `test_classical_exemplar_covered_by_every_school`.
+
+4. **PR #163** — `chore(session): update SESSION_STATE for Phase 1 completion`
+   - This file update.
+
+Test suite: **529 passed** (was 506 at start of session; +23 new).
 
 ---
 
-## Artifacts Created
+## The Load-Bearing Outcome
+
+Before Phase 1, `gaudi check` running against
+`tests/philosophy/classical/canonical/` produced six `SMELL-014
+LazyElement` findings on the Repository implementations, Clock,
+FixedClock, and ReservationIdGenerator — all documented in the
+exemplar's README as audit-predicted false positives.
+
+After Phase 1, under `school = "classical"` (the default), **those
+six findings are gone**. Under `school = "pragmatic"`, they **come
+back**. The engine is now doing exactly what the audit said it should.
 
 ```
-docs/philosophy/
-├── README.md                # index, rationale, contribution rules
-├── canonical-task.md        # the order-processing problem statement
-├── classical.md             # the default
-├── pragmatic.md
-├── functional.md
-├── unix.md
-├── resilient.md
-├── data-oriented.md
-├── convention.md
-└── event-sourced.md
-
-docs/rule-registry.md
-└── (new section) Philosophy Scope Audit
-
-tests/philosophy/
-├── seed_data.py             # shared across all schools
-└── classical/
-    ├── canonical/
-    │   ├── README.md        # rubric 10/10 + finding classification
-    │   ├── domain/models.py
-    │   ├── infrastructure/clock.py
-    │   ├── infrastructure/repositories.py
-    │   ├── services/validation.py
-    │   ├── services/pricing.py
-    │   ├── services/reservation.py
-    │   ├── services/notification.py
-    │   └── pipeline.py
-    └── test_canonical.py
-
-gaudi.toml                   # + tests/philosophy/seed_data.py exclude
+rule       | baseline | classical | pragmatic
+-----------|----------|-----------|----------
+SMELL-014  |     7    |     0     |    7
+SMELL-018  |     1    |     0     |    1
 ```
 
-Untracked (deliberately not committed — Nathan's working RFC):
-- `gaudi-architectural-philosophies.md`
+This is the "same code, different verdict" proof that the scope
+system is doing something real, and it is pinned as a permanent
+regression test.
 
 ---
 
 ## Phase Roadmap
 
-**Phase 0 — scaffolding (complete overnight):**
+**Phase 0 — scaffolding:**
 
-- [x] 0a: Axiom sheets for eight schools (PR #155)
-- [x] 0b: Rule audit with scope column (PR #156)
-- [x] 0c: Canonical task statement (PR #157)
-- [x] 0d: Classical reference exemplar (PR #158)
+- [x] 0a: Axiom sheets for eight schools (#155)
+- [x] 0b: Rule audit with scope column (#156)
+- [x] 0c: Canonical task statement (#157)
+- [x] 0d: Classical reference exemplar (#158)
 
-**Phase 0 remaining — more reference exemplars (follow-up PRs):**
+**Phase 0 remaining — reference exemplars (future PRs):**
 
 - [ ] 0e: Pragmatic exemplar (the sharpest contrast with Classical)
 - [ ] 0f: Functional exemplar
@@ -148,67 +118,69 @@ Untracked (deliberately not committed — Nathan's working RFC):
 - [ ] 0j: Data-Oriented exemplar
 - [ ] 0k: Event-Sourced exemplar
 
-**Phase 1 — engine change (deferred until Nathan approves):**
+When each lands, a new set of rows is added to
+`EXEMPLAR_EXPECTATIONS` in
+`tests/philosophy/test_philosophy_matrix.py` and the matrix grows
+automatically.
 
-- [ ] Add `Rule.philosophy_scope: frozenset[str] = frozenset({"universal"})`
-- [ ] Add `[philosophy].school` key to `gaudi.toml`
-- [ ] One-predicate filter in `engine.py`: a rule runs iff
-      `"universal" in rule.philosophy_scope or school in rule.philosophy_scope`
-- [ ] Tag the ~22 scoped rules per the audit's findings
-- [ ] Verify the six audit-predicted false positives on the Classical
-      exemplar disappear when `school = "classical"`
+**Phase 1 — engine change (complete this session):**
 
-**Phase 2 — matrix test (after Phase 1):**
+- [x] `Rule.philosophy_scope` field (#160)
+- [x] `[philosophy].school` in `gaudi.toml` (#160)
+- [x] `rule_applies_to_school` one-predicate filter (#160)
+- [x] Unit tests and guardrails (#160)
+- [x] 22 scoped rules tagged per the audit (#161)
+- [x] Fixture corpus runner adjusted to preserve per-rule specs (#161)
+- [x] Cross-school matrix test for scope filtering (#162)
 
-- [ ] `tests/philosophy/test_philosophy_matrix.py` — parametrized over
-      (school, exemplar) pairs; asserts expected-finding deltas.
+**Phase 2 — polish (future PRs, low priority):**
 
-**Phase 3 — philosophy inference (after Phase 2):**
-
+- [ ] CLI attribution in report output (show which philosophy
+      a rule belongs to when it fires)
 - [ ] `gaudi philosophy --explain` deterministic inference from
-      project dependencies (Django → convention, heavy immutability
-      → functional, etc.).
+      project dependencies
+- [ ] Detector precision issues found during Phase 0: SMELL-007
+      over-fires on service classes, SMELL-023 confuses `Protocol`
+      classes with real inheritance
 
 ---
 
 ## Things To Know Before Next Session
 
-1. **The RFC file in the repo root** (`gaudi-architectural-philosophies.md`)
-   is Nathan's working document. Do not commit it. It has already served
-   its purpose — its content has been distilled into the eight axiom
-   sheets under `docs/philosophy/`.
+1. **The RFC file** `gaudi-architectural-philosophies.md` in the
+   repo root is still untracked. Its content has been distilled
+   into the eight axiom sheets plus the Phase 1 implementation.
 
-2. **`gaudi check` running on the classical exemplar produces the
-   expected false positives.** This is not a regression — it is the
-   forcing-function evidence for Phase 1. The README inside the
-   exemplar directory categorizes every finding.
+2. **Default school is `classical`.** Any project that picks up
+   this version of Gaudi without adding `[philosophy]` to its
+   `gaudi.toml` will see the same rules fire as it did in v0.1.1,
+   because Classical is the closest match to the implicit default
+   that pre-Phase-1 Gaudi was using.
 
-3. **SMELL-007 and SMELL-023 detector precision issues** were observed
-   but not fixed. SMELL-007 (DivergentChange) over-fires on service
-   classes with multiple methods serving one responsibility. SMELL-023
-   (RefusedBequest) confuses Protocol classes with real inheritance.
-   Both are good follow-up issues; the audit's engine-change does not
-   resolve them.
+3. **Phase 2 polish is deferred.** The engine works end-to-end with
+   zero UX additions. Attribution in report output and `gaudi init`
+   wizards are nice-to-haves, not prerequisites for anything.
 
-4. **The seed data is intentionally shared and immutable.** Every
-   school's implementation must run against `tests/philosophy/seed_data.py`
-   unchanged so that differences in output are attributable to
-   architectural differences, not test setup.
+4. **The matrix test is the regression gate.** Any future change
+   that breaks scope filtering — typo in a tag, accidental
+   un-scoping, drift between the audit and the code — should fail
+   `tests/philosophy/test_philosophy_matrix.py` loudly.
 
-5. **Next exemplar: Pragmatic.** It should be a straight-through
-   function with tests around it, no Repository Protocol, no services
-   extracted until the Rule of Three fires. The diff against Classical
-   is exactly what teaches the philosophical difference.
+5. **Next natural piece of work: Pragmatic exemplar.** It is the
+   sharpest philosophical contrast with Classical on the same
+   canonical task, and writing it will immediately exercise the
+   matrix's pragmatic row beyond the Classical exemplar's
+   negative check.
 
 ---
 
 ## Test Suite / Build Status
 
 - `ruff check .` — clean
-- `ruff format --check .` — 530 files formatted
-- `pytest --tb=short -q` — **506 passed**, 3 warnings
-- `gaudi check` — baseline project findings plus the documented
-  philosophy exemplar findings (all categorized in the exemplar README)
+- `ruff format --check .` — 532 files formatted
+- `pytest --tb=short -q` — **529 passed**, 3 warnings
+- `gaudi check` on the Gaudí project itself — six SMELL-014 and
+  one SMELL-018 findings removed relative to pre-Phase-1 baseline
 - CI: every PR this session merged green without `--admin`
 
 ---
@@ -216,11 +188,11 @@ Untracked (deliberately not committed — Nathan's working RFC):
 ## Commits Landed (this session, in order)
 
 ```
-aee2750 test(philosophy): add Classical reference exemplar of canonical task (#158)
-bc582de docs(philosophy): add canonical task statement for reference exemplars (#157)
-85e8c1f docs(registry): add philosophy scope audit for all implemented rules (#156)
-9a01656 docs(philosophy): add axiom sheets for eight architectural schools (#155)
+63ca682 test(philosophy): add cross-school matrix test for scope filtering (#162)
+2129031 feat(rules): tag 22 scoped rules per the philosophy audit (#161)
+bdc0af6 feat(engine): Rule.philosophy_scope and [philosophy].school wiring (#160)
+9289def chore(session): update SESSION_STATE with overnight multi-philosophy work (#159)
 ```
 
-Branch tip: `main`. No open PRs from this session. No uncommitted
-changes other than the untracked RFC file.
+Branch tip: `main`. No open PRs from this session once #163 lands.
+No uncommitted changes other than the untracked RFC file.
