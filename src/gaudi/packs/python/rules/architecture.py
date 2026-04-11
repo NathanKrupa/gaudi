@@ -74,6 +74,19 @@ class GodModel(Rule):
     code = "ARCH-002"
     severity = Severity.WARN
     category = Category.ARCHITECTURE
+    # Scoped away from Convention: fat models are the blessed
+    # ActiveRecord/Django pattern. See docs/philosophy/convention.md.
+    philosophy_scope = frozenset(
+        {
+            "classical",
+            "pragmatic",
+            "functional",
+            "unix",
+            "resilient",
+            "data-oriented",
+            "event-sourced",
+        }
+    )
     message_template = "Model '{model}' has {count} fields — consider splitting into related models"
     recommendation_template = (
         "Models with more than {threshold} fields often contain distinct concerns. "
@@ -247,6 +260,10 @@ class MissingTimestamps(Rule):
     code = "SCHEMA-001"
     severity = Severity.INFO
     category = Category.SCHEMA
+    # Scoped to Classical + Convention: audit-trail timestamps are an
+    # ORM-row concept. Event-sourced projections get time from the log;
+    # functional/unix/data-oriented do not use rows as the source of truth.
+    philosophy_scope = frozenset({"classical", "convention"})
     message_template = "Model '{model}' has no timestamp fields (created_at, updated_at)"
     recommendation_template = (
         "Add created_at and updated_at DateTimeField columns with auto_now_add and auto_now. "
@@ -425,6 +442,19 @@ class SingleFileModels(Rule):
     code = "STRUCT-001"
     severity = Severity.WARN
     category = Category.STRUCTURE
+    # Scoped away from Convention: Django's models.py is load-bearing
+    # — splitting it is fighting the framework. See docs/philosophy/convention.md.
+    philosophy_scope = frozenset(
+        {
+            "classical",
+            "pragmatic",
+            "functional",
+            "unix",
+            "resilient",
+            "data-oriented",
+            "event-sourced",
+        }
+    )
     message_template = (
         "File '{file}' contains {count} models and is {lines} lines long — "
         "consider splitting into a models package"

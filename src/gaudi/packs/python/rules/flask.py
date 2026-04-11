@@ -19,6 +19,9 @@ class FlaskNoAppFactory(Rule):
     severity = Severity.WARN
     category = Category.STRUCTURE
     requires_library = "flask"
+    # Framework-specific best practice. Only meaningful under
+    # Classical (testability via factory) and Convention (framework idiom).
+    philosophy_scope = frozenset({"classical", "convention"})
     message_template = "Flask app created at module level — use application factory pattern"
     recommendation_template = (
         "Use create_app() factory function instead of module-level Flask(). "

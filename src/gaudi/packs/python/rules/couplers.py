@@ -24,6 +24,11 @@ class FeatureEnvy(Rule):
     code = "SMELL-009"
     severity = Severity.WARN
     category = Category.CODE_SMELL
+    # Method-envy is an OOP smell about object data ownership.
+    # Functional and Data-Oriented do not have owning objects;
+    # Unix modules are namespaces, not owners; Event-Sourced uses
+    # aggregates and events instead.
+    philosophy_scope = frozenset({"classical", "convention"})
     message_template = (
         "Method '{method}' in '{class_name}' accesses another object's attributes more than its own"
     )
@@ -165,6 +170,11 @@ class MiddleMan(Rule):
     code = "SMELL-018"
     severity = Severity.WARN
     category = Category.CODE_SMELL
+    # Delegation wrappers are seams under Classical, Convention,
+    # Resilient (circuit breakers), Data-Oriented (batch wrappers),
+    # and Event-Sourced (aggregate boundaries). Pragmatic/Unix/
+    # Functional consider them dead weight.
+    philosophy_scope = frozenset({"pragmatic", "unix", "functional"})
     message_template = (
         "Class '{class_name}' delegates {delegated}/{total} methods — it's a middle man"
     )

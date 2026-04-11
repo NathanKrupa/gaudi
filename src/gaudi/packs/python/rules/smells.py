@@ -273,6 +273,20 @@ class Loops(Rule):
     code = "SMELL-013"
     severity = Severity.INFO
     category = Category.CODE_SMELL
+    # Scoped away from Data-Oriented: comprehensions allocate
+    # intermediate collections; manual fused loops are cache-coherent.
+    # See docs/philosophy/data-oriented.md catechism #6.
+    philosophy_scope = frozenset(
+        {
+            "classical",
+            "pragmatic",
+            "functional",
+            "unix",
+            "resilient",
+            "convention",
+            "event-sourced",
+        }
+    )
     message_template = "Loop at line {line} could be replaced with a comprehension or builtin"
     recommendation_template = (
         "Use a list comprehension, generator expression, or sum() instead of an accumulation loop."

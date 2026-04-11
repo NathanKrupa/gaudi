@@ -274,6 +274,21 @@ class PrintInsteadOfLog(Rule):
     code = "LOG-004"
     severity = Severity.WARN
     category = Category.LOGGING
+    # Scoped away from Unix: text on stdout IS the universal Unix
+    # interface. A Unix program that emits data on stdout and
+    # diagnostics on stderr is correct, not misbehaving. See
+    # docs/philosophy/unix.md catechism #2.
+    philosophy_scope = frozenset(
+        {
+            "classical",
+            "pragmatic",
+            "functional",
+            "resilient",
+            "data-oriented",
+            "convention",
+            "event-sourced",
+        }
+    )
     message_template = "print() call at line {line} -- use a logger instead"
     recommendation_template = (
         "Service code should emit log records, not stdout text. Replace print()"
@@ -376,6 +391,19 @@ class NoCorrelationID(Rule):
     code = "LOG-005"
     severity = Severity.INFO
     category = Category.LOGGING
+    # Scoped away from Unix and Data-Oriented: correlation IDs are a
+    # long-lived-service concept. One-shot Unix scripts and batch
+    # Data-Oriented jobs have no request to correlate across.
+    philosophy_scope = frozenset(
+        {
+            "classical",
+            "pragmatic",
+            "functional",
+            "resilient",
+            "convention",
+            "event-sourced",
+        }
+    )
     message_template = "Endpoint handler logs at line {line} without correlation id in extra="
     recommendation_template = (
         "Pass extra={{'request_id': request_id}} (or correlation_id / trace_id) on"
