@@ -80,6 +80,17 @@ PRAGMATIC_EXEMPLAR = "pragmatic/canonical"
 # each discipline chooses to accept.
 FUNCTIONAL_EXEMPLAR = "functional/canonical"
 
+# The Unix reference exemplar — four independent programs composed
+# via JSON-lines over stdio. Classes are refused; the script IS the
+# service. Unlike Pragmatic and Functional, this exemplar is NOT
+# scope-invariant: ARCH-013 FatScript (moved from universal to
+# scoped-away-from-unix in the PR that introduced this exemplar)
+# fires under every school except ``unix``. This is the matrix's
+# second "same code, different verdict" demonstration, symmetric
+# to Classical's SMELL-014 behavior but going the opposite
+# direction: clean at home, dirty abroad.
+UNIX_EXEMPLAR = "unix/canonical"
+
 # Exemplars whose finding set is expected to be identical under
 # every valid school. These are the "control conditions" for the
 # matrix: universal rules must be scope-invariant, and a divergence
@@ -170,6 +181,27 @@ CLASSICAL_FORBIDS_UNDER_PRAGMATIC: frozenset[str] = frozenset(
         "SMELL-009",
         "SMELL-022",
         "SMELL-023",
+    }
+)
+
+# The Unix exemplar's universal findings — these fire under every
+# school. SMELL-003 on the long stage functions, STRUCT-012 because
+# the test fixture scripts aren't declared as pyproject entry points
+# (a real Unix-shaped project would declare them), STRUCT-021 for
+# the repeated plain-dict keys ('sku', '_status', 'customer_id').
+UNIX_REQUIRES_EVERYWHERE: frozenset[str] = frozenset({"SMELL-003", "STRUCT-012", "STRUCT-021"})
+
+# Universal forbidden: the Unix exemplar has zero classes, so none
+# of the OOP-specific rules may fire regardless of school.
+UNIX_FORBIDS_EVERYWHERE: frozenset[str] = frozenset(
+    {
+        "SMELL-014",  # no classes at all
+        "SMELL-018",  # no wrappers
+        "SMELL-020",  # no large classes
+        "SMELL-022",  # no data classes
+        "SMELL-023",  # no inheritance
+        "ARCH-002",  # no models
+        "DOM-001",  # no domain classes
     }
 )
 
@@ -277,6 +309,38 @@ EXEMPLAR_EXPECTATIONS: list[ExemplarExpectation] = [
             }
         )
     ],
+    # --- Unix exemplar rows --------------------------------------------
+    # Under the Unix home school: ARCH-013 must NOT fire (scoped away).
+    # The universal findings (SMELL-003, STRUCT-012, STRUCT-021) fire.
+    ExemplarExpectation(
+        exemplar=UNIX_EXEMPLAR,
+        school="unix",
+        required_rules=UNIX_REQUIRES_EVERYWHERE,
+        forbidden_rules=UNIX_FORBIDS_EVERYWHERE | frozenset({"ARCH-013"}),
+    ),
+    # Under every NON-unix school: ARCH-013 fires on main() functions
+    # that Unix treats as "the script IS the service." This is the
+    # "same code, different verdict" demonstration symmetric to
+    # the Classical exemplar's SMELL-014 behavior.
+    *[
+        ExemplarExpectation(
+            exemplar=UNIX_EXEMPLAR,
+            school=school,
+            required_rules=UNIX_REQUIRES_EVERYWHERE | frozenset({"ARCH-013"}),
+            forbidden_rules=UNIX_FORBIDS_EVERYWHERE,
+        )
+        for school in sorted(
+            {
+                "classical",
+                "pragmatic",
+                "functional",
+                "resilient",
+                "data-oriented",
+                "convention",
+                "event-sourced",
+            }
+        )
+    ],
 ]
 
 
@@ -354,6 +418,55 @@ class TestPhilosophyMatrix:
         covered = {e.school for e in EXEMPLAR_EXPECTATIONS if e.exemplar == FUNCTIONAL_EXEMPLAR}
         missing = VALID_SCHOOLS - covered
         assert not missing, f"Functional exemplar matrix is missing schools: {sorted(missing)}"
+
+    def test_unix_exemplar_covered_by_every_school(self) -> None:
+        """The unix exemplar should also run under every school."""
+        covered = {e.school for e in EXEMPLAR_EXPECTATIONS if e.exemplar == UNIX_EXEMPLAR}
+        missing = VALID_SCHOOLS - covered
+        assert not missing, f"Unix exemplar matrix is missing schools: {sorted(missing)}"
+
+    def test_unix_exemplar_arch013_absent_under_unix(self) -> None:
+        """The load-bearing regression test for the Unix exemplar.
+
+        ``ARCH-013 FatScript`` was moved from universal to
+        scoped-away-from-unix because the Unix stages tripped it on
+        ``main()`` functions that are pure argparse + stdin loop +
+        atomic write plumbing. Under Unix catechism #1, the script
+        IS the service — there is no "service elsewhere" to extract
+        to. This test pins that audit revision: under
+        school='unix', ``ARCH-013`` must not fire on the Unix
+        exemplar's ~80 lines of stage scripts.
+        """
+        findings = _run_exemplar(UNIX_EXEMPLAR, "unix")
+        arch_013 = [f for f in findings if f.code == "ARCH-013"]
+        assert not arch_013, (
+            "ARCH-013 fired on the Unix exemplar under school='unix'. "
+            "This is the regression the audit revision was supposed "
+            "to prevent. Findings: " + "; ".join(f"{f.file}:{f.line}" for f in arch_013)
+        )
+
+    def test_unix_exemplar_arch013_present_under_classical(self) -> None:
+        """The symmetric demonstration for the ARCH-013 scope.
+
+        The same four stage files that pass cleanly under Unix must
+        trip ARCH-013 under Classical, because Classical architecture
+        considers a 17-line main() with business logic in it a
+        candidate for extraction. This is "same code, different
+        verdict" going the opposite direction from the Classical
+        exemplar's SMELL-014 behavior: Unix is clean at home, dirty
+        abroad; Classical is clean at home, dirty abroad. Two
+        independent forcing-function demonstrations that the scope
+        system filters per-school rather than globally silencing.
+        """
+        findings = _run_exemplar(UNIX_EXEMPLAR, "classical")
+        arch_013 = [f for f in findings if f.code == "ARCH-013"]
+        assert arch_013, (
+            "ARCH-013 did not fire on the Unix exemplar under "
+            "school='classical'. The main() functions in the four "
+            "stage scripts should have tripped the FatScript rule, "
+            "proving that philosophy scoping filters rather than "
+            "globally silencing."
+        )
 
     @pytest.mark.parametrize("exemplar", SCOPE_INVARIANT_EXEMPLARS)
     def test_scope_invariant_exemplar_is_stable_across_schools(self, exemplar: str) -> None:

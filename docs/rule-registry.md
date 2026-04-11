@@ -315,16 +315,18 @@ away from Data-Oriented.
 
 Of the ~124 currently implemented rules:
 
-- **~102 (82%) are universal** — they descend from the three pillars and
+- **~101 (81%) are universal** — they descend from the three pillars and
   hold in every school.
-- **~22 (18%) are scoped** — they depend on school-specific axioms.
+- **~23 (19%) are scoped** — they depend on school-specific axioms.
+  (Originally 22 at Phase 1; `ARCH-013 FatScript` was moved to scoped
+  when the Unix exemplar surfaced it as a false positive.)
 
 This result is load-bearing: it validates the prediction that philosophy
 scoping needs only a small amount of machinery, because the catalog is
 already mostly universal. The engine change (Phase 1) can be small
 because the audit is small.
 
-### Scoped Rules (the 22)
+### Scoped Rules (the 23)
 
 These rules have non-universal scope. Each entry names the schools under
 which the rule remains defensible and cites the axiom sheet that justifies
@@ -354,8 +356,9 @@ the exclusion. Rules not listed here are universal.
 | **STAB-011** MissingHealthEndpoint | classical, pragmatic, functional, resilient, convention, event-sourced | unix, data-oriented | Same as OPS-009. |
 | **ASYNC-004** NoGracefulShutdown | classical, pragmatic, functional, resilient, convention, event-sourced | unix, data-oriented | Graceful shutdown matters for long-lived processes. One-shot Unix scripts and batch Data-Oriented jobs terminate by completing, not by receiving a signal. |
 | **DOM-001** AnemicDomainModel | classical, convention | functional, data-oriented, event-sourced, unix, pragmatic | Fowler's DDD-era critique of data-without-behavior. Every school listed as excluded uses anemic records deliberately: [functional.md](philosophy/functional.md) catechism #1, [data-oriented.md](philosophy/data-oriented.md) catechism #7, [event-sourced.md](philosophy/event-sourced.md) catechism #1. Pragmatic considers the extraction-of-behavior-into-methods premature until a caller needs it. |
+| **ARCH-013** FatScript | classical, pragmatic, functional, resilient, data-oriented, convention, event-sourced | unix | Under [unix.md](philosophy/unix.md) catechism #1, "the script IS the service." ARCH-013's premise ("extract the business logic to a service") has no application when the script is already the smallest honest unit of work — a small program that reads stdin, calls one helper function, and writes stdout. Evidence: `tests/philosophy/unix/canonical/` tripped this rule three times on `main()` functions that were pure argparse + stdin loop + atomic write plumbing. Scope was added after writing the Unix exemplar surfaced the false positive. |
 
-### Universal Rules (the ~102)
+### Universal Rules (the ~101)
 
 All other implemented rules are universal. A rule is universal if it
 descends directly from the three pillars and the fourteen principles of
@@ -371,7 +374,7 @@ universal rules include:
 - **All of STRUCT** (010–013, 020–021) except 001. Packaging, pyproject,
   entry points, lockfiles, return types, and magic strings are universal
   infrastructure concerns.
-- **All of ARCH** (010, 011, 013, 020, 022) except 002. Import direction,
+- **All of ARCH** (010, 011, 020, 022) except 002 and 013. Import direction,
   connector-logic leakage, fat scripts, env leakage, and scattered config
   are Principle #1, #5, #9, and #10 applied directly.
 - **All of ERR** (001–006). Principle #4 (failure must be named) is a

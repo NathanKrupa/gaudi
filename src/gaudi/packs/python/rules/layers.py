@@ -128,6 +128,24 @@ class FatScript(Rule):
     code = "ARCH-013"
     severity = Severity.WARN
     category = Category.ARCHITECTURE
+    # Scoped away from Unix: under docs/philosophy/unix.md catechism #1,
+    # the script IS the service. A small program that reads stdin,
+    # calls one helper function, and writes stdout has no "business
+    # logic to extract" — the script is already the smallest honest
+    # unit of work. Evidence: tests/philosophy/unix/canonical/ trips
+    # this rule three times on main() functions that are pure
+    # argparse + stdin loop + atomic write plumbing.
+    philosophy_scope = frozenset(
+        {
+            "classical",
+            "pragmatic",
+            "functional",
+            "resilient",
+            "data-oriented",
+            "convention",
+            "event-sourced",
+        }
+    )
     message_template = "Entry point '{function}' has {lines} lines of business logic"
     recommendation_template = (
         "Entry points should be thin — parse input,"
