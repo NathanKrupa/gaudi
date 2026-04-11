@@ -41,6 +41,20 @@ dev = [
     "bandit[toml]>=1.7",
     "pip-audit>=2.7",
     "pre-commit>=3.7",
+    # Test-only. Used exclusively by the Convention reference exemplar
+    # under tests/philosophy/convention/canonical/ to demonstrate a
+    # faithful Django implementation of the canonical order-processing
+    # task. Gaudi itself has NO runtime dependency on Django — all
+    # DJ-*, DRF-*, and Django-aware rules lint user projects via AST
+    # inspection, not by importing their code.
+    #
+    # Pinned to Django 5.x LTS for CI stability. Django 5.2 is the
+    # current LTS, officially supports Python 3.10-3.13, and works
+    # on 3.14 at the time of writing but is not officially supported
+    # there. The Convention tests are skipped automatically when
+    # Django cannot be imported, so CI on 3.14 stays green even if
+    # pip resolution leaves Django uninstalled.
+    "django>=5.0,<6.0; python_version<'3.14'",
 ]
 
 [project.scripts]

@@ -91,6 +91,25 @@ FUNCTIONAL_EXEMPLAR = "functional/canonical"
 # direction: clean at home, dirty abroad.
 UNIX_EXEMPLAR = "unix/canonical"
 
+# The Convention reference exemplar — a real Django app. The
+# composition root lives on a Manager method (OrderManager.place_order),
+# every model is registered in admin, and a drift-checked migration
+# exists. Under ``convention`` the scoped-to-convention rules
+# (SMELL-020 LargeClass, DOM-001 AnemicDomainModel, SCHEMA-001
+# MissingTimestamps, ARCH-002 GodModel, STRUCT-001 SingleFileModels)
+# are permitted to fire on real Django models because the audit
+# treats them as Convention-specific concerns. Under other schools,
+# most of these must NOT fire — SMELL-020, ARCH-002, STRUCT-001 are
+# scoped AWAY from Convention only, so they still run elsewhere.
+#
+# The scope-sensitive finding that pins this exemplar in the matrix
+# is SMELL-014 LazyElement: under ``convention``, the single-method
+# CustomerManager, ProductManager, Customer, and PromoCode classes
+# are seams the framework uses; under every non-convention/classical/
+# resilient/event-sourced school, those classes are "dead weight"
+# the audit correctly flags.
+CONVENTION_EXEMPLAR = "convention/canonical"
+
 # Exemplars whose finding set is expected to be identical under
 # every valid school. These are the "control conditions" for the
 # matrix: universal rules must be scope-invariant, and a divergence
@@ -205,6 +224,23 @@ UNIX_FORBIDS_EVERYWHERE: frozenset[str] = frozenset(
     }
 )
 
+# The Convention exemplar's universal findings — these fire under
+# every school as honest universal costs of the Django idiom:
+# SMELL-003 on the ~92-line place_order manager method,
+# STRUCT-021 on repeated Django field-name literals like 'sku' and
+# 'status'.
+CONVENTION_REQUIRES_EVERYWHERE: frozenset[str] = frozenset({"SMELL-003", "STRUCT-021"})
+
+# Under ``convention``: SMELL-014 must NOT fire on the single-method
+# Django Managers and models. Under every non-convention school
+# that scopes SMELL-014 IN, it MUST fire. This is the matrix row
+# that pins the scope-sensitive demonstration on the Convention
+# exemplar (symmetric to the Classical exemplar's SMELL-014 row,
+# but with Django Managers as the seam).
+CONVENTION_SMELL_014_FIRES_UNDER: frozenset[str] = frozenset(
+    {"pragmatic", "functional", "unix", "data-oriented"}
+)
+
 
 EXEMPLAR_EXPECTATIONS: list[ExemplarExpectation] = [
     ExemplarExpectation(
@@ -308,6 +344,74 @@ EXEMPLAR_EXPECTATIONS: list[ExemplarExpectation] = [
                 "event-sourced",
             }
         )
+    ],
+    # --- Convention exemplar rows --------------------------------------
+    # Under ``convention`` (the home school): DOM-001, SCHEMA-001,
+    # SMELL-020, ARCH-002, STRUCT-001 are permitted to fire (they are
+    # scoped to, or away from, convention per the audit, and the real
+    # Django models trigger some of them). SMELL-014 must NOT fire —
+    # Django Managers are seams under Convention.
+    ExemplarExpectation(
+        exemplar=CONVENTION_EXEMPLAR,
+        school="convention",
+        required_rules=CONVENTION_REQUIRES_EVERYWHERE,
+        forbidden_rules=frozenset({"SMELL-014"}),
+    ),
+    # Under ``classical``: DOM-001 and SCHEMA-001 stay scoped IN
+    # (classical+convention), so they fire. SMELL-014 stays scoped
+    # AWAY from classical, so it does NOT fire.
+    ExemplarExpectation(
+        exemplar=CONVENTION_EXEMPLAR,
+        school="classical",
+        required_rules=CONVENTION_REQUIRES_EVERYWHERE,
+        forbidden_rules=frozenset({"SMELL-014"}),
+    ),
+    # Under schools that scope SMELL-014 IN (pragmatic / functional /
+    # unix / data-oriented), SMELL-014 MUST fire on the Django Manager
+    # subclasses and single-method models. Meanwhile DOM-001 /
+    # SCHEMA-001 / SMELL-020 / SMELL-022 / SMELL-023 / SMELL-009 /
+    # ARCH-002 must all stay silent because they are scoped AWAY from
+    # those schools.
+    *[
+        ExemplarExpectation(
+            exemplar=CONVENTION_EXEMPLAR,
+            school=school,
+            required_rules=CONVENTION_REQUIRES_EVERYWHERE | frozenset({"SMELL-014"}),
+            forbidden_rules=frozenset(
+                {
+                    "DOM-001",
+                    "SCHEMA-001",
+                    "SMELL-020",
+                    "ARCH-002",
+                    "STRUCT-001",
+                    "SMELL-022",
+                    "SMELL-023",
+                    "SMELL-009",
+                }
+            ),
+        )
+        for school in sorted(CONVENTION_SMELL_014_FIRES_UNDER)
+    ],
+    # Under resilient and event-sourced: SMELL-014 is scoped AWAY, so
+    # it does not fire. DOM-001 and SCHEMA-001 are also scoped away
+    # from these schools, so they do not fire.
+    *[
+        ExemplarExpectation(
+            exemplar=CONVENTION_EXEMPLAR,
+            school=school,
+            required_rules=CONVENTION_REQUIRES_EVERYWHERE,
+            forbidden_rules=frozenset(
+                {
+                    "SMELL-014",
+                    "DOM-001",
+                    "SCHEMA-001",
+                    "SMELL-020",
+                    "SMELL-022",
+                    "SMELL-023",
+                }
+            ),
+        )
+        for school in ("resilient", "event-sourced")
     ],
     # --- Unix exemplar rows --------------------------------------------
     # Under the Unix home school: ARCH-013 must NOT fire (scoped away).
@@ -424,6 +528,41 @@ class TestPhilosophyMatrix:
         covered = {e.school for e in EXEMPLAR_EXPECTATIONS if e.exemplar == UNIX_EXEMPLAR}
         missing = VALID_SCHOOLS - covered
         assert not missing, f"Unix exemplar matrix is missing schools: {sorted(missing)}"
+
+    def test_convention_exemplar_covered_by_every_school(self) -> None:
+        """The convention exemplar should also run under every school."""
+        covered = {e.school for e in EXEMPLAR_EXPECTATIONS if e.exemplar == CONVENTION_EXEMPLAR}
+        missing = VALID_SCHOOLS - covered
+        assert not missing, f"Convention exemplar matrix is missing schools: {sorted(missing)}"
+
+    def test_convention_managers_trip_smell_014_outside_convention(self) -> None:
+        """The Convention-flavored same-code-different-verdict pin.
+
+        Under schools that reject anti-extensibility seams
+        (pragmatic/functional/unix/data-oriented), Django Manager
+        subclasses with one method are SMELL-014 targets. Under
+        ``convention`` itself, they are framework seams and the rule
+        must stay silent. This test exercises both directions with
+        the exact same source files.
+        """
+        findings_pragmatic = _run_exemplar(CONVENTION_EXEMPLAR, "pragmatic")
+        smell_014 = [f for f in findings_pragmatic if f.code == "SMELL-014"]
+        assert smell_014, (
+            "SMELL-014 did not fire on the Convention exemplar under "
+            "school='pragmatic'. The single-method Manager subclasses "
+            "(CustomerManager, ProductManager) and single-method models "
+            "should have tripped the LazyElement rule."
+        )
+
+        findings_convention = _run_exemplar(CONVENTION_EXEMPLAR, "convention")
+        smell_014_conv = [f for f in findings_convention if f.code == "SMELL-014"]
+        assert not smell_014_conv, (
+            "SMELL-014 fired on the Convention exemplar under "
+            "school='convention'. Django Managers are seams under "
+            "Convention, not dead weight — the audit tags SMELL-014 "
+            "as scoped away from convention for this reason. "
+            "Findings: " + "; ".join(f"{f.file}:{f.line}" for f in smell_014_conv)
+        )
 
     def test_unix_exemplar_arch013_absent_under_unix(self) -> None:
         """The load-bearing regression test for the Unix exemplar.
