@@ -71,6 +71,22 @@ CLASSICAL_EXEMPLAR = "classical/canonical"
 # Pragmatic exemplar is the clean control condition that proves it.
 PRAGMATIC_EXEMPLAR = "pragmatic/canonical"
 
+# The Functional reference exemplar — pure functions over immutable
+# records, Ok/Err return values, no mutation, no raised exceptions.
+# Like Pragmatic, it is scope-invariant: its gaudi findings are the
+# same under every school. Unlike Pragmatic, it trips only one
+# universal rule (SMELL-003 on the compositional process_order) vs.
+# Pragmatic's three. The delta isolates which universal rule costs
+# each discipline chooses to accept.
+FUNCTIONAL_EXEMPLAR = "functional/canonical"
+
+# Exemplars whose finding set is expected to be identical under
+# every valid school. These are the "control conditions" for the
+# matrix: universal rules must be scope-invariant, and a divergence
+# on one of these exemplars means a supposedly-universal rule has
+# accidentally leaked a scope decision.
+SCOPE_INVARIANT_EXEMPLARS: tuple[str, ...] = (PRAGMATIC_EXEMPLAR, FUNCTIONAL_EXEMPLAR)
+
 # Under every school, the Pragmatic exemplar must trip SMELL-003
 # (long function) and SMELL-004 (long parameter list). These are
 # the deliberate trade-offs the Pragmatic discipline accepts as the
@@ -91,6 +107,33 @@ PRAGMATIC_FORBIDS_EVERYWHERE: frozenset[str] = frozenset(
         "SMELL-023",  # no inheritance
         "ARCH-002",  # no models
         "DOM-001",  # no domain classes
+    }
+)
+
+# Under every school, the Functional exemplar must trip SMELL-003
+# (long function on process_order at ~41 lines). This is the
+# honest cost of composing five pipeline stages with explicit
+# early-return error threading in Python. See
+# tests/philosophy/functional/canonical/README.md.
+FUNCTIONAL_REQUIRES_EVERYWHERE: frozenset[str] = frozenset({"SMELL-003"})
+
+# Under every school, the Functional exemplar must NOT trip the
+# OOP-specific rules (the frozen dataclasses have zero methods)
+# or the anti-extensibility rules (no wrapper classes, no
+# inheritance, no mutation). If any of these ever fires, either
+# the exemplar grew a method it shouldn't have, or the scope
+# filter broke.
+FUNCTIONAL_FORBIDS_EVERYWHERE: frozenset[str] = frozenset(
+    {
+        "SMELL-014",  # no single-method classes (frozen records have zero methods)
+        "SMELL-018",  # no middle-man wrappers
+        "SMELL-020",  # no large classes
+        "SMELL-022",  # classical-scoped, and records have zero methods besides
+        "SMELL-023",  # no inheritance
+        "SMELL-008",  # no shotgun surgery after inlining the type alias
+        "SMELL-009",  # no feature envy (no methods at all)
+        "ARCH-002",  # no models
+        "DOM-001",  # no domain classes with behavior — frozen records excluded
     }
 )
 
@@ -206,6 +249,34 @@ EXEMPLAR_EXPECTATIONS: list[ExemplarExpectation] = [
             }
         )
     ],
+    # --- Functional exemplar rows --------------------------------------
+    # Eight rows, one per school. The Functional exemplar is also
+    # scope-invariant: under every school it trips only SMELL-003 on
+    # the compositional process_order. Unlike Pragmatic, it reaches
+    # this with a very different shape — frozen dataclasses, Ok/Err
+    # result threading, and free-function helpers. The matrix pins
+    # both disciplines independently so neither can regress into
+    # the other's finding profile.
+    *[
+        ExemplarExpectation(
+            exemplar=FUNCTIONAL_EXEMPLAR,
+            school=school,
+            required_rules=FUNCTIONAL_REQUIRES_EVERYWHERE,
+            forbidden_rules=FUNCTIONAL_FORBIDS_EVERYWHERE,
+        )
+        for school in sorted(
+            {
+                "classical",
+                "pragmatic",
+                "functional",
+                "unix",
+                "resilient",
+                "data-oriented",
+                "convention",
+                "event-sourced",
+            }
+        )
+    ],
 ]
 
 
@@ -278,27 +349,39 @@ class TestPhilosophyMatrix:
         missing = VALID_SCHOOLS - covered
         assert not missing, f"Pragmatic exemplar matrix is missing schools: {sorted(missing)}"
 
-    def test_pragmatic_exemplar_findings_are_scope_invariant(self) -> None:
+    def test_functional_exemplar_covered_by_every_school(self) -> None:
+        """The functional exemplar should also run under every school."""
+        covered = {e.school for e in EXEMPLAR_EXPECTATIONS if e.exemplar == FUNCTIONAL_EXEMPLAR}
+        missing = VALID_SCHOOLS - covered
+        assert not missing, f"Functional exemplar matrix is missing schools: {sorted(missing)}"
+
+    @pytest.mark.parametrize("exemplar", SCOPE_INVARIANT_EXEMPLARS)
+    def test_scope_invariant_exemplar_is_stable_across_schools(self, exemplar: str) -> None:
         """Universal rules must not shift based on the active school.
 
-        The Pragmatic exemplar has no classes, so it trips only
-        universal rules (SMELL-003 LongFunction, SMELL-004
-        LongParameterList, STRUCT-021 MagicStrings, plus infra rules
-        like STRUCT-011 and the OPS-00x family). Running it under
-        every valid school must produce the same set of rule codes.
-        If the set diverges, a rule is accidentally leaking a scope
-        decision into a rule the audit classified as universal.
+        Each scope-invariant exemplar (Pragmatic's class-free
+        function, Functional's pure-record composition) trips only
+        universal rules. Running it under every valid school must
+        produce an identical set of rule codes. If the set diverges
+        between any two schools, a rule is accidentally leaking a
+        scope decision into a rule the audit classified as universal.
+
+        This is the control-condition half of the matrix's claim.
+        The Classical exemplar asserts that **scoped** rules shift
+        with the active school ('same code, different verdict').
+        These exemplars assert the symmetric property: **universal**
+        rules do *not* shift.
         """
-        observed = {}
+        observed: dict[str, frozenset[str]] = {}
         for school in VALID_SCHOOLS:
-            findings = _run_exemplar(PRAGMATIC_EXEMPLAR, school)
+            findings = _run_exemplar(exemplar, school)
             observed[school] = frozenset(f.code for f in findings)
 
         baseline_school = next(iter(VALID_SCHOOLS))
         baseline = observed[baseline_school]
         for school, codes in observed.items():
             assert codes == baseline, (
-                f"Pragmatic exemplar finding set shifted: under {school!r} "
+                f"{exemplar} finding set shifted: under {school!r} "
                 f"got {sorted(codes)}, but under {baseline_school!r} got "
                 f"{sorted(baseline)}. Universal rules must be scope-invariant; "
                 f"a shift indicates an accidentally-scoped rule."
