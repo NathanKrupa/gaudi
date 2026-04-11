@@ -14,7 +14,19 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
-from gaudi.core import Finding, Rule
+from gaudi.core import DEFAULT_SCHOOL, Finding, Rule
+
+
+def rule_applies_to_school(rule: Rule, school: str) -> bool:
+    """Return True iff this rule should run under the given school.
+
+    A rule runs when its ``philosophy_scope`` either includes the active
+    school or declares ``"universal"``. Rules that declare no scope at
+    all default to ``{"universal"}`` via the class attribute on
+    ``Rule``, so no rule is ever silently skipped.
+    """
+    scope = rule.philosophy_scope
+    return "universal" in scope or school in scope
 
 
 class Pack:
@@ -66,15 +78,18 @@ class Pack:
         """
         raise NotImplementedError(f"Pack '{self.name}' must implement parse()")
 
-    def check(self, path: Path) -> list[Finding]:
+    def check(self, path: Path, school: str = DEFAULT_SCHOOL) -> list[Finding]:
         """
-        Parse the project and run all registered rules.
+        Parse the project and run all registered rules that apply under
+        the given architectural school.
 
         Returns a list of findings sorted by severity.
         """
         context = self.parse(path)
         findings: list[Finding] = []
         for rule in self._rules:
+            if not rule_applies_to_school(rule, school):
+                continue
             results = rule.check(context)
             if results:
                 findings.extend(results)

@@ -118,6 +118,9 @@ class PythonContext:
     has_requirements: bool = False
     has_pyproject: bool = False
     detected_libraries: set[str] = field(default_factory=set)
+    # The architectural school this project has declared in gaudi.toml.
+    # Defaults to "classical" when unset, matching the engine default.
+    school: str = "classical"
 
     @property
     def model_names(self) -> set[str]:
