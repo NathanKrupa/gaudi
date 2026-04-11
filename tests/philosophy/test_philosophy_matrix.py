@@ -157,6 +157,29 @@ RESILIENT_EXEMPLAR = "resilient/canonical"
 # rows pin required/forbidden sets directly.
 DATA_ORIENTED_EXEMPLAR = "data_oriented/canonical"
 
+# The Event-Sourced reference exemplar — orders as streams of
+# past-tense frozen events, an in-process append-only event
+# store, two read-side projections (current orders +
+# reservations) rebuildable from the log, a pure command handler
+# that enforces six invariants and emits named rejection events
+# for each, and a time-travel query implemented as a replay up
+# to a cutoff. See
+# ``tests/philosophy/event_sourced/canonical/README.md`` for the
+# rubric (10/10) and findings triage.
+#
+# Like Pragmatic, Functional, and Resilient, the Event-Sourced
+# exemplar is fully scope-invariant: its finding set is bit-
+# identical under every valid school. No OOP-specific rule fires
+# because events are frozen dataclasses with zero methods, the
+# aggregate is a free function, and the two holder classes
+# (EventStore, CurrentOrdersProjection, InventoryReservationsProjection)
+# are not single-method wrappers. No STAB-* rule fires because
+# there is no third-party HTTP or queue client to pattern-match
+# against. The exemplar's contribution to the matrix is a fourth
+# scope-invariant control condition that exercises a discipline
+# (frozen events + replay + time-travel) no other exemplar shares.
+EVENT_SOURCED_EXEMPLAR = "event_sourced/canonical"
+
 # Exemplars whose finding set is expected to be identical under
 # every valid school. These are the "control conditions" for the
 # matrix: universal rules must be scope-invariant, and a divergence
@@ -166,6 +189,7 @@ SCOPE_INVARIANT_EXEMPLARS: tuple[str, ...] = (
     PRAGMATIC_EXEMPLAR,
     FUNCTIONAL_EXEMPLAR,
     RESILIENT_EXEMPLAR,
+    EVENT_SOURCED_EXEMPLAR,
 )
 
 # Under every school, the Resilient exemplar must trip this set of
@@ -351,6 +375,49 @@ DATA_ORIENTED_REQUIRES_EVERYWHERE: frozenset[str] = frozenset({"SMELL-003", "STR
 # on any of them means either the exemplar grew a class it
 # shouldn't have, or a scope filter broke.
 DATA_ORIENTED_FORBIDS_EVERYWHERE: frozenset[str] = frozenset(
+    {
+        "SMELL-014",  # no single-method classes
+        "SMELL-018",  # no middle-man wrappers
+        "SMELL-020",  # no large classes
+        "SMELL-022",  # no pure-data classes with behavior elsewhere
+        "SMELL-023",  # no inheritance
+        "ARCH-002",  # no models
+        "DOM-001",  # no domain classes
+    }
+)
+
+# The Event-Sourced exemplar's universal required findings.
+# All three are honest costs of the aggregate-and-projections
+# discipline:
+#
+# - ``SMELL-003`` on the 181-line ``place_order`` (enforces six
+#   invariants inline and emits a named rejection event for each),
+#   the 53-line ``process_order`` entry point, the 39-line
+#   ``_outcome_from_events`` adapter, and the 33-line projection
+#   ``apply`` dispatch. Splitting any of them would scatter the
+#   reading of "what events does this command produce under what
+#   conditions?"
+# - ``SMELL-004`` on ``place_order`` (8 params) and
+#   ``process_order`` (11 params). Every parameter is read by an
+#   invariant check or a wiring step; bundling them would hide a
+#   dependency, not simplify it.
+# - ``STRUCT-021`` on plain-dict keys in the outcome shape
+#   (``'order_id'``, ``'status'``, ``'final_price'``, ...). The
+#   acceptance outcome is a dict shared across every exemplar;
+#   a dataclass would diverge from the contract.
+EVENT_SOURCED_REQUIRES_EVERYWHERE: frozenset[str] = frozenset(
+    {"SMELL-003", "SMELL-004", "STRUCT-021"}
+)
+
+# The Event-Sourced exemplar's forbidden findings — the OOP-
+# specific rules that presuppose classes with behavior. Every
+# event type is a frozen-slots dataclass with zero methods, the
+# aggregate is a free function, and the store/projections are
+# small holder classes that no detector pattern-matches as
+# single-method wrappers, large classes, middle-men, or anemic
+# domain objects. A regression on any of these means either the
+# exemplar grew a class it shouldn't have or a scope filter broke.
+EVENT_SOURCED_FORBIDS_EVERYWHERE: frozenset[str] = frozenset(
     {
         "SMELL-014",  # no single-method classes
         "SMELL-018",  # no middle-man wrappers
@@ -596,6 +663,38 @@ EXEMPLAR_EXPECTATIONS: list[ExemplarExpectation] = [
             }
         )
     ],
+    # --- Event-Sourced exemplar rows -----------------------------------
+    # Eight rows, one per school. The Event-Sourced exemplar is
+    # fully scope-invariant — its finding set is bit-identical
+    # across every school, same as Pragmatic, Functional, and
+    # Resilient. Every row asserts the same universal findings
+    # fire (SMELL-003, SMELL-004, STRUCT-021) and the same OOP-
+    # specific rules stay silent (SMELL-014/018/020/022/023,
+    # ARCH-002, DOM-001) because events are frozen dataclasses
+    # with zero methods and the aggregate is a free function.
+    # The scope-invariance is pinned structurally by
+    # test_scope_invariant_exemplar_is_stable_across_schools via
+    # the exemplar's inclusion in SCOPE_INVARIANT_EXEMPLARS.
+    *[
+        ExemplarExpectation(
+            exemplar=EVENT_SOURCED_EXEMPLAR,
+            school=school,
+            required_rules=EVENT_SOURCED_REQUIRES_EVERYWHERE,
+            forbidden_rules=EVENT_SOURCED_FORBIDS_EVERYWHERE,
+        )
+        for school in sorted(
+            {
+                "classical",
+                "pragmatic",
+                "functional",
+                "unix",
+                "resilient",
+                "data-oriented",
+                "convention",
+                "event-sourced",
+            }
+        )
+    ],
     # --- Unix exemplar rows --------------------------------------------
     # Under the Unix home school: ARCH-013 must NOT fire (scoped away).
     # The universal findings (SMELL-003, STRUCT-012, STRUCT-021) fire.
@@ -729,6 +828,12 @@ class TestPhilosophyMatrix:
         covered = {e.school for e in EXEMPLAR_EXPECTATIONS if e.exemplar == DATA_ORIENTED_EXEMPLAR}
         missing = VALID_SCHOOLS - covered
         assert not missing, f"Data-oriented exemplar matrix is missing schools: {sorted(missing)}"
+
+    def test_event_sourced_exemplar_covered_by_every_school(self) -> None:
+        """The event-sourced exemplar should also run under every school."""
+        covered = {e.school for e in EXEMPLAR_EXPECTATIONS if e.exemplar == EVENT_SOURCED_EXEMPLAR}
+        missing = VALID_SCHOOLS - covered
+        assert not missing, f"Event-sourced exemplar matrix is missing schools: {sorted(missing)}"
 
     def test_convention_managers_trip_smell_014_outside_convention(self) -> None:
         """The Convention-flavored same-code-different-verdict pin.
