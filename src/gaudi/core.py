@@ -126,12 +126,40 @@ class Finding:
         return "\n".join(lines)
 
 
+UNIVERSAL_SCOPE: frozenset[str] = frozenset({"universal"})
+
+VALID_SCHOOLS: frozenset[str] = frozenset(
+    {
+        "classical",
+        "pragmatic",
+        "functional",
+        "unix",
+        "resilient",
+        "data-oriented",
+        "convention",
+        "event-sourced",
+    }
+)
+
+VALID_SCOPE_TOKENS: frozenset[str] = VALID_SCHOOLS | {"universal"}
+
+DEFAULT_SCHOOL: str = "classical"
+
+
 class Rule:
     """
     Base class for all Gaudí rules.
 
     Subclass this to create custom architectural checks. Each rule
     must define a code, severity, category, and implement the check() method.
+
+    Every rule also declares a ``philosophy_scope`` — the set of architectural
+    schools under which the rule is defensible. The default ``{"universal"}``
+    means the rule descends from the three pillars and holds in every school;
+    a rule that depends on school-specific axioms should list the schools
+    explicitly (e.g. ``{"pragmatic", "functional"}``). See
+    ``docs/philosophy/`` for the axiom sheets and ``docs/rule-registry.md``
+    for the scope audit.
 
     Example:
         class CheckTenantIsolation(Rule):
@@ -156,6 +184,7 @@ class Rule:
     message_template: str = ""
     recommendation_template: str = ""
     requires_library: str | None = None
+    philosophy_scope: frozenset[str] = UNIVERSAL_SCOPE
 
     def check(self, context: Any) -> list[Finding]:
         """
