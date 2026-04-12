@@ -134,10 +134,16 @@ def _looks_like_credential_name(name: str) -> bool:
     return True
 
 
+_TEST_PREFIXES = ("test-", "test_", "test.", "fake-", "fake_", "dummy-", "dummy_")
+
+
 def _looks_like_placeholder_value(value: str) -> bool:
     if value.lower() in _PLACEHOLDER_VALUES:
         return True
-    if "your-" in value.lower() or "your_" in value.lower():
+    lowered = value.lower()
+    if "your-" in lowered or "your_" in lowered:
+        return True
+    if any(lowered.startswith(prefix) for prefix in _TEST_PREFIXES):
         return True
     return False
 

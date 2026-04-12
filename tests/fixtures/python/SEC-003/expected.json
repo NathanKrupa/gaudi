@@ -31,6 +31,9 @@
     },
     "pass_placeholder_values.py": {
       "expected_findings": []
+    },
+    "pass_test_prefix_values.py": {
+      "expected_findings": []
     }
   }
 }

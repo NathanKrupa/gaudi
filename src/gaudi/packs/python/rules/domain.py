@@ -89,11 +89,19 @@ def _count_behavior_methods(cls: ast.ClassDef) -> int:
     return count
 
 
+def _unwrap_subscript(node: ast.expr) -> ast.expr:
+    """Unwrap generic type annotations like Manager["Product"] to Manager."""
+    if isinstance(node, ast.Subscript):
+        return _unwrap_subscript(node.value)
+    return node
+
+
 def _inherits_manager_base(cls: ast.ClassDef) -> bool:
     for base in cls.bases:
-        if isinstance(base, ast.Attribute) and base.attr in _MANAGER_BASE_HINTS:
+        unwrapped = _unwrap_subscript(base)
+        if isinstance(unwrapped, ast.Attribute) and unwrapped.attr in _MANAGER_BASE_HINTS:
             return True
-        if isinstance(base, ast.Name) and base.id in _MANAGER_BASE_HINTS:
+        if isinstance(unwrapped, ast.Name) and unwrapped.id in _MANAGER_BASE_HINTS:
             return True
     return False
 

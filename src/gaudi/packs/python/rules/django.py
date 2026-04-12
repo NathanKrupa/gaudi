@@ -7,6 +7,17 @@ import ast
 from gaudi.core import Rule, Finding, Severity, Category
 from gaudi.packs.python.context import PythonContext
 
+_TEST_PLACEHOLDER_PREFIXES = ("test-", "test_", "test.", "dummy-", "dummy_", "fake-", "fake_")
+_TEST_PLACEHOLDER_SUBSTRINGS = ("example", "placeholder", "not-used", "not_used")
+
+
+def _is_test_placeholder(value: str) -> bool:
+    """Detect SECRET_KEY values that are clearly test placeholders."""
+    lowered = value.lower()
+    if any(lowered.startswith(prefix) for prefix in _TEST_PLACEHOLDER_PREFIXES):
+        return True
+    return any(marker in lowered for marker in _TEST_PLACEHOLDER_SUBSTRINGS)
+
 
 class DjangoSecretKeyExposed(Rule):
     """Detect Django SECRET_KEY hardcoded in settings.
@@ -41,6 +52,8 @@ class DjangoSecretKeyExposed(Rule):
                         if isinstance(node.value, ast.Constant) and isinstance(
                             node.value.value, str
                         ):
+                            if _is_test_placeholder(node.value.value):
+                                continue
                             findings.append(self.finding(file=f.relative_path, line=node.lineno))
         return findings
 
