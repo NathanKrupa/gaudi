@@ -13,6 +13,9 @@
     },
     "pass_full_override.py": {
       "expected_findings": []
+    },
+    "pass_protocol_class.py": {
+      "expected_findings": []
     }
   }
 }

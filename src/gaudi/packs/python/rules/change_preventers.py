@@ -29,6 +29,35 @@ def _method_attr_set(
     return attrs
 
 
+def _init_injected_attrs(cls: ast.ClassDef) -> set[str]:
+    """Attributes set in __init__ directly from constructor parameters.
+
+    When __init__ does ``self.x = x`` (parameter name matches attribute
+    name), that attribute is a dependency injected at construction time,
+    not internal state. Disjoint groups formed entirely from injected
+    dependencies indicate a coordinator/orchestrator pattern, not
+    divergent change.
+    """
+    for node in cls.body:
+        if not isinstance(node, ast.FunctionDef) or node.name != "__init__":
+            continue
+        param_names = {arg.arg for arg in node.args.args if arg.arg != "self"}
+        injected: set[str] = set()
+        for stmt in ast.walk(node):
+            if (
+                isinstance(stmt, ast.Assign)
+                and len(stmt.targets) == 1
+                and isinstance(stmt.targets[0], ast.Attribute)
+                and isinstance(stmt.targets[0].value, ast.Name)
+                and stmt.targets[0].value.id == "self"
+                and isinstance(stmt.value, ast.Name)
+                and stmt.value.id in param_names
+            ):
+                injected.add(stmt.targets[0].attr)
+        return injected
+    return set()
+
+
 class DivergentChange(Rule):
     """SMELL-007: Class methods touch disjoint attribute sets.
 
@@ -56,8 +85,9 @@ class DivergentChange(Rule):
                 methods = [n for n in node.body if isinstance(n, ast.FunctionDef)]
                 if len(methods) < 4:
                     continue
+                injected = _init_injected_attrs(node)
                 non_init = [m for m in methods if m.name != "__init__"]
-                attr_sets = [_method_attr_set(m) for m in non_init]
+                attr_sets = [_method_attr_set(m) - injected for m in non_init]
                 # Remove empty sets
                 attr_sets = [s for s in attr_sets if s]
                 if len(attr_sets) < 2:

@@ -196,7 +196,7 @@ class TemporaryField(Rule):
 # SMELL-023  RefusedBequest
 # ---------------------------------------------------------------
 
-_IGNORED_BASES = frozenset({"object", "ABC"})
+_IGNORED_BASES = frozenset({"object", "ABC", "Protocol"})
 
 
 def _is_refused_body(body: list[ast.stmt]) -> bool:
