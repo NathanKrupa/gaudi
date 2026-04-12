@@ -21,6 +21,7 @@ def _parse_safe(source: str) -> ast.Module | None:
 # ---------------------------------------------------------------
 
 _ORM_ALL_ATTRS = frozenset({"all", "filter", "exclude", "select_related", "prefetch_related"})
+_BOUNDING_TERMINALS = frozenset({"first", "last", "get", "count", "exists", "aggregate"})
 
 
 class UnboundedResultSet(Rule):
@@ -45,8 +46,11 @@ class UnboundedResultSet(Rule):
             tree = _parse_safe(fi.source)
             if tree is None:
                 continue
+            bounded = self._collect_bounded_call_ids(tree)
             for node in ast.walk(tree):
                 if not isinstance(node, ast.Call):
+                    continue
+                if id(node) in bounded:
                     continue
                 func = node.func
                 if not isinstance(func, ast.Attribute):
@@ -62,6 +66,29 @@ class UnboundedResultSet(Rule):
                         )
                     )
         return findings
+
+    @staticmethod
+    def _collect_bounded_call_ids(tree: ast.Module) -> set[int]:
+        """Find ORM Call nodes consumed by a bounding terminal like .first()."""
+        bounded: set[int] = set()
+        for node in ast.walk(tree):
+            if not isinstance(node, ast.Call):
+                continue
+            func = node.func
+            if not isinstance(func, ast.Attribute):
+                continue
+            if func.attr not in _BOUNDING_TERMINALS:
+                continue
+            UnboundedResultSet._mark_chain_bounded(func.value, bounded)
+        return bounded
+
+    @staticmethod
+    def _mark_chain_bounded(node: ast.expr, bounded: set[int]) -> None:
+        """Walk down a method chain, marking every Call node as bounded."""
+        if isinstance(node, ast.Call):
+            bounded.add(id(node))
+            if isinstance(node.func, ast.Attribute):
+                UnboundedResultSet._mark_chain_bounded(node.func.value, bounded)
 
     @staticmethod
     def _is_orm_chain(func: ast.Attribute) -> bool:
