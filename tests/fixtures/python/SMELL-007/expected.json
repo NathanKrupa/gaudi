@@ -13,6 +13,9 @@
     },
     "pass_cohesive.py": {
       "expected_findings": []
+    },
+    "pass_injected_deps.py": {
+      "expected_findings": []
     }
   }
 }
