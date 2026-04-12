@@ -1,9 +1,9 @@
-"""Fixture for SEC-001: Django model with a Meta class but no permissions key."""
+"""Fixture for SEC-001: security-sensitive model with Meta but no permissions."""
 
 from django.db import models
 
 
-class Order(models.Model):
+class UserAccount(models.Model):
     name = models.CharField(max_length=200)
 
     class Meta:
