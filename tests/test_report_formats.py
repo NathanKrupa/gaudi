@@ -119,6 +119,84 @@ class TestMarkdownReport:
         assert "Project-level findings" in out
 
 
+class TestPhilosophyAttribution:
+    def test_universal_finding_has_empty_scope_label(self) -> None:
+        f = _make_finding()
+        assert f.scope_label == ""
+
+    def test_scoped_finding_has_sorted_scope_label(self) -> None:
+        f = Finding(
+            code="DOM-001",
+            severity=Severity.WARN,
+            category=Category.DOMAIN_MODEL,
+            message="anemic",
+            recommendation="fix",
+            philosophy_scope=frozenset({"convention", "classical"}),
+        )
+        assert f.scope_label == "classical, convention"
+
+    def test_to_dict_omits_scope_for_universal(self) -> None:
+        f = _make_finding()
+        assert "philosophy_scope" not in f.to_dict()
+
+    def test_to_dict_includes_scope_for_scoped(self) -> None:
+        f = Finding(
+            code="DOM-001",
+            severity=Severity.WARN,
+            category=Category.DOMAIN_MODEL,
+            message="anemic",
+            recommendation="fix",
+            philosophy_scope=frozenset({"classical", "convention"}),
+        )
+        d = f.to_dict()
+        assert d["philosophy_scope"] == ["classical", "convention"]
+
+    def test_format_human_includes_scope(self) -> None:
+        f = Finding(
+            code="DOM-001",
+            severity=Severity.WARN,
+            category=Category.DOMAIN_MODEL,
+            message="anemic",
+            recommendation="fix",
+            philosophy_scope=frozenset({"classical"}),
+        )
+        assert "(classical)" in f.format_human()
+
+    def test_format_human_omits_scope_for_universal(self) -> None:
+        f = _make_finding()
+        human = f.format_human()
+        assert "(" not in human.split(" - ")[0]
+
+    def test_github_title_includes_scope(self) -> None:
+        f = Finding(
+            code="DOM-001",
+            severity=Severity.WARN,
+            category=Category.DOMAIN_MODEL,
+            message="anemic",
+            recommendation="fix",
+            philosophy_scope=frozenset({"classical"}),
+        )
+        out = format_github([f])
+        assert "title=DOM-001 (classical)" in out
+
+    def test_markdown_heading_includes_scope(self, tmp_path: Path) -> None:
+        src = tmp_path / "m.py"
+        src.write_text("x = 1\n")
+        f = Finding(
+            code="DOM-001",
+            severity=Severity.WARN,
+            category=Category.DOMAIN_MODEL,
+            message="anemic",
+            recommendation="fix",
+            file=str(src),
+            line=1,
+            philosophy_scope=frozenset({"classical", "convention"}),
+        )
+        out = format_markdown_report([f], tmp_path)
+        assert "### DOM-001 (classical, convention)" in out
+        assert "**Schools:** classical, convention" in out
+
+
 class TestCliWiring:
     def test_check_format_github_runs_on_clean_dir(self, tmp_path: Path) -> None:
         runner = CliRunner()

@@ -71,7 +71,10 @@ def format_github(findings: list[Finding], project_path: Path | None = None) -> 
         if f.line is not None:
             props.append(f"line={f.line}")
 
-        props.append(f"title={_escape_github_property(f.code)}")
+        title = f.code
+        if f.scope_label:
+            title += f" ({f.scope_label})"
+        props.append(f"title={_escape_github_property(title)}")
 
         prop_str = ",".join(props)
         message = _escape_github_data(f.message)
@@ -165,9 +168,12 @@ def format_markdown_report(
             label = f"{rel_str}:{f.line}" if f.line is not None else rel_str
             location_link = f"[{label}]({rel_str}{anchor})"
 
-        out.append(f"### {f.code} — {f.severity.label}")
+        scope_tag = f" ({f.scope_label})" if f.scope_label else ""
+        out.append(f"### {f.code}{scope_tag} — {f.severity.label}")
         out.append("")
         out.append(f"- **Category:** {f.category.value}")
+        if f.scope_label:
+            out.append(f"- **Schools:** {f.scope_label}")
         if location_link:
             out.append(f"- **Location:** {location_link}")
         out.append(f"- **Message:** {f.message}")

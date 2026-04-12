@@ -48,6 +48,7 @@ class Engine:
         path: Path,
         pack_names: list[str] | None = None,
         min_severity: Severity = Severity.INFO,
+        school: str | None = None,
     ) -> list[Finding]:
         """
         Run architectural checks on the given path.
@@ -56,6 +57,7 @@ class Engine:
             path: File or directory to check.
             pack_names: Specific packs to use. If None, auto-detect.
             min_severity: Minimum severity level to include in results.
+            school: Philosophy school to filter rules by.
 
         Returns:
             List of findings sorted by severity then code.
@@ -70,7 +72,7 @@ class Engine:
 
         findings: list[Finding] = []
         for pack in packs:
-            pack_findings = pack.check(path)
+            pack_findings = pack.check(path, school=school)
             findings.extend(pack_findings)
 
         # Filter by minimum severity
