@@ -18,7 +18,7 @@ import click
 from rich.console import Console
 from rich.text import Text
 
-from gaudi.config import load_config
+from gaudi.config import get_school, load_config
 from gaudi.core import Severity
 from gaudi.engine import Engine
 from gaudi.formats import format_github, format_markdown_report
@@ -85,7 +85,10 @@ def check(
             sys.exit(1)
 
     # Run checks
-    findings = engine.check(project_path, pack_names=pack_names, min_severity=min_severity)
+    school = get_school(config)
+    findings = engine.check(
+        project_path, pack_names=pack_names, min_severity=min_severity, school=school
+    )
 
     # Output results
     if output_format == "json":
@@ -117,6 +120,10 @@ def check(
                 header.append(" [", style="dim")
                 header.append(label, style=style)
                 header.append("]", style="dim")
+
+                # Philosophy scope (only for scoped rules)
+                if finding.scope_label:
+                    header.append(f" ({finding.scope_label})", style="magenta")
 
                 # Location
                 if finding.file:
@@ -198,7 +205,10 @@ def report(
             console.print(f"Available packs: {', '.join(engine.packs.keys()) or 'none installed'}")
             sys.exit(1)
 
-    findings = engine.check(project_path, pack_names=pack_names, min_severity=min_severity)
+    school = get_school(config)
+    findings = engine.check(
+        project_path, pack_names=pack_names, min_severity=min_severity, school=school
+    )
     markdown = format_markdown_report(findings, project_path, snippet_context=snippet_context)
 
     if output:

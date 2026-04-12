@@ -92,6 +92,7 @@ class Finding:
     file: str | None = None
     line: int | None = None
     context: dict[str, Any] = field(default_factory=dict)
+    philosophy_scope: frozenset[str] = field(default_factory=frozenset)
 
     def to_dict(self) -> dict[str, Any]:
         d = {
@@ -107,10 +108,19 @@ class Finding:
             d["line"] = self.line
         if self.context:
             d["context"] = self.context
+        if self.philosophy_scope and "universal" not in self.philosophy_scope:
+            d["philosophy_scope"] = sorted(self.philosophy_scope)
         return d
 
     def to_json(self) -> str:
         return json.dumps(self.to_dict(), indent=2)
+
+    @property
+    def scope_label(self) -> str:
+        """Human-readable scope label, empty for universal rules."""
+        if not self.philosophy_scope or "universal" in self.philosophy_scope:
+            return ""
+        return ", ".join(sorted(self.philosophy_scope))
 
     def format_human(self) -> str:
         severity_tag = self.severity.value.upper()
@@ -120,7 +130,8 @@ class Finding:
             if self.line:
                 location += f":{self.line}"
 
-        lines = [f"{self.code} [{severity_tag}]{location} - {self.message}"]
+        scope = f" ({self.scope_label})" if self.scope_label else ""
+        lines = [f"{self.code} [{severity_tag}]{scope}{location} - {self.message}"]
         if self.recommendation:
             lines.append(f"  -> {self.recommendation}")
         return "\n".join(lines)
@@ -230,4 +241,5 @@ class Rule:
             file=file,
             line=line,
             context=kwargs,
+            philosophy_scope=self.philosophy_scope,
         )
