@@ -281,7 +281,26 @@ class MissingTimestamps(Rule):
         "date_modified",
         "modified_date",
         "timestamp",
+        "sent_at",
+        "published_at",
+        "occurred_at",
+        "recorded_at",
     }
+
+    # Fields whose presence signals the model tracks mutable state
+    _MUTABLE_FIELD_NAMES = {"status", "state", "is_active", "is_deleted", "is_archived"}
+
+    @staticmethod
+    def _is_transactional(model: "ModelInfo") -> bool:
+        """Heuristic: a model that has ForeignKey relationships or mutable-state
+        fields is transactional and benefits from audit timestamps. Reference/
+        lookup models (Product, PromoCode) typically have neither."""
+        for col in model.columns:
+            if col.is_foreign_key:
+                return True
+            if col.name.lower() in MissingTimestamps._MUTABLE_FIELD_NAMES:
+                return True
+        return False
 
     def check(self, context: PythonContext) -> list[Finding]:
         findings = []
@@ -294,14 +313,21 @@ class MissingTimestamps(Rule):
                 col.name.lower() in self.TIMESTAMP_PATTERNS for col in model.columns
             )
 
-            if not has_timestamps:
-                findings.append(
-                    self.finding(
-                        file=model.source_file,
-                        line=model.source_line,
-                        model=model.name,
-                    )
+            if has_timestamps:
+                continue
+
+            # Reference/lookup models without FKs or mutable-state fields
+            # don't need audit timestamps
+            if not self._is_transactional(model):
+                continue
+
+            findings.append(
+                self.finding(
+                    file=model.source_file,
+                    line=model.source_line,
+                    model=model.name,
                 )
+            )
         return findings
 
 
@@ -392,12 +418,33 @@ class NoStringLengthLimit(Rule):
 # ---------------------------------------------------------------------------
 
 
+_SENSITIVE_MODEL_NAMES = frozenset(
+    {"user", "account", "role", "group", "permission", "token", "session", "credential"}
+)
+_SENSITIVE_PATH_PARTS = frozenset({"auth", "authz", "security", "permissions", "accounts"})
+
+
+def _is_security_sensitive(model: "ModelInfo") -> bool:
+    """Heuristic: models with security-sensitive names or in auth-related paths
+    should declare explicit permissions. Django's auto-generated add/change/
+    delete/view permissions are sufficient for ordinary domain models."""
+    if any(part in model.name.lower() for part in _SENSITIVE_MODEL_NAMES):
+        return True
+    path_parts = model.source_file.replace("\\", "/").lower().split("/")
+    return bool(_SENSITIVE_PATH_PARTS & set(path_parts))
+
+
 class NoMetaPermissions(Rule):
     """
-    SEC-001: Django model without explicit permissions in Meta.
+    SEC-001: Security-sensitive Django model without explicit permissions in Meta.
 
     Principles: #4 (Failure must be named).
     Source: FWDOCS Django auth framework — implicit permissions are silent failure under hostile input.
+
+    Django auto-generates add/change/delete/view permissions for every model,
+    which is sufficient for ordinary domain models. This rule only fires on
+    models with security-sensitive names or paths where custom permissions
+    are likely needed.
     """
 
     code = "SEC-001"
@@ -416,6 +463,8 @@ class NoMetaPermissions(Rule):
         findings = []
         for model in context.models:
             if model.has_meta and "permissions" not in model.meta_options:
+                if not _is_security_sensitive(model):
+                    continue
                 findings.append(
                     self.finding(
                         file=model.source_file,
