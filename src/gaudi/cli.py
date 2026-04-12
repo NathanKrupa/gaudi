@@ -269,8 +269,7 @@ def philosophy(path: str, output_format: str):
             "recommended": result.recommended,
             "scores": result.scores,
             "signals": [
-                {"school": s.school, "reason": s.reason, "weight": s.weight}
-                for s in result.signals
+                {"school": s.school, "reason": s.reason, "weight": s.weight} for s in result.signals
             ],
         }
         click.echo(json_mod.dumps(output, indent=2))
@@ -296,7 +295,9 @@ def philosophy(path: str, output_format: str):
         recommended = result.recommended
         console.print(f"[bold green]Recommended:[/bold green] {recommended}")
         console.print()
-        console.print(f'  [dim]echo \'[philosophy]\\nschool = "{recommended}"\' >> gaudi.toml[/dim]')
+        console.print(
+            f"  [dim]echo '[philosophy]\\nschool = \"{recommended}\"' >> gaudi.toml[/dim]"
+        )
         console.print()
 
 

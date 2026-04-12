@@ -23,18 +23,22 @@ class TestInferenceResult:
         assert r.recommended is None
 
     def test_scores_sum_weights(self) -> None:
-        r = InferenceResult(signals=[
-            SchoolSignal("classical", "a", weight=2),
-            SchoolSignal("classical", "b", weight=1),
-            SchoolSignal("pragmatic", "c", weight=3),
-        ])
+        r = InferenceResult(
+            signals=[
+                SchoolSignal("classical", "a", weight=2),
+                SchoolSignal("classical", "b", weight=1),
+                SchoolSignal("pragmatic", "c", weight=3),
+            ]
+        )
         assert r.scores == {"pragmatic": 3, "classical": 3}
 
     def test_recommended_is_highest_score(self) -> None:
-        r = InferenceResult(signals=[
-            SchoolSignal("convention", "django", weight=5),
-            SchoolSignal("classical", "sqlalchemy", weight=2),
-        ])
+        r = InferenceResult(
+            signals=[
+                SchoolSignal("convention", "django", weight=5),
+                SchoolSignal("classical", "sqlalchemy", weight=2),
+            ]
+        )
         assert r.recommended == "convention"
 
 
@@ -94,6 +98,7 @@ class TestCliPhilosophyCommand:
         result = runner.invoke(main, ["philosophy", str(tmp_path), "--format", "json"])
         assert result.exit_code == 0, result.output
         import json
+
         data = json.loads(result.output)
         assert data["recommended"] == "convention"
         assert "convention" in data["scores"]

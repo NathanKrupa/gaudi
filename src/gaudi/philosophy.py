@@ -137,10 +137,12 @@ def _detect_structure_signals(project_path: Path) -> list[SchoolSignal]:
     sh_files = list(project_path.rglob("*.sh"))
     makefiles = list(project_path.glob("Makefile"))
     if sh_files or makefiles:
-        signals.append(SchoolSignal(
-            school="unix",
-            reason=f"Found {len(sh_files)} shell script(s) and {len(makefiles)} Makefile(s)",
-        ))
+        signals.append(
+            SchoolSignal(
+                school="unix",
+                reason=f"Found {len(sh_files)} shell script(s) and {len(makefiles)} Makefile(s)",
+            )
+        )
 
     # Protocol classes suggest classical OOP
     py_files = list(project_path.rglob("*.py"))
@@ -153,25 +155,31 @@ def _detect_structure_signals(project_path: Path) -> list[SchoolSignal]:
         except Exception:
             pass
     if protocol_count >= 2:
-        signals.append(SchoolSignal(
-            school="classical",
-            reason=f"Found {protocol_count} files using typing.Protocol (interface segregation)",
-        ))
+        signals.append(
+            SchoolSignal(
+                school="classical",
+                reason=f"Found {protocol_count} files using typing.Protocol (interface segregation)",
+            )
+        )
 
     # models.py + admin.py suggest Django/convention
     if list(project_path.rglob("models.py")) and list(project_path.rglob("admin.py")):
-        signals.append(SchoolSignal(
-            school="convention",
-            reason="Found models.py + admin.py (Django app structure)",
-            weight=2,
-        ))
+        signals.append(
+            SchoolSignal(
+                school="convention",
+                reason="Found models.py + admin.py (Django app structure)",
+                weight=2,
+            )
+        )
 
     # migrations/ directory suggests convention
     if list(project_path.rglob("migrations/")):
-        signals.append(SchoolSignal(
-            school="convention",
-            reason="Found migrations/ directory (framework-managed schema)",
-        ))
+        signals.append(
+            SchoolSignal(
+                school="convention",
+                reason="Found migrations/ directory (framework-managed schema)",
+            )
+        )
 
     return signals
 
