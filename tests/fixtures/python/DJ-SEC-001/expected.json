@@ -16,6 +16,9 @@
     },
     "pass_models.py": {
       "expected_findings": []
+    },
+    "pass_settings_test_placeholder.py": {
+      "expected_findings": []
     }
   }
 }

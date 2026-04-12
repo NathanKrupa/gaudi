@@ -37,6 +37,9 @@
     },
     "pass_manager_has_behavior.py": {
       "expected_findings": []
+    },
+    "pass_manager_generic_type.py": {
+      "expected_findings": []
     }
   }
 }
