@@ -15,6 +15,28 @@ from gaudi.pack import Pack
 logger = logging.getLogger(__name__)
 
 
+def apply_overrides(
+    findings: list[Finding],
+    rule_overrides: dict[str, str],
+) -> list[Finding]:
+    """Apply per-rule severity overrides and suppressions.
+
+    ``rule_overrides`` maps rule code → severity string or ``"off"``.
+    """
+    if not rule_overrides:
+        return findings
+    result: list[Finding] = []
+    for f in findings:
+        override = rule_overrides.get(f.code)
+        if override is None:
+            result.append(f)
+        elif override == "off":
+            continue
+        else:
+            result.append(f.with_severity(Severity(override)))
+    return result
+
+
 class Engine:
     def __init__(self) -> None:
         self._packs: dict[str, Pack] = {}
@@ -49,6 +71,7 @@ class Engine:
         pack_names: list[str] | None = None,
         min_severity: Severity = Severity.INFO,
         school: str | None = None,
+        rule_overrides: dict[str, str] | None = None,
     ) -> list[Finding]:
         """
         Run architectural checks on the given path.
@@ -58,6 +81,7 @@ class Engine:
             pack_names: Specific packs to use. If None, auto-detect.
             min_severity: Minimum severity level to include in results.
             school: Philosophy school to filter rules by.
+            rule_overrides: Per-rule severity overrides (code → severity or "off").
 
         Returns:
             List of findings sorted by severity then code.
@@ -74,6 +98,10 @@ class Engine:
         for pack in packs:
             pack_findings = pack.check(path, school=school)
             findings.extend(pack_findings)
+
+        # Apply per-rule severity overrides and suppressions
+        if rule_overrides:
+            findings = apply_overrides(findings, rule_overrides)
 
         # Filter by minimum severity
         findings = [f for f in findings if f.severity.priority <= min_severity.priority]
