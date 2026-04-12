@@ -33,6 +33,7 @@ class PythonPack(Pack):
     def check(self, path: Path, school: str | None = None) -> list[Finding]:
         context = self.parse(path)
         active_school = school or context.school or DEFAULT_SCHOOL
+        files_by_path = {f.relative_path: f for f in context.files}
         findings: list[Finding] = []
         for rule in self._rules:
             if rule.requires_library and rule.requires_library not in context.detected_libraries:
@@ -40,6 +41,12 @@ class PythonPack(Pack):
             if not rule_applies_to_school(rule, active_school):
                 continue
             results = rule.check(context)
-            if results:
-                findings.extend(results)
+            if not results:
+                continue
+            for f in results:
+                if f.file and f.line is not None:
+                    file_info = files_by_path.get(f.file)
+                    if file_info and file_info.is_suppressed(f.line, f.code):
+                        continue
+                findings.append(f)
         return sorted(findings, key=lambda f: (f.severity.priority, f.code))

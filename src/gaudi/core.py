@@ -122,6 +122,12 @@ class Finding:
             return ""
         return ", ".join(sorted(self.philosophy_scope))
 
+    def with_severity(self, severity: "Severity") -> "Finding":
+        """Return a copy with the severity replaced (for config overrides)."""
+        from dataclasses import replace
+
+        return replace(self, severity=severity)
+
     def format_human(self) -> str:
         severity_tag = self.severity.value.upper()
         location = ""

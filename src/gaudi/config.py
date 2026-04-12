@@ -19,7 +19,7 @@ else:
         import tomli as tomllib
 
 
-from gaudi.core import DEFAULT_SCHOOL, VALID_SCHOOLS
+from gaudi.core import DEFAULT_SCHOOL, VALID_SCHOOLS, Severity
 
 DEFAULT_CONFIG: dict[str, Any] = {
     "packs": [],  # empty = auto-detect
@@ -28,6 +28,8 @@ DEFAULT_CONFIG: dict[str, Any] = {
     "rules": {},
     "philosophy": {"school": DEFAULT_SCHOOL},
 }
+
+_VALID_SEVERITIES = frozenset(s.value for s in Severity)
 
 
 def load_config(project_path: Path) -> dict[str, Any]:
@@ -63,6 +65,15 @@ def load_config(project_path: Path) -> dict[str, Any]:
             f"gaudi.toml [philosophy].school is {school!r}; must be one of {sorted(VALID_SCHOOLS)}"
         )
 
+    # Parse per-rule severity overrides: [gaudi.rules] RULE-ID = "severity"
+    rules_table = gaudi_config.get("rules", {})
+    if isinstance(rules_table, dict):
+        for rule_code, sev_value in rules_table.items():
+            if isinstance(sev_value, str) and sev_value in _VALID_SEVERITIES:
+                config["rules"][rule_code] = sev_value
+            elif sev_value == "off":
+                config["rules"][rule_code] = "off"
+
     return config
 
 
@@ -76,3 +87,12 @@ def get_school(config: dict[str, Any]) -> str:
     """Return the active philosophy school for a loaded config dict."""
     philosophy = config.get("philosophy") or {}
     return philosophy.get("school", DEFAULT_SCHOOL)
+
+
+def get_rule_overrides(config: dict[str, Any]) -> dict[str, str]:
+    """Return per-rule severity overrides from ``[gaudi.rules]``.
+
+    Maps rule code → severity string (``"error"``, ``"warn"``, ``"info"``,
+    or ``"off"`` to suppress entirely).
+    """
+    return dict(config.get("rules") or {})

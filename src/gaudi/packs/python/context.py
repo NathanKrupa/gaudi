@@ -8,6 +8,7 @@ Django models, SQLAlchemy tables, project structure, etc.
 from __future__ import annotations
 
 import ast
+import re
 from dataclasses import dataclass, field
 from enum import Enum
 from functools import cached_property
@@ -76,6 +77,30 @@ class ModelInfo:
         ]
 
 
+_NOQA_RE = re.compile(r"#\s*noqa\b(?:\s*:\s*(.+))?")
+
+
+def _parse_noqa(source: str) -> dict[int, frozenset[str]]:
+    """Map line numbers to sets of suppressed rule codes.
+
+    ``# noqa`` (bare) suppresses all rules on that line.
+    ``# noqa: CODE1, CODE2`` suppresses only the listed codes.
+    An empty frozenset means "suppress everything on this line".
+    """
+    suppressions: dict[int, frozenset[str]] = {}
+    for line_no, line in enumerate(source.splitlines(), 1):
+        m = _NOQA_RE.search(line)
+        if m is None:
+            continue
+        codes_str = m.group(1)
+        if codes_str:
+            codes = frozenset(c.strip() for c in codes_str.split(",") if c.strip())
+        else:
+            codes = frozenset()  # bare noqa — suppress all
+        suppressions[line_no] = codes
+    return suppressions
+
+
 @dataclass
 class FileInfo:
     """Metadata about a Python source file."""
@@ -100,6 +125,18 @@ class FileInfo:
             return ast.parse(self.source)
         except SyntaxError:
             return None
+
+    @cached_property
+    def noqa_suppressions(self) -> dict[int, frozenset[str]]:
+        """Per-line noqa suppressions, parsed once and cached."""
+        return _parse_noqa(self.source)
+
+    def is_suppressed(self, line: int, rule_code: str) -> bool:
+        """Check if a rule is suppressed at the given line via ``# noqa``."""
+        codes = self.noqa_suppressions.get(line)
+        if codes is None:
+            return False
+        return len(codes) == 0 or rule_code in codes
 
 
 @dataclass
