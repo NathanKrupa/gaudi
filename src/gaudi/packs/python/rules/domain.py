@@ -26,6 +26,8 @@ _DOMAIN_BASE_HINTS = frozenset(
     }
 )
 
+_MANAGER_BASE_HINTS = frozenset({"Manager", "BaseManager"})
+
 _NON_BEHAVIOR_DUNDERS = frozenset(
     {
         "__init__",
@@ -87,6 +89,40 @@ def _count_behavior_methods(cls: ast.ClassDef) -> int:
     return count
 
 
+def _inherits_manager_base(cls: ast.ClassDef) -> bool:
+    for base in cls.bases:
+        if isinstance(base, ast.Attribute) and base.attr in _MANAGER_BASE_HINTS:
+            return True
+        if isinstance(base, ast.Name) and base.id in _MANAGER_BASE_HINTS:
+            return True
+    return False
+
+
+def _build_manager_method_counts(tree: ast.Module) -> dict[str, int]:
+    """Map Manager class names to their behavior method count."""
+    counts: dict[str, int] = {}
+    for node in ast.iter_child_nodes(tree):
+        if isinstance(node, ast.ClassDef) and _inherits_manager_base(node):
+            counts[node.name] = _count_behavior_methods(node)
+    return counts
+
+
+def _get_manager_class_name(cls: ast.ClassDef) -> str | None:
+    """Find the Manager class name from ``objects = SomeManager()``."""
+    for node in cls.body:
+        if not isinstance(node, ast.Assign):
+            continue
+        if not any(isinstance(t, ast.Name) and t.id == "objects" for t in node.targets):
+            continue
+        if isinstance(node.value, ast.Call):
+            func = node.value.func
+            if isinstance(func, ast.Name):
+                return func.id
+            if isinstance(func, ast.Attribute):
+                return func.attr
+    return None
+
+
 class AnemicDomainModel(Rule):
     """DOM-001: Domain model with many fields and zero behavior.
 
@@ -126,20 +162,23 @@ class AnemicDomainModel(Rule):
             tree = f.ast_tree
             if tree is None:
                 continue
+            manager_methods = _build_manager_method_counts(tree)
             for node in ast.walk(tree):
                 if not isinstance(node, ast.ClassDef):
                     continue
                 if not _inherits_domain_base(node):
                     continue
-                # Django: assignments to *Field(...) calls.
-                # Pydantic / SQLAlchemy 2.x: annotated assignments.
                 field_count = max(
                     _count_django_fields(node),
                     _count_pydantic_fields(node),
                 )
                 if field_count < _ANEMIC_FIELD_THRESHOLD:
                     continue
-                if _count_behavior_methods(node) > 0:
+                behavior = _count_behavior_methods(node)
+                mgr_name = _get_manager_class_name(node)
+                if mgr_name:
+                    behavior += manager_methods.get(mgr_name, 0)
+                if behavior > 0:
                     continue
                 findings.append(
                     self.finding(

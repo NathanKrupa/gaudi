@@ -21,6 +21,9 @@
     },
     "pass_non_orm_call.py": {
       "expected_findings": []
+    },
+    "pass_filter_chain_bounded.py": {
+      "expected_findings": []
     }
   }
 }
