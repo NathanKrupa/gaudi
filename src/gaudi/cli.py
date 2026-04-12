@@ -239,5 +239,66 @@ def list_packs():
         console.print()
 
 
+@main.command()
+@click.argument("path", type=click.Path(exists=True), default=".")
+@click.option(
+    "--format",
+    "-f",
+    "output_format",
+    type=click.Choice(["text", "json"]),
+    default="text",
+    help="Output format.",
+)
+def philosophy(path: str, output_format: str):
+    """Infer the architectural philosophy of a project.
+
+    Analyzes dependencies, project structure, and code patterns to
+    recommend which philosophy school best matches the project. Use
+    this to decide what to put in [philosophy].school in gaudi.toml.
+    """
+    from gaudi.philosophy import infer_philosophy
+
+    project_path = Path(path).resolve()
+    result = infer_philosophy(project_path)
+
+    if output_format == "json":
+        import json as json_mod
+
+        output = {
+            "path": str(project_path),
+            "recommended": result.recommended,
+            "scores": result.scores,
+            "signals": [
+                {"school": s.school, "reason": s.reason, "weight": s.weight}
+                for s in result.signals
+            ],
+        }
+        click.echo(json_mod.dumps(output, indent=2))
+    else:
+        console.print()
+        if not result.signals:
+            console.print("[yellow]No strong signals detected.[/yellow]")
+            console.print("Default school: [bold]classical[/bold]")
+            console.print()
+            return
+
+        console.print("[bold]Philosophy inference[/bold]")
+        console.print()
+
+        # Show signals grouped by school
+        for school, score in result.scores.items():
+            console.print(f"  [cyan]{school}[/cyan] (score: {score})")
+            school_signals = [s for s in result.signals if s.school == school]
+            for s in school_signals:
+                console.print(f"    — {s.reason}")
+            console.print()
+
+        recommended = result.recommended
+        console.print(f"[bold green]Recommended:[/bold green] {recommended}")
+        console.print()
+        console.print(f'  [dim]echo \'[philosophy]\\nschool = "{recommended}"\' >> gaudi.toml[/dim]')
+        console.print()
+
+
 if __name__ == "__main__":
     main()
