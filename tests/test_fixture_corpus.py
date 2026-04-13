@@ -2,6 +2,8 @@
 # ABOUTME: Discovers tests/fixtures/<lang>/<RULE-ID>/ and asserts findings match expected.json.
 from __future__ import annotations
 
+import logging
+
 import pytest
 
 from gaudi.core import DEFAULT_SCHOOL, Finding
@@ -15,9 +17,12 @@ from gaudi.packs.python.rules import ALL_RULES as PYTHON_RULES
 from tests.fixture_corpus import (
     ExpectedFinding,
     FixtureCase,
+    _strip_fixture_prefix,
     discover_all_cases,
     fixture_as_project,
 )
+
+logger = logging.getLogger(__name__)
 
 _ALL_RULES_BY_CODE = {r.code: r for r in (*PYTHON_RULES, *OPS_RULES)}
 
@@ -45,6 +50,26 @@ def _school_for_rule(rule_id: str) -> str:
 
 _CASES = discover_all_cases()
 _MISMATCH = "{test_id}: {field} mismatch -- expected {expected}, got {actual}"
+
+
+def _activated_rule_codes(project_root, school: str) -> list[str]:
+    """Return rule codes whose activation gates pass for the given project.
+
+    Replays the same library and philosophy-scope gates used by the packs
+    at check-time, without running the rules themselves. This lets the
+    test runner report which rules *would* be consulted for a fixture.
+    """
+    from gaudi.packs.python.parser import parse_project as parse_py
+
+    context = parse_py(project_root)
+    activated: list[str] = []
+    for rule in (*PYTHON_RULES, *OPS_RULES):
+        if rule.requires_library and rule.requires_library not in context.detected_libraries:
+            continue
+        if not rule_applies_to_school(rule, school):
+            continue
+        activated.append(rule.code)
+    return sorted(activated)
 
 
 def _make_engine() -> Engine:
@@ -98,6 +123,14 @@ def test_fixture_case(case: FixtureCase) -> None:
             if not toml_path.exists():
                 toml_path.write_text(f'[philosophy]\nschool = "{school}"\n', encoding="utf-8")
         all_findings = engine.check(project_root)
+        stripped = _strip_fixture_prefix(case.name)
+        ran_rules = _activated_rule_codes(project_root, school)
+        logger.info(
+            "activation: fixture=%s  stripped=%s  ran_rules=%s",
+            case.name,
+            stripped,
+            ran_rules,
+        )
     findings = [f for f in all_findings if f.code == case.rule_id]
 
     assert len(findings) == len(case.expected), (
