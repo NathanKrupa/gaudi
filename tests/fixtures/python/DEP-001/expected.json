@@ -10,7 +10,26 @@
         }
       ]
     },
+    "fail_boundary_three_node_cycle/": {
+      "expected_findings": [
+        {
+          "severity": "error",
+          "message_contains": "Circular import"
+        }
+      ]
+    },
+    "fail_boundary_package_cycle/": {
+      "expected_findings": [
+        {
+          "severity": "error",
+          "message_contains": "Circular import"
+        }
+      ]
+    },
     "pass_linear_chain/": {
+      "expected_findings": []
+    },
+    "pass_boundary_stdlib_filtering/": {
       "expected_findings": []
     }
   }

@@ -12,6 +12,9 @@
     },
     "pass_below_threshold/": {
       "expected_findings": []
+    },
+    "pass_boundary_stdlib_not_counted/": {
+      "expected_findings": []
     }
   }
 }
