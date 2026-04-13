@@ -95,20 +95,47 @@ def _count_fixtures(rule_dir: Path, prefix: str) -> int:
     return files + dirs
 
 
+_LIBRARY_IMPORT_NAMES: dict[str, tuple[str, ...]] = {
+    "django": ("django",),
+    "drf": ("rest_framework",),
+    "flask": ("flask",),
+    "fastapi": ("fastapi",),
+    "sqlalchemy": ("sqlalchemy",),
+    "celery": ("celery",),
+    "pydantic": ("pydantic",),
+    "requests": ("requests", "httpx"),
+    "boto3": ("boto3",),
+    "alembic": ("alembic",),
+    "anthropic": ("anthropic",),
+    "pandas": ("pandas",),
+    "pytest": ("pytest",),
+}
+
+
 def _has_library_import(fixture_path: Path, library: str) -> bool:
     """Check if a fixture file imports a library the detector would recognize."""
     try:
         source = fixture_path.read_text(encoding="utf-8", errors="replace")
     except OSError:
         return False
-    return library in source
+    import_names = _LIBRARY_IMPORT_NAMES.get(library, (library,))
+    return any(name in source for name in import_names)
 
 
 def _check_vacuous_pass(rule_dir: Path, rule: Rule) -> bool:
-    """Return True if any pass fixture is vacuous (library gate not satisfied)."""
+    """Return True if any pass fixture is vacuous (library gate not satisfied).
+
+    Fixtures whose name indicates they test the inactive gate (e.g.
+    ``pass_no_flask_import``, ``pass_non_drf_class``) are exempt.
+    """
     if rule.requires_library is None:
         return False
+    lib_lower = rule.requires_library.lower()
+    gate_markers = (f"no_{lib_lower}", f"non_{lib_lower}", f"not_{lib_lower}", "no_import")
     for path in rule_dir.glob("pass_*.py"):
+        name_lower = path.stem.lower()
+        if any(marker in name_lower for marker in gate_markers):
+            continue
         if not _has_library_import(path, rule.requires_library):
             return True
     return False
