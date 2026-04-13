@@ -63,12 +63,15 @@ class TestIsDockerfile:
         # ambiguous with source filenames; require the canonical form.
         assert not _is_dockerfile(Path("dockerfile"))
 
-    def test_rejects_stage_variants_for_now(self) -> None:
-        # Documented gap: stage variants are not supported yet. When a user
-        # asks for them, add a config-driven allowlist or a denylist of source
-        # extensions; do NOT silently widen the regex.
-        assert not _is_dockerfile(Path("Dockerfile.prod"))
-        assert not _is_dockerfile(Path("app.Dockerfile"))
+    def test_accepts_stage_variants(self) -> None:
+        assert _is_dockerfile(Path("Dockerfile.prod"))
+        assert _is_dockerfile(Path("Dockerfile.staging"))
+        assert _is_dockerfile(Path("app.Dockerfile"))
+
+    def test_rejects_non_docker_extensions(self) -> None:
+        assert not _is_dockerfile(Path("Dockerfile.py"))
+        assert not _is_dockerfile(Path("Dockerfile.yml"))
+        assert not _is_dockerfile(Path("Dockerfile.tar.gz"))
 
 
 class TestOpsPackDiscovery:

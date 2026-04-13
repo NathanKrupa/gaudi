@@ -21,6 +21,9 @@
     },
     "pass_non_pydantic_class.py": {
       "expected_findings": []
+    },
+    "pass_model_config.py": {
+      "expected_findings": []
     }
   }
 }
