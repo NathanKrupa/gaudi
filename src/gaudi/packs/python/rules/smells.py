@@ -229,6 +229,9 @@ class GlobalData(Rule):
                 # ALL_CAPS non-empty dict/list = reference data table
                 if is_allcaps and _is_reference_data(value):
                     continue
+                # Django urlpatterns is a module-level list by design
+                if any(isinstance(t, ast.Name) and t.id == "urlpatterns" for t in node.targets):
+                    continue
                 # Flag mutable containers
                 is_mutable = isinstance(value, (ast.Dict, ast.List, ast.Set)) or _is_mutable_call(
                     value

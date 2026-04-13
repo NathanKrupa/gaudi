@@ -9,6 +9,7 @@ from gaudi.packs.python.context import PythonContext
 
 _TEST_PLACEHOLDER_PREFIXES = ("test-", "test_", "test.", "dummy-", "dummy_", "fake-", "fake_")
 _TEST_PLACEHOLDER_SUBSTRINGS = ("example", "placeholder", "not-used", "not_used")
+_DEV_SETTINGS_MARKERS = ("local", "dev", "development", "testing")
 
 
 def _is_test_placeholder(value: str) -> bool:
@@ -74,10 +75,18 @@ class DjangoDebugTrue(Rule):
         "Set DEBUG = False in production. Use environment variables to control debug mode."
     )
 
+    @staticmethod
+    def _is_dev_settings(path: str) -> bool:
+        """Settings files for local/dev/testing are expected to have DEBUG=True."""
+        lowered = path.replace("\\", "/").lower()
+        return any(marker in lowered for marker in _DEV_SETTINGS_MARKERS)
+
     def check(self, context: PythonContext) -> list[Finding]:
         findings = []
         for f in context.files:
             if "settings" not in f.relative_path.lower():
+                continue
+            if self._is_dev_settings(f.relative_path):
                 continue
             tree = f.ast_tree
             if tree is None:
