@@ -33,6 +33,15 @@ We take supply chain security seriously. All contributions are reviewed with thi
 
 We recommend (but don't yet require) [signed commits](https://docs.github.com/en/authentication/managing-commit-signature-verification/signing-commits). This may become mandatory as the project matures.
 
+## Editorial Doctrine
+
+Every rule design question in Gaudi must appeal to a principle. The fourteen
+numbered principles in three pillars (Truthfulness, Economy, Cost-honesty)
+govern which rules enter the catalog, how thresholds and severities are
+assigned, and when a rule should be cut. Read
+[docs/principles.md](docs/principles.md) before proposing a new rule or
+changing a threshold.
+
 ## High-Impact Contributions
 
 These are the areas where contributions will have the most impact right now:

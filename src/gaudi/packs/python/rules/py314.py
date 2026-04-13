@@ -456,27 +456,72 @@ class TarfileNoFilter(Rule):
             except SyntaxError:
                 continue
 
+            # Collect names that are tarfile objects (assigned from tarfile.open)
+            tarfile_names = self._find_tarfile_names(tree)
             for node in ast.walk(tree):
                 if isinstance(node, ast.Call):
-                    func_name = self._get_call_name(node)
-                    if func_name and func_name.endswith((".extract", ".extractall")):
-                        # Check if 'filter' is in keyword arguments
-                        has_filter = any(kw.arg == "filter" for kw in node.keywords)
-                        if not has_filter:
-                            findings.append(
-                                self.finding(
-                                    file=file_info.relative_path,
-                                    line=node.lineno,
-                                )
+                    if not self._is_tarfile_extract(node, tarfile_names):
+                        continue
+                    has_filter = any(kw.arg == "filter" for kw in node.keywords)
+                    if not has_filter:
+                        findings.append(
+                            self.finding(
+                                file=file_info.relative_path,
+                                line=node.lineno,
                             )
+                        )
         return findings
 
-    def _get_call_name(self, node: ast.Call) -> str | None:
-        if isinstance(node.func, ast.Attribute):
-            return f".{node.func.attr}"
-        if isinstance(node.func, ast.Name):
-            return node.func.id
-        return None
+    @staticmethod
+    def _find_tarfile_names(tree: ast.Module) -> set[str]:
+        """Collect variable names assigned from tarfile.open() or TarFile()."""
+        names: set[str] = set()
+        for node in ast.walk(tree):
+            # Regular assignment: tf = tarfile.open(...)
+            if isinstance(node, ast.Assign):
+                val = node.value
+                if not isinstance(val, ast.Call):
+                    continue
+                func = val.func
+                if isinstance(func, ast.Attribute) and isinstance(func.value, ast.Name):
+                    if func.value.id == "tarfile" and func.attr in ("open", "TarFile"):
+                        for t in node.targets:
+                            if isinstance(t, ast.Name):
+                                names.add(t.id)
+            # Context manager: with tarfile.open(...) as tf:
+            if isinstance(node, ast.With):
+                for item in node.items:
+                    ctx = item.context_expr
+                    if not isinstance(ctx, ast.Call):
+                        continue
+                    func = ctx.func
+                    if (
+                        isinstance(func, ast.Attribute)
+                        and isinstance(func.value, ast.Name)
+                        and func.value.id == "tarfile"
+                        and func.attr in ("open", "TarFile")
+                        and isinstance(item.optional_vars, ast.Name)
+                    ):
+                        names.add(item.optional_vars.id)
+        return names
+
+    @staticmethod
+    def _is_tarfile_extract(node: ast.Call, tarfile_names: set[str]) -> bool:
+        """Check if this call is .extract/.extractall on a tarfile object."""
+        func = node.func
+        if not isinstance(func, ast.Attribute):
+            return False
+        if func.attr not in ("extract", "extractall"):
+            return False
+        # Direct tarfile.open().extract() chain
+        if isinstance(func.value, ast.Call) and isinstance(func.value.func, ast.Attribute):
+            inner = func.value.func
+            if isinstance(inner.value, ast.Name) and inner.value.id == "tarfile":
+                return True
+        # Named variable: tf.extract() where tf was assigned from tarfile.open()
+        if isinstance(func.value, ast.Name) and func.value.id in tarfile_names:
+            return True
+        return False
 
 
 # ---------------------------------------------------------------------------

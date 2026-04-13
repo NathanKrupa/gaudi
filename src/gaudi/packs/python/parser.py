@@ -105,13 +105,7 @@ SQLALCHEMY_IMPORTS = frozenset({"sqlalchemy", "sqlalchemy.orm"})
 
 # Built-in glob patterns excluded from analysis on every Python project.
 # Layered on top of the universal CORE_EXCLUDE_GLOBS from gaudi.excludes.
-# ``migrations`` is here because Django auto-generates that directory and
-# it never reflects intentional architecture; removing it is tracked as
-# a follow-up.
-DEFAULT_EXCLUDE_GLOBS: tuple[str, ...] = (
-    *CORE_EXCLUDE_GLOBS,
-    "**/migrations/**",
-)
+DEFAULT_EXCLUDE_GLOBS: tuple[str, ...] = (*CORE_EXCLUDE_GLOBS,)
 
 
 def parse_project(path: Path, extra_excludes: list[str] | None = None) -> PythonContext:
