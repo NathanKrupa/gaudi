@@ -12,6 +12,9 @@
     },
     "pass_stable_hub/": {
       "expected_findings": []
+    },
+    "pass_boundary_min_files/": {
+      "expected_findings": []
     }
   }
 }
