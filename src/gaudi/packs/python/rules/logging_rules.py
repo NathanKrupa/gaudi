@@ -115,11 +115,20 @@ _SENSITIVE_EXACT: frozenset[str] = frozenset({"token", "pwd"})
 
 def _is_sensitive_name(name: str) -> bool:
     lower = name.lower()
+    parts = lower.split("_")
     if lower in _SENSITIVE_EXACT:
         return True
-    if any(part in _SENSITIVE_EXACT for part in lower.split("_")):
+    if any(part in _SENSITIVE_EXACT for part in parts):
         return True
-    return any(pat in lower for pat in _SENSITIVE_NAME_PATTERNS)
+    # Match sensitive patterns as complete underscore-delimited segments.
+    # "password" matches "user_password" but not "passwordless".
+    # "api_key" matches "my_api_key" but not "api_server_key".
+    for pat in _SENSITIVE_NAME_PATTERNS:
+        pat_parts = pat.split("_")
+        for i in range(len(parts) - len(pat_parts) + 1):
+            if parts[i : i + len(pat_parts)] == pat_parts:
+                return True
+    return False
 
 
 def _references_sensitive(node: ast.AST) -> bool:
