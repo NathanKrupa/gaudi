@@ -1,9 +1,10 @@
 # ABOUTME: Security fundamental rules for Python (OWASP Top 10 overlap).
-# ABOUTME: Detects raw SQL injection, hardcoded credentials, eval/exec, unsafe deserialization.
+# ABOUTME: Detects raw SQL injection, hardcoded credentials, eval/exec, unsafe deserialization, SSRF.
 from __future__ import annotations
 
 import ast
 import re
+from typing import Iterator
 
 from gaudi.core import Rule, Finding, Severity, Category
 from gaudi.packs.python.context import PythonContext
@@ -324,6 +325,194 @@ class UnsafeDeserialization(Rule):
 
 
 # ---------------------------------------------------------------
+# SEC-006  SSRFVector
+# ---------------------------------------------------------------
+
+_HTTP_CALL_TARGETS: dict[str, frozenset[str]] = {
+    "requests": frozenset({"get", "post", "put", "delete", "head", "patch"}),
+    "httpx": frozenset({"get", "post", "put", "delete", "head", "patch"}),
+}
+
+_URLLIB_TARGETS = frozenset({"urlopen"})
+
+_SANITIZER_FUNCS = frozenset({"urlparse", "urlsplit"})
+
+_SANITIZER_METHODS = frozenset({"startswith", "endswith"})
+
+
+def _is_http_sink(node: ast.Call) -> str | None:
+    """Return 'module.method' if the call is a known HTTP sink, else None."""
+    func = node.func
+    if not isinstance(func, ast.Attribute):
+        return None
+    attr = func.attr
+    val = func.value
+    # requests.get(...), httpx.post(...)
+    if isinstance(val, ast.Name) and val.id in _HTTP_CALL_TARGETS:
+        if attr in _HTTP_CALL_TARGETS[val.id]:
+            return f"{val.id}.{attr}"
+    # urllib.request.urlopen(...)
+    if (
+        isinstance(val, ast.Attribute)
+        and isinstance(val.value, ast.Name)
+        and val.value.id == "urllib"
+        and val.attr == "request"
+        and attr in _URLLIB_TARGETS
+    ):
+        return "urllib.request.urlopen"
+    return None
+
+
+def _url_arg(call: ast.Call) -> ast.expr | None:
+    """Extract the URL argument from an HTTP call (first positional or 'url' keyword)."""
+    if call.args:
+        return call.args[0]
+    for kw in call.keywords:
+        if kw.arg == "url":
+            return kw.value
+    return None
+
+
+def _is_constant_expr(node: ast.expr) -> bool:
+    """Return True if the expression is a string constant or an f-string with a constant base."""
+    if isinstance(node, ast.Constant) and isinstance(node.value, str):
+        return True
+    if isinstance(node, ast.JoinedStr):
+        # f-string with constant base like f"https://api.example.com/{item_id}"
+        # is safe — the base URL is fixed, only path components vary.
+        if node.values and isinstance(node.values[0], ast.Constant):
+            prefix = node.values[0].value
+            if isinstance(prefix, str) and "://" in prefix:
+                return True
+    return False
+
+
+def _collect_tainted_names(func_def: ast.FunctionDef) -> set[str]:
+    """Walk a function body to find names that carry parameter taint.
+
+    Strategy:
+    1. All function parameters are initially tainted.
+    2. Simple assignments ``x = tainted`` propagate taint.
+    3. If a tainted name passes through a sanitizer (urlparse, startswith,
+       ``in`` membership check), clear it.
+    """
+    tainted: set[str] = set()
+    for arg in func_def.args.args:
+        tainted.add(arg.arg)
+
+    sanitized: set[str] = set()
+
+    for node in ast.walk(func_def):
+        # Detect sanitizers: urlparse(x), x.startswith(...), x in ALLOWED
+        if isinstance(node, ast.Call):
+            # urlparse(var) / urlsplit(var)
+            func = node.func
+            callee_name: str | None = None
+            if isinstance(func, ast.Name):
+                callee_name = func.id
+            elif isinstance(func, ast.Attribute):
+                callee_name = func.attr
+            if callee_name in _SANITIZER_FUNCS and node.args:
+                arg0 = node.args[0]
+                if isinstance(arg0, ast.Name):
+                    sanitized.add(arg0.id)
+
+            # var.startswith(...) / var.endswith(...)
+            if (
+                isinstance(func, ast.Attribute)
+                and func.attr in _SANITIZER_METHODS
+                and isinstance(func.value, ast.Name)
+            ):
+                sanitized.add(func.value.id)
+
+        # Detect ``var in ALLOWED_HOSTS`` or ``var not in ALLOWED``
+        if isinstance(node, ast.Compare):
+            if isinstance(node.left, ast.Name):
+                for op in node.ops:
+                    if isinstance(op, (ast.In, ast.NotIn)):
+                        sanitized.add(node.left.id)
+
+        # Propagate taint through simple assignment: x = tainted_var
+        if isinstance(node, ast.Assign) and len(node.targets) == 1:
+            target = node.targets[0]
+            value = node.value
+            if isinstance(target, ast.Name) and isinstance(value, ast.Name):
+                if value.id in tainted and value.id not in sanitized:
+                    tainted.add(target.id)
+                elif _is_constant_expr(value):
+                    pass  # constant assignment, not tainted
+            elif isinstance(target, ast.Name) and _is_constant_expr(value):
+                pass  # assigning a constant clears taint implicitly (name not added)
+
+    return tainted - sanitized
+
+
+def _check_function_ssrf(
+    func_def: ast.FunctionDef,
+    relative_path: str,
+) -> Iterator[tuple[int, str]]:
+    """Yield (line, sink_name) for HTTP calls with tainted URL args in a function."""
+    tainted = _collect_tainted_names(func_def)
+    if not tainted:
+        return
+
+    for node in ast.walk(func_def):
+        if not isinstance(node, ast.Call):
+            continue
+        sink = _is_http_sink(node)
+        if sink is None:
+            continue
+        url_node = _url_arg(node)
+        if url_node is None:
+            continue
+        if isinstance(url_node, ast.Name) and url_node.id in tainted:
+            yield (node.lineno, sink)
+        elif isinstance(url_node, ast.Constant):
+            pass  # constant URL literal, safe
+
+
+class SSRFVector(Rule):
+    """SEC-006: User input flowing into HTTP calls without validation.
+
+    Principles: #4 (Failure must be named).
+    Source: OWASP A10:2021 — Server-Side Request Forgery.
+
+    Uses intra-procedural taint tracking: function parameters are tainted,
+    taint propagates through simple assignments, and is cleared by
+    urlparse/startswith/membership checks.
+    """
+
+    code = "SEC-006"
+    severity = Severity.WARN
+    category = Category.SECURITY
+    message_template = "Tainted URL passed to '{sink}' at line {line} — SSRF risk"
+    recommendation_template = (
+        "Validate URLs against an allowlist before making HTTP requests. "
+        "Use urlparse() to inspect scheme and hostname, and restrict to "
+        "known-safe hosts."
+    )
+
+    def check(self, context: PythonContext) -> list[Finding]:
+        findings: list[Finding] = []
+        for f in context.files:
+            tree = f.ast_tree
+            if tree is None:
+                continue
+            for node in ast.walk(tree):
+                if not isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                    continue
+                for line, sink in _check_function_ssrf(node, f.relative_path):
+                    findings.append(
+                        self.finding(
+                            file=f.relative_path,
+                            line=line,
+                            sink=sink,
+                        )
+                    )
+        return findings
+
+
+# ---------------------------------------------------------------
 # Exported rule instances
 # ---------------------------------------------------------------
 
@@ -332,4 +521,5 @@ SECURITY_RULES = (
     HardcodedCredential(),
     EvalExecUsage(),
     UnsafeDeserialization(),
+    SSRFVector(),
 )

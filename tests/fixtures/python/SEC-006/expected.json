@@ -1,0 +1,48 @@
+{
+  "rule_id": "SEC-006",
+  "description": "SSRFVector -- user input flowing into HTTP calls without validation",
+  "fixtures": {
+    "fail_tainted_url_direct.py": {
+      "expected_findings": [
+        {
+          "severity": "warn",
+          "line": 8,
+          "message_contains": "requests.get"
+        },
+        {
+          "severity": "warn",
+          "line": 12,
+          "message_contains": "httpx.get"
+        },
+        {
+          "severity": "warn",
+          "line": 16,
+          "message_contains": "requests.post"
+        }
+      ]
+    },
+    "fail_tainted_url_via_var.py": {
+      "expected_findings": [
+        {
+          "severity": "warn",
+          "line": 9,
+          "message_contains": "requests.get"
+        },
+        {
+          "severity": "warn",
+          "line": 14,
+          "message_contains": "urllib.request.urlopen"
+        }
+      ]
+    },
+    "pass_constant_url.py": {
+      "expected_findings": []
+    },
+    "pass_sanitized_url.py": {
+      "expected_findings": []
+    },
+    "pass_no_http_call.py": {
+      "expected_findings": []
+    }
+  }
+}
