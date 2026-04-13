@@ -179,17 +179,39 @@ severity = "warn"          # minimum severity to report
 exclude = ["migrations/"]  # paths to skip
 
 [gaudi.rules]
-"ARCH-001" = "error"       # override severity (planned, see Known Limitations)
-"IDX-003" = "off"          # disable specific rule (planned, see Known Limitations)
+"ARCH-001" = "error"       # override severity
+"IDX-003" = "off"          # disable a rule entirely
+
+[philosophy]
+school = "convention"      # infer with: gaudi philosophy .
 ```
 
-## Known Limitations (v0.1.0 alpha)
+### Inline suppression
 
-- **Per-rule severity overrides and disabling are not wired yet.** The `[gaudi.rules]` section in `gaudi.toml` is parsed but not enforced. Path exclusions via `[gaudi].exclude` work as documented.
+Suppress findings on a single line with `# noqa`:
+
+```python
+SECRET_KEY = "test-only"  # noqa: DJ-SEC-001
+urlpatterns = [...]       # noqa
+```
+
+`# noqa` (bare) suppresses all findings on that line. `# noqa: CODE1, CODE2` suppresses only the listed rules.
+
+### Philosophy inference
+
+Gaudi can recommend which architectural school best matches your project:
+
+```bash
+gaudi philosophy .
+```
+
+This analyzes your dependencies and project structure to suggest a school (e.g., `convention` for Django projects, `data-oriented` for NumPy pipelines).
+
+## Known Limitations (v0.1 alpha)
+
 - Some library-specific rules use regex on raw text instead of full AST analysis, which can produce false positives.
-- Severity assignments across the catalog have not yet been audited against the doctrine in [docs/principles.md](https://github.com/NathanKrupa/gaudi/blob/main/docs/principles.md). They are not wrong; they are unaudited.
 
-These limitations are tracked in the [issue tracker](https://github.com/NathanKrupa/gaudi/issues) and will be addressed in v0.2.
+These are tracked in the [issue tracker](https://github.com/NathanKrupa/gaudi/issues).
 
 ## Philosophy
 
