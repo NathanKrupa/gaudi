@@ -1,4 +1,4 @@
-"""Fixture for SMELL-003: a function exactly 25 lines long is at the boundary."""
+"""Fixture for SMELL-003: a function exactly 30 lines long is at the boundary."""
 
 
 def boundary(order):
@@ -22,5 +22,11 @@ def boundary(order):
     order.audit_trail.append("checked")
     order.audit_trail.append("logged")
     order.audit_trail.append("notified")
+    order.audit_trail.append("done")
+    order.audit_trail.append("emailed")
+    order.audit_trail.append("queued")
+    order.audit_trail.append("archived")
+    order.audit_trail.append("confirmed")
     order.notify()
+    order.flush()
     return total

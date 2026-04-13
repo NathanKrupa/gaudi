@@ -42,7 +42,7 @@ class LongFunction(Rule):
                 if node.end_lineno is None:
                     continue
                 lines = node.end_lineno - node.lineno + 1
-                if lines > 25:
+                if lines > 30:
                     findings.append(
                         self.finding(
                             file=f.relative_path,

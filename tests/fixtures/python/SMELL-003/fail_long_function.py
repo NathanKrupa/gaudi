@@ -1,4 +1,4 @@
-"""Fixture for SMELL-003: a 26-line function trips the > 25 threshold."""
+"""Fixture for SMELL-003: a 31-line function trips the > 30 threshold."""
 
 
 def process_order(order):
@@ -25,6 +25,10 @@ def process_order(order):
     order.audit_trail.append("done")
     order.audit_trail.append("emailed")
     order.audit_trail.append("queued")
+    order.audit_trail.append("archived")
+    order.audit_trail.append("confirmed")
+    order.audit_trail.append("finalized")
     order.notify()
     order.flush()
+    order.save()
     return total

@@ -1,6 +1,6 @@
 {
   "rule_id": "SMELL-003",
-  "description": "LongFunction -- functions exceeding 25 lines",
+  "description": "LongFunction -- functions exceeding 30 lines",
   "fixtures": {
     "fail_long_function.py": {
       "expected_findings": [
@@ -14,7 +14,7 @@
     "pass_short_function.py": {
       "expected_findings": []
     },
-    "pass_boundary_25_lines.py": {
+    "pass_boundary_30_lines.py": {
       "expected_findings": []
     }
   }

@@ -121,10 +121,7 @@ class TestMultiFileFixtures:
         rule_dir = _write_rule_dir(
             tmp_path,
             "DEMO-005",
-            {
-                "rule_id": "DEMO-005",
-                "fixtures": {"fail_branched": {"expected_findings": []}},
-            },
+            {"rule_id": "DEMO-005", "fixtures": {"fail_branched": {"expected_findings": []}}},
             {
                 "fail_branched/alembic/versions/a.py": "revision = 'a'\n",
                 "fail_branched/alembic/versions/b.py": "revision = 'b'\n",
@@ -132,25 +129,16 @@ class TestMultiFileFixtures:
         )
         case = _cases_for_rule_dir(rule_dir)[0]
 
-        with fixture_as_project(case) as project_root:
-            assert (project_root / "alembic" / "versions" / "a.py").read_text(
+        with fixture_as_project(case) as root:
+            assert (root / "alembic" / "versions" / "a.py").read_text(
                 encoding="utf-8"
             ) == "revision = 'a'\n"
-            assert (project_root / "alembic" / "versions" / "b.py").read_text(
+            assert (root / "alembic" / "versions" / "b.py").read_text(
                 encoding="utf-8"
             ) == "revision = 'b'\n"
-            # The fail_ prefix is NOT preserved at the project root.
-            assert not (project_root / "fail_branched").exists(), (
-                "directory fixture wrapper should not appear in temp project"
-            )
-            # Directory fixtures own their project shape -- the runner does NOT
-            # synthesize a stub pyproject.toml for them. Single-file fixtures
-            # still get one (covered by test_fixture_as_project_single_file).
-            assert not (project_root / "pyproject.toml").exists(), (
-                "directory fixtures must own their project shape; runner must "
-                "not inject stub files (this is what makes STRUCT-011/013 fail "
-                "fixtures expressible)"
-            )
+            assert not (root / "fail_branched").exists()
+            # Directory fixtures own their project shape — no stub files injected
+            assert not (root / "pyproject.toml").exists()
 
     def test_mixed_single_and_multi_in_one_rule(self, tmp_path: Path) -> None:
         rule_dir = _write_rule_dir(
