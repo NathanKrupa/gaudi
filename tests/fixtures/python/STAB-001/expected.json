@@ -8,11 +8,6 @@
           "severity": "warn",
           "line": 5,
           "message_contains": "all"
-        },
-        {
-          "severity": "warn",
-          "line": 9,
-          "message_contains": "filter"
         }
       ]
     },
@@ -23,6 +18,9 @@
       "expected_findings": []
     },
     "pass_filter_chain_bounded.py": {
+      "expected_findings": []
+    },
+    "pass_filter_only.py": {
       "expected_findings": []
     }
   }

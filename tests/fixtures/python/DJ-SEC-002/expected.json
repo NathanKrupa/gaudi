@@ -16,6 +16,9 @@
     },
     "pass_settings_debug_from_env.py": {
       "expected_findings": []
+    },
+    "pass_local_settings.py": {
+      "expected_findings": []
     }
   }
 }

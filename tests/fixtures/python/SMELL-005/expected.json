@@ -18,6 +18,9 @@
     },
     "pass_constants_only.py": {
       "expected_findings": []
+    },
+    "pass_django_urlpatterns.py": {
+      "expected_findings": []
     }
   }
 }

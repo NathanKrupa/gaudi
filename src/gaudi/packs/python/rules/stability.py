@@ -20,7 +20,7 @@ def _parse_safe(source: str) -> ast.Module | None:
 # Nygard Ch. 4: "Unbounded Result Sets" anti-pattern
 # ---------------------------------------------------------------
 
-_ORM_ALL_ATTRS = frozenset({"all", "filter", "exclude", "select_related", "prefetch_related"})
+_ORM_ALL_ATTRS = frozenset({"all"})
 _BOUNDING_TERMINALS = frozenset({"first", "last", "get", "count", "exists", "aggregate"})
 
 
