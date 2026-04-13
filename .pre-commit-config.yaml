@@ -19,6 +19,15 @@ repos:
       - id: detect-secrets
         args: ["--baseline", ".secrets.baseline"]
 
+  - repo: local
+    hooks:
+      - id: gaudi-cheat-sheet
+        name: gaudi cheat-sheet drift guard
+        entry: gaudi cheat-sheet --check -o docs/gaudi-rules.md
+        language: system
+        pass_filenames: false
+        always_run: true
+
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.6.0
     hooks:

@@ -197,6 +197,25 @@ urlpatterns = [...]       # noqa
 
 `# noqa` (bare) suppresses all findings on that line. `# noqa: CODE1, CODE2` suppresses only the listed rules.
 
+### Rule cheat-sheet
+
+Generate a one-line-per-rule markdown file from the live registry, suitable
+for `@`-reference from `CLAUDE.md` or any other AI agent instructions file:
+
+```bash
+# Print to stdout
+gaudi cheat-sheet
+
+# Write to a file (committed artifact)
+gaudi cheat-sheet -o docs/gaudi-rules.md
+
+# CI drift guard: exit 1 if the file is out of date
+gaudi cheat-sheet --check -o docs/gaudi-rules.md
+```
+
+The committed artifact at [`docs/gaudi-rules.md`](docs/gaudi-rules.md) is
+generated from rule `recommendation_template` fields. It cannot drift.
+
 ### Philosophy inference
 
 Gaudi can recommend which architectural school best matches your project:
