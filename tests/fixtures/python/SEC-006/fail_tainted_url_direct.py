@@ -1,4 +1,5 @@
 """Fixture for SEC-006: user input flows directly into HTTP calls."""
+
 import requests
 import httpx
 

@@ -1,4 +1,5 @@
 """Fixture for SEC-006: constant URLs are not tainted."""
+
 import requests
 import httpx
 

@@ -1,4 +1,5 @@
 """Fixture for SEC-006: tainted URL flows through local variable assignment."""
+
 import requests
 import urllib.request
 

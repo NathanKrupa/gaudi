@@ -485,9 +485,7 @@ class SSRFVector(Rule):
     code = "SEC-006"
     severity = Severity.WARN
     category = Category.SECURITY
-    message_template = (
-        "Tainted URL passed to '{sink}' at line {line} — SSRF risk"
-    )
+    message_template = "Tainted URL passed to '{sink}' at line {line} — SSRF risk"
     recommendation_template = (
         "Validate URLs against an allowlist before making HTTP requests. "
         "Use urlparse() to inspect scheme and hostname, and restrict to "

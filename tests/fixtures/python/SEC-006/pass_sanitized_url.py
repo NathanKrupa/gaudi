@@ -1,4 +1,5 @@
 """Fixture for SEC-006: sanitized URLs should not trigger."""
+
 import requests
 from urllib.parse import urlparse
 

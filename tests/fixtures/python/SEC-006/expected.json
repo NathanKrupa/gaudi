@@ -6,17 +6,17 @@
       "expected_findings": [
         {
           "severity": "warn",
-          "line": 7,
+          "line": 8,
           "message_contains": "requests.get"
         },
         {
           "severity": "warn",
-          "line": 11,
+          "line": 12,
           "message_contains": "httpx.get"
         },
         {
           "severity": "warn",
-          "line": 15,
+          "line": 16,
           "message_contains": "requests.post"
         }
       ]
@@ -25,12 +25,12 @@
       "expected_findings": [
         {
           "severity": "warn",
-          "line": 8,
+          "line": 9,
           "message_contains": "requests.get"
         },
         {
           "severity": "warn",
-          "line": 13,
+          "line": 14,
           "message_contains": "urllib.request.urlopen"
         }
       ]
