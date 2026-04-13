@@ -311,5 +311,79 @@ def philosophy(path: str, output_format: str):
         console.print()
 
 
+@main.command(name="cheat-sheet")
+@click.option(
+    "--output",
+    "-o",
+    type=click.Path(),
+    default=None,
+    help="Write the cheat-sheet to this file instead of stdout.",
+)
+@click.option(
+    "--check",
+    is_flag=True,
+    default=False,
+    help="Exit 1 if the file at -o differs from generated output.",
+)
+def cheat_sheet(output: str | None, check: bool):
+    """Generate a rule cheat-sheet from the live registry.
+
+    Renders one line per rule, grouped by severity, suitable for
+    @-reference from CLAUDE.md. Use --check in CI to guard against
+    drift between the committed artifact and the rule catalog.
+    """
+    import difflib
+
+    from gaudi.services.cheat_sheet import render_cheat_sheet
+
+    engine = Engine()
+    engine.discover_packs()
+
+    all_rules = []
+    for pack in engine.packs.values():
+        all_rules.extend(pack.rules)
+
+    rendered = render_cheat_sheet(all_rules)
+
+    if check:
+        if not output:
+            console.print("[red]--check requires -o to specify the file to verify.[/red]")
+            sys.exit(1)
+        target = Path(output)
+        if not target.exists():
+            console.print(f"[red]{output} does not exist. Generate it first:[/red]")
+            console.print(f"  gaudi cheat-sheet -o {output}")
+            sys.exit(1)
+        existing = target.read_text(encoding="utf-8")
+        if existing == rendered:
+            console.print(f"[green]{output} is up to date.[/green]")
+            return
+        diff = difflib.unified_diff(
+            existing.splitlines(keepends=True),
+            rendered.splitlines(keepends=True),
+            fromfile=output,
+            tofile="generated",
+        )
+        console.print(f"[red]{output} is out of date.[/red]")
+        console.print()
+        console.print("The rule registry has changed since this file was last regenerated.")
+        console.print("To fix:")
+        console.print()
+        console.print(f"    gaudi cheat-sheet -o {output}")
+        console.print(f"    git add {output}")
+        console.print("    git commit")
+        console.print()
+        console.print("Diff:")
+        for line in diff:
+            click.echo(line, nl=False)
+        sys.exit(1)
+
+    if output:
+        Path(output).write_text(rendered, encoding="utf-8")
+        console.print(f"[green]Wrote cheat-sheet to {output}[/green]")
+    else:
+        click.echo(rendered)
+
+
 if __name__ == "__main__":
     main()

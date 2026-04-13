@@ -38,7 +38,8 @@ Future source keys (not yet mined):
 
 ### Code Smell Rules (SMELL) -- Source: FOWLER
 
-All 24 rules map directly to Fowler's smell catalog in *Refactoring* (2nd ed.), Chapter 3.
+24 rules map directly to Fowler's smell catalog in *Refactoring* (2nd ed.), Chapter 3.
+SMELL-025 extends the same naming principles to identifiers via Ousterhout Ch. 14.
 
 | Code      | Class Name           | Fowler Smell                           | Chapter/Section |
 |-----------|----------------------|----------------------------------------|-----------------|
@@ -66,6 +67,7 @@ All 24 rules map directly to Fowler's smell catalog in *Refactoring* (2nd ed.), 
 | SMELL-022 | DataClassSmell       | Data Class                             | Ch. 3           |
 | SMELL-023 | RefusedBequest       | Refused Bequest                        | Ch. 3           |
 | SMELL-024 | Comments             | Comments                               | Ch. 3           |
+| SMELL-025 | TemporalIdentifier   | *(extended)* Temporal markers in identifiers | OUSTRHOUT Ch. 14 |
 
 ### Architecture 90 Rules -- Source: ARCH90
 
@@ -249,6 +251,12 @@ existing Python linter covers.
 
 ---
 
+## General Mining Queue
+
+| Planned Code | Pattern / Anti-Pattern                   | Source               | Detectability | Notes / Blocker                                                                |
+|--------------|------------------------------------------|----------------------|---------------|--------------------------------------------------------------------------------|
+| SMELL-???    | Defensive validation inside trust boundaries | Hunt & Thomas *Pragmatic Programmer* T24-25; Ousterhout Ch. 10 | Low | Requires type-flow or call-graph analysis. Cheapest slice: `RedundantTypeCheck` (isinstance on non-Optional param). See NathanKrupa/gaudi#132. |
+
 ## Future Mining Queues
 
 ### Service Boundary Rules (SVC) -- Source: NEWMAN
@@ -313,9 +321,9 @@ away from Data-Oriented.
 
 ### Summary
 
-Of the ~124 currently implemented rules:
+Of the ~125 currently implemented rules:
 
-- **~101 (81%) are universal** — they descend from the three pillars and
+- **~102 (82%) are universal** — they descend from the three pillars and
   hold in every school.
 - **~23 (19%) are scoped** — they depend on school-specific axioms.
   (Originally 22 at Phase 1; `ARCH-013 FatScript` was moved to scoped
@@ -369,8 +377,8 @@ universal rules include:
   remaining Fowler smells (mysterious names, long functions, long
   parameter lists, global data, duplicated code, shotgun surgery, data
   clumps, repeated switches, temporary field, message chains, alternative
-  interfaces, comments) appeal directly to Truthfulness #3 and Economy #6
-  and hold in every school.
+  interfaces, comments, temporal identifiers) appeal directly to
+  Truthfulness #3 and Economy #6 and hold in every school.
 - **All of STRUCT** (010–013, 020–021) except 001. Packaging, pyproject,
   entry points, lockfiles, return types, and magic strings are universal
   infrastructure concerns.
