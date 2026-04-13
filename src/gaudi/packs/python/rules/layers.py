@@ -72,6 +72,33 @@ class ImportDirectionViolation(Rule):
 _DATA_LAYER_KEYWORDS = ("connector", "store", "repository", "db")
 
 
+def _is_guard_pattern(node: ast.If) -> bool:
+    """Return True if the if-statement is a defensive guard, not business logic.
+
+    Guards are: ``if x is None``, ``if not x``, ``if isinstance(x, ...)``,
+    ``if x is not None``. These are normal defensive checks in data-layer
+    code (cache misses, null results, type narrowing).
+    """
+    test = node.test
+    # if x is None / if x is not None
+    if isinstance(test, ast.Compare) and len(test.ops) == 1:
+        op = test.ops[0]
+        if isinstance(op, (ast.Is, ast.IsNot)):
+            if isinstance(test.comparators[0], ast.Constant) and test.comparators[0].value is None:
+                return True
+    # if not x
+    if isinstance(test, ast.UnaryOp) and isinstance(test.op, ast.Not):
+        return True
+    # if isinstance(x, ...)
+    if (
+        isinstance(test, ast.Call)
+        and isinstance(test.func, ast.Name)
+        and test.func.id == "isinstance"
+    ):
+        return True
+    return False
+
+
 class ConnectorLogicLeak(Rule):
     """Detect data-layer files containing business logic (connector logic leak).
 
@@ -103,6 +130,8 @@ class ConnectorLogicLeak(Rule):
                     continue
                 for child in ast.walk(node):
                     if isinstance(child, ast.If) and child.orelse:
+                        if _is_guard_pattern(child):
+                            continue
                         findings.append(
                             self.finding(
                                 file=fi.relative_path,
