@@ -179,6 +179,6 @@ Three observations from the triangle:
 
 - [docs/philosophy/functional.md](../../../../docs/philosophy/functional.md) — The axiom sheet.
 - [docs/philosophy/canonical-task.md](../../../../docs/philosophy/canonical-task.md) — The canonical task specification.
-- [docs/rule-registry.md](../../../../docs/rule-registry.md) — The rule audit, including the scope tags the matrix test verifies.
+- [docs/rule-sources.md](../../../../docs/rule-sources.md) — The rule audit, including the scope tags the matrix test verifies.
 - [tests/philosophy/classical/canonical/README.md](../../classical/canonical/README.md) — The Classical reference exemplar.
 - [tests/philosophy/pragmatic/canonical/README.md](../../pragmatic/canonical/README.md) — The Pragmatic reference exemplar.

@@ -116,6 +116,8 @@ Show people how to use Gaudí in their pipelines:
 - Run the full suite with `pytest`
 - Run `gaudi-fixture-coverage --strict` — every rule must have a complete
   fixture directory; CI enforces this
+- Run `gaudi cheat-sheet --check -o docs/gaudi-rules.md` — the committed
+  cheat-sheet must match the live rule registry; CI enforces this
 - CI enforces a minimum coverage threshold
 
 ## Pull Request Process

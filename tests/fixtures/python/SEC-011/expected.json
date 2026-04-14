@@ -1,0 +1,38 @@
+{
+  "rule_id": "SEC-011",
+  "description": "SubprocessShellInjection -- shell=True with non-literal command, or os.system/os.popen with non-literal argument",
+  "fixtures": {
+    "fail_shell_injection.py": {
+      "expected_findings": [
+        {
+          "severity": "error",
+          "line": 8,
+          "message_contains": "shell=True"
+        },
+        {
+          "severity": "error",
+          "line": 12,
+          "message_contains": "shell=True"
+        },
+        {
+          "severity": "error",
+          "line": 16,
+          "message_contains": "shell=True"
+        },
+        {
+          "severity": "error",
+          "line": 20,
+          "message_contains": "os.system"
+        },
+        {
+          "severity": "error",
+          "line": 24,
+          "message_contains": "os.popen"
+        }
+      ]
+    },
+    "pass_safe_subprocess.py": {
+      "expected_findings": []
+    }
+  }
+}

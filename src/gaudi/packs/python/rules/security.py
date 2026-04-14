@@ -281,7 +281,7 @@ class UnsafeDeserialization(Rule):
     category = Category.SECURITY
     message_template = "Unsafe deserialization '{call}' at line {line}"
     recommendation_template = (
-        "pickle and yaml.load can execute arbitrary code on untrusted "
+        "pickle, marshal, and yaml.load execute arbitrary code on untrusted "
         "input. Use json, or yaml.safe_load / Loader=SafeLoader."
     )
 
@@ -308,6 +308,16 @@ class UnsafeDeserialization(Rule):
                             file=f.relative_path,
                             line=node.lineno,
                             call=f"pickle.{attr}",
+                        )
+                    )
+                    continue
+                # marshal.load / marshal.loads
+                if module == "marshal" and attr in ("load", "loads"):
+                    findings.append(
+                        self.finding(
+                            file=f.relative_path,
+                            line=node.lineno,
+                            call=f"marshal.{attr}",
                         )
                     )
                     continue
@@ -513,6 +523,555 @@ class SSRFVector(Rule):
 
 
 # ---------------------------------------------------------------
+# SEC-007  WeakCryptography
+# ---------------------------------------------------------------
+
+_WEAK_HASHES = frozenset({"md5", "sha1"})
+
+_SECURITY_TOKEN_NAME_RE = re.compile(
+    r"(?:^|_)(token|key|secret|password|nonce|salt|session|otp|signature|csrf)(?:$|_)",
+    re.IGNORECASE,
+)
+
+_RANDOM_CALLABLES = frozenset(
+    {
+        "random",
+        "randint",
+        "randrange",
+        "choice",
+        "choices",
+        "sample",
+        "randbytes",
+        "getrandbits",
+        "uniform",
+    }
+)
+
+
+def _has_security_context(name: str | None) -> bool:
+    """Return True if an identifier name signals security-sensitive use."""
+    if not name:
+        return False
+    return bool(_SECURITY_TOKEN_NAME_RE.search(name))
+
+
+class WeakCryptography(Rule):
+    """SEC-007: hashlib.md5/sha1 used for security, or random module used for tokens.
+
+    Principles: #4 (Failure must be named).
+    Source: OWASP A02 — Cryptographic Failures; CWE-327 / CWE-338.
+    """
+
+    code = "SEC-007"
+    severity = Severity.ERROR
+    category = Category.SECURITY
+    message_template = "Weak cryptography '{call}' at line {line}"
+    recommendation_template = (
+        "Use hashlib.sha256 or hashlib.scrypt for password/message hashing, "
+        "and the 'secrets' module (token_hex, token_urlsafe, token_bytes) "
+        "for tokens, keys, salts, and session identifiers."
+    )
+
+    def check(self, context: PythonContext) -> list[Finding]:
+        findings: list[Finding] = []
+        for f in context.files:
+            if _is_test_file(f.relative_path):
+                continue
+            tree = f.ast_tree
+            if tree is None:
+                continue
+            # Pass 1: hashlib.md5 / hashlib.sha1 — flag unconditionally.
+            for node in ast.walk(tree):
+                if not isinstance(node, ast.Call):
+                    continue
+                func = node.func
+                if (
+                    isinstance(func, ast.Attribute)
+                    and isinstance(func.value, ast.Name)
+                    and func.value.id == "hashlib"
+                    and func.attr in _WEAK_HASHES
+                ):
+                    findings.append(
+                        self.finding(
+                            file=f.relative_path,
+                            line=node.lineno,
+                            call=f"hashlib.{func.attr}",
+                        )
+                    )
+            # Pass 2: random.<callable>() inside a function whose name signals
+            # security context (generate_token, api_key, make_session, etc.).
+            for fn in ast.walk(tree):
+                if not isinstance(fn, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                    continue
+                if not _has_security_context(fn.name):
+                    continue
+                for node in ast.walk(fn):
+                    if not isinstance(node, ast.Call):
+                        continue
+                    func = node.func
+                    if (
+                        isinstance(func, ast.Attribute)
+                        and isinstance(func.value, ast.Name)
+                        and func.value.id == "random"
+                        and func.attr in _RANDOM_CALLABLES
+                    ):
+                        findings.append(
+                            self.finding(
+                                file=f.relative_path,
+                                line=node.lineno,
+                                call=f"random.{func.attr}",
+                            )
+                        )
+        return findings
+
+
+# ---------------------------------------------------------------
+# SEC-008  InsecureSSLVerification
+# ---------------------------------------------------------------
+
+
+class InsecureSSLVerification(Rule):
+    """SEC-008: TLS certificate verification disabled via verify=False or ssl.CERT_NONE.
+
+    Principles: #4 (Failure must be named).
+    Source: OWASP A02 — Cryptographic Failures; CWE-295 Improper Certificate Validation.
+    """
+
+    code = "SEC-008"
+    severity = Severity.ERROR
+    category = Category.SECURITY
+    message_template = "{detail} at line {line} — TLS verification disabled"
+    recommendation_template = (
+        "Leave verify at its default (True) or pass a CA bundle path. "
+        "For ssl.SSLContext, use ssl.CERT_REQUIRED. Disabling verification "
+        "makes the connection vulnerable to man-in-the-middle attacks."
+    )
+
+    def check(self, context: PythonContext) -> list[Finding]:
+        findings: list[Finding] = []
+        for f in context.files:
+            if _is_test_file(f.relative_path):
+                continue
+            tree = f.ast_tree
+            if tree is None:
+                continue
+            for node in ast.walk(tree):
+                # verify=False on any call
+                if isinstance(node, ast.Call):
+                    for kw in node.keywords:
+                        if (
+                            kw.arg == "verify"
+                            and isinstance(kw.value, ast.Constant)
+                            and kw.value.value is False
+                        ):
+                            findings.append(
+                                self.finding(
+                                    file=f.relative_path,
+                                    line=node.lineno,
+                                    detail="verify=False",
+                                )
+                            )
+                            break
+                # ssl.CERT_NONE reference
+                if (
+                    isinstance(node, ast.Attribute)
+                    and isinstance(node.value, ast.Name)
+                    and node.value.id == "ssl"
+                    and node.attr == "CERT_NONE"
+                ):
+                    findings.append(
+                        self.finding(
+                            file=f.relative_path,
+                            line=node.lineno,
+                            detail="ssl.CERT_NONE",
+                        )
+                    )
+        return findings
+
+
+# ---------------------------------------------------------------
+# Import resolution helper (shared by SEC-009, SEC-010)
+# ---------------------------------------------------------------
+
+
+def _build_name_to_module(tree: ast.AST) -> tuple[dict[str, str], dict[str, str]]:
+    """Scan imports; return (module_aliases, direct_names).
+
+    - ``module_aliases`` maps a local name back to its dotted source module
+      (``import xml.etree.ElementTree as ET`` → ``{"ET": "xml.etree.ElementTree"}``).
+    - ``direct_names`` maps a directly imported symbol to its source module
+      (``from tempfile import mktemp`` → ``{"mktemp": "tempfile"}``).
+    """
+    module_aliases: dict[str, str] = {}
+    direct_names: dict[str, str] = {}
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            for alias in node.names:
+                local = alias.asname or alias.name.split(".")[0]
+                module_aliases[local] = alias.name
+        elif isinstance(node, ast.ImportFrom):
+            if not node.module:
+                continue
+            for alias in node.names:
+                direct_names[alias.asname or alias.name] = node.module
+    return module_aliases, direct_names
+
+
+def _resolve_call_target(
+    call: ast.Call,
+    module_aliases: dict[str, str],
+    direct_names: dict[str, str],
+) -> tuple[str, str] | None:
+    """Resolve a Call to (module, function).
+
+    Returns None if the call target cannot be resolved to an imported symbol.
+    Handles three shapes:
+      1. ``alias.func(...)``         → (module_aliases[alias], func)
+      2. ``a.b.func(...)``           → ("a.b", func) if a.b is an import path
+      3. ``func(...)``               → (direct_names[func], func)
+    """
+    func = call.func
+    if isinstance(func, ast.Attribute):
+        value = func.value
+        if isinstance(value, ast.Name):
+            module = module_aliases.get(value.id)
+            if module:
+                return (module, func.attr)
+        # a.b.func — walk the dotted chain
+        parts: list[str] = [func.attr]
+        cursor: ast.expr = value
+        while isinstance(cursor, ast.Attribute):
+            parts.append(cursor.attr)
+            cursor = cursor.value
+        if isinstance(cursor, ast.Name):
+            parts.append(cursor.id)
+            parts.reverse()
+            # Did the user `import a.b`? Then module_aliases[a] == "a.b".
+            root = parts[0]
+            root_module = module_aliases.get(root)
+            if root_module:
+                # Reconstruct: if `import lxml.etree`, parts=["lxml","etree","parse"]
+                # Module = "lxml.etree", function = "parse"
+                prefix = ".".join(parts[:-1])
+                if prefix == root_module or prefix.startswith(root_module + "."):
+                    return (prefix, parts[-1])
+    elif isinstance(func, ast.Name):
+        module = direct_names.get(func.id)
+        if module:
+            return (module, func.id)
+    return None
+
+
+# ---------------------------------------------------------------
+# SEC-009  XXEVulnerable
+# ---------------------------------------------------------------
+
+_XXE_UNSAFE_MODULES = frozenset({"xml.etree.ElementTree", "lxml.etree"})
+_XXE_UNSAFE_FUNCS = frozenset({"parse", "fromstring", "iterparse"})
+
+
+class XXEVulnerable(Rule):
+    """SEC-009: XML parsing without disabling external entities.
+
+    Principles: #4 (Failure must be named).
+    Source: OWASP A05:2021 — Security Misconfiguration; CWE-611 XXE.
+    """
+
+    code = "SEC-009"
+    severity = Severity.ERROR
+    category = Category.SECURITY
+    message_template = "'{call}' at line {line} — XXE risk (external entities enabled by default)"
+    recommendation_template = (
+        "Use defusedxml (defusedxml.ElementTree.parse) for stdlib XML, "
+        "or pass an lxml.etree.XMLParser(resolve_entities=False, no_network=True) "
+        "via the parser= keyword. Default stdlib and lxml parsers resolve "
+        "external entities and can leak files or cause billion-laughs DoS."
+    )
+
+    def check(self, context: PythonContext) -> list[Finding]:
+        findings: list[Finding] = []
+        for f in context.files:
+            if _is_test_file(f.relative_path):
+                continue
+            tree = f.ast_tree
+            if tree is None:
+                continue
+            module_aliases, direct_names = _build_name_to_module(tree)
+            for node in ast.walk(tree):
+                if not isinstance(node, ast.Call):
+                    continue
+                target = _resolve_call_target(node, module_aliases, direct_names)
+                if target is None:
+                    continue
+                module, func_name = target
+                if module not in _XXE_UNSAFE_MODULES:
+                    continue
+                if func_name not in _XXE_UNSAFE_FUNCS:
+                    continue
+                # A hardened parser passed via keyword clears the finding.
+                if any(kw.arg == "parser" for kw in node.keywords):
+                    continue
+                call_repr = f"{module}.{func_name}"
+                findings.append(
+                    self.finding(
+                        file=f.relative_path,
+                        line=node.lineno,
+                        call=call_repr,
+                    )
+                )
+        return findings
+
+
+# ---------------------------------------------------------------
+# SEC-010  InsecureTempFile
+# ---------------------------------------------------------------
+
+
+class InsecureTempFile(Rule):
+    """SEC-010: tempfile.mktemp() race between path selection and open.
+
+    Principles: #4 (Failure must be named).
+    Source: OWASP A01:2021 — Broken Access Control; CWE-377 Insecure Temporary File.
+    """
+
+    code = "SEC-010"
+    severity = Severity.ERROR
+    category = Category.SECURITY
+    message_template = "'{call}' at line {line} — race-prone temporary file"
+    recommendation_template = (
+        "Use tempfile.mkstemp() or tempfile.NamedTemporaryFile(). mktemp() "
+        "returns a path without opening the file, so an attacker can create "
+        "it as a symlink between the call and the subsequent open()."
+    )
+
+    def check(self, context: PythonContext) -> list[Finding]:
+        findings: list[Finding] = []
+        for f in context.files:
+            if _is_test_file(f.relative_path):
+                continue
+            tree = f.ast_tree
+            if tree is None:
+                continue
+            module_aliases, direct_names = _build_name_to_module(tree)
+            for node in ast.walk(tree):
+                if not isinstance(node, ast.Call):
+                    continue
+                target = _resolve_call_target(node, module_aliases, direct_names)
+                if target is None:
+                    continue
+                module, func_name = target
+                if module == "tempfile" and func_name == "mktemp":
+                    findings.append(
+                        self.finding(
+                            file=f.relative_path,
+                            line=node.lineno,
+                            call=f"tempfile.{func_name}",
+                        )
+                    )
+        return findings
+
+
+# ---------------------------------------------------------------
+# SEC-011  SubprocessShellInjection
+# ---------------------------------------------------------------
+
+_SUBPROCESS_CALLABLES = frozenset({"run", "call", "check_call", "check_output", "Popen"})
+
+
+def _is_literal_command(node: ast.expr) -> bool:
+    """Return True if a command argument is a safe literal (str/bytes constant)."""
+    return isinstance(node, ast.Constant) and isinstance(node.value, (str, bytes))
+
+
+def _has_shell_true(call: ast.Call) -> bool:
+    for kw in call.keywords:
+        if kw.arg == "shell" and isinstance(kw.value, ast.Constant) and kw.value.value is True:
+            return True
+    return False
+
+
+class SubprocessShellInjection(Rule):
+    """SEC-011: subprocess with shell=True on a non-literal, or os.system/popen with a non-literal.
+
+    Principles: #4 (Failure must be named).
+    Source: OWASP A03:2021 — Injection; CWE-78 OS Command Injection.
+    """
+
+    code = "SEC-011"
+    severity = Severity.ERROR
+    category = Category.SECURITY
+    message_template = "{detail} at line {line} — command injection risk"
+    recommendation_template = (
+        "Pass argv as a list (subprocess.run(['cmd', arg1, arg2])) and leave "
+        "shell=False. If a shell is unavoidable, escape with shlex.quote. "
+        "Never build a shell command by concatenating user input."
+    )
+
+    def check(self, context: PythonContext) -> list[Finding]:
+        findings: list[Finding] = []
+        for f in context.files:
+            if _is_test_file(f.relative_path):
+                continue
+            tree = f.ast_tree
+            if tree is None:
+                continue
+            module_aliases, direct_names = _build_name_to_module(tree)
+            for node in ast.walk(tree):
+                if not isinstance(node, ast.Call):
+                    continue
+                target = _resolve_call_target(node, module_aliases, direct_names)
+                if target is None:
+                    continue
+                module, func_name = target
+                # subprocess.<callable> with shell=True and a non-literal command
+                if module == "subprocess" and func_name in _SUBPROCESS_CALLABLES:
+                    if not _has_shell_true(node):
+                        continue
+                    if not node.args:
+                        continue
+                    if _is_literal_command(node.args[0]):
+                        continue
+                    findings.append(
+                        self.finding(
+                            file=f.relative_path,
+                            line=node.lineno,
+                            detail=f"subprocess.{func_name}(shell=True, ...)",
+                        )
+                    )
+                # os.system / os.popen with a non-literal command
+                elif module == "os" and func_name in ("system", "popen"):
+                    if not node.args:
+                        continue
+                    if _is_literal_command(node.args[0]):
+                        continue
+                    findings.append(
+                        self.finding(
+                            file=f.relative_path,
+                            line=node.lineno,
+                            detail=f"os.{func_name}",
+                        )
+                    )
+        return findings
+
+
+# ---------------------------------------------------------------
+# SEC-012  PathTraversal
+# ---------------------------------------------------------------
+
+
+_PATH_IO_METHODS = frozenset(
+    {
+        "read_text",
+        "read_bytes",
+        "write_text",
+        "write_bytes",
+        "open",
+        "unlink",
+        "touch",
+        "mkdir",
+        "rmdir",
+        "rename",
+        "replace",
+    }
+)
+
+
+def _is_path_constructor(call: ast.Call) -> bool:
+    """True for Path(...) or pathlib.Path(...)."""
+    func = call.func
+    if isinstance(func, ast.Name) and func.id == "Path":
+        return True
+    if (
+        isinstance(func, ast.Attribute)
+        and func.attr == "Path"
+        and isinstance(func.value, ast.Name)
+        and func.value.id == "pathlib"
+    ):
+        return True
+    return False
+
+
+def _check_function_path_traversal(
+    func_def: ast.FunctionDef | ast.AsyncFunctionDef,
+) -> Iterator[tuple[int, str]]:
+    """Yield (line, sink_name) for I/O calls with tainted first args.
+
+    Sinks:
+      - open(tainted, ...)
+      - Path(tainted).<io_method>(...)  — I/O must be chained on the Path
+    """
+    tainted = _collect_tainted_names(func_def)
+    if not tainted:
+        return
+
+    for node in ast.walk(func_def):
+        if not isinstance(node, ast.Call):
+            continue
+        func = node.func
+
+        # open(tainted, ...)
+        if isinstance(func, ast.Name) and func.id == "open":
+            if node.args and isinstance(node.args[0], ast.Name) and node.args[0].id in tainted:
+                yield (node.lineno, "open")
+                continue
+
+        # <Path(tainted)>.<io_method>(...)
+        if isinstance(func, ast.Attribute) and func.attr in _PATH_IO_METHODS:
+            inner = func.value
+            if (
+                isinstance(inner, ast.Call)
+                and _is_path_constructor(inner)
+                and inner.args
+                and isinstance(inner.args[0], ast.Name)
+                and inner.args[0].id in tainted
+            ):
+                yield (node.lineno, f"Path(...).{func.attr}")
+
+
+class PathTraversal(Rule):
+    """SEC-012: Function parameter flows into open() or Path() unsanitized.
+
+    Principles: #4 (Failure must be named).
+    Source: OWASP A01:2021 — Broken Access Control; CWE-22 Path Traversal.
+
+    Uses intra-procedural taint (same model as SEC-006): parameters are
+    tainted, simple renames propagate, startswith/endswith/membership/
+    urlparse-style checks clear the taint.
+    """
+
+    code = "SEC-012"
+    severity = Severity.ERROR
+    category = Category.SECURITY
+    message_template = "Tainted path passed to '{sink}' at line {line} — path traversal risk"
+    recommendation_template = (
+        "Validate the path against an allowlist or a fixed base directory. "
+        "Resolve with Path(user_input).resolve() and check "
+        "path.is_relative_to(BASE) before opening."
+    )
+
+    def check(self, context: PythonContext) -> list[Finding]:
+        findings: list[Finding] = []
+        for f in context.files:
+            if _is_test_file(f.relative_path):
+                continue
+            tree = f.ast_tree
+            if tree is None:
+                continue
+            for node in ast.walk(tree):
+                if not isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                    continue
+                for line, sink in _check_function_path_traversal(node):
+                    findings.append(
+                        self.finding(
+                            file=f.relative_path,
+                            line=line,
+                            sink=sink,
+                        )
+                    )
+        return findings
+
+
+# ---------------------------------------------------------------
 # Exported rule instances
 # ---------------------------------------------------------------
 
@@ -522,4 +1081,10 @@ SECURITY_RULES = (
     EvalExecUsage(),
     UnsafeDeserialization(),
     SSRFVector(),
+    WeakCryptography(),
+    InsecureSSLVerification(),
+    XXEVulnerable(),
+    InsecureTempFile(),
+    SubprocessShellInjection(),
+    PathTraversal(),
 )

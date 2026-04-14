@@ -1,0 +1,60 @@
+{
+  "rule_id": "SMELL-025",
+  "description": "TemporalIdentifier -- temporal markers in identifiers (class, function, variable names)",
+  "fixtures": {
+    "fail_legacy_class.py": {
+      "expected_findings": [
+        {
+          "severity": "info",
+          "line": 5,
+          "message_contains": "LegacyAuthClient"
+        }
+      ]
+    },
+    "fail_new_function.py": {
+      "expected_findings": [
+        {
+          "severity": "info",
+          "line": 5,
+          "message_contains": "new_billing_handler"
+        }
+      ]
+    },
+    "fail_version_suffix_class.py": {
+      "expected_findings": [
+        {
+          "severity": "info",
+          "line": 5,
+          "message_contains": "UserServiceV2"
+        }
+      ]
+    },
+    "fail_deprecated_prefix.py": {
+      "expected_findings": [
+        {
+          "severity": "info",
+          "line": 5,
+          "message_contains": "deprecated_send_email"
+        }
+      ]
+    },
+    "fail_temporal_constant.py": {
+      "expected_findings": [
+        {
+          "severity": "info",
+          "line": 4,
+          "message_contains": "OLD_API_TIMEOUT"
+        }
+      ]
+    },
+    "pass_clean_names.py": {
+      "expected_findings": []
+    },
+    "pass_substring_not_word.py": {
+      "expected_findings": []
+    },
+    "pass_protocol_version.py": {
+      "expected_findings": []
+    }
+  }
+}

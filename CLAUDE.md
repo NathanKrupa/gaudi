@@ -50,7 +50,7 @@ Gaudi rule decision.
 - **src/gaudi/cli.py** — Click-based CLI (`gaudi check`)
 - **src/gaudi/packs/python/** — Python language pack (79 rules: 64 general + 15 library-specific)
 - **tests/** — pytest suite with fixtures
-- **docs/rule-registry.md** — Maps every rule to its canonical source text
+- **docs/rule-sources.md** — Curated source texts, ARCH-90 curriculum, philosophy scope audit, mining queues (not exhaustive; see docs/gaudi-rules.md for every rule)
 
 ## Key Files
 
@@ -58,7 +58,7 @@ Gaudi rule decision.
 - **CONTRIBUTING.md** — Contributor guide
 - **pyproject.toml** — Package metadata, dependencies, entry points, ruff config
 - **gaudi.toml** — Runtime configuration (severity overrides, exclusions)
-- **docs/rule-registry.md** — Rule provenance and mining queues
+- **docs/rule-sources.md** — Rule provenance and mining queues
 
 ## PR Workflow
 

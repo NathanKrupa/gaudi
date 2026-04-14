@@ -1,0 +1,36 @@
+{
+  "rule_id": "SEC-007",
+  "description": "WeakCryptography -- hashlib.md5/sha1 for security, and random module for tokens/keys",
+  "fixtures": {
+    "fail_weak_crypto.py": {
+      "expected_findings": [
+        {
+          "severity": "error",
+          "line": 8,
+          "message_contains": "hashlib.md5"
+        },
+        {
+          "severity": "error",
+          "line": 12,
+          "message_contains": "hashlib.sha1"
+        },
+        {
+          "severity": "error",
+          "line": 16,
+          "message_contains": "random"
+        },
+        {
+          "severity": "error",
+          "line": 20,
+          "message_contains": "random"
+        }
+      ]
+    },
+    "pass_secure_crypto.py": {
+      "expected_findings": []
+    },
+    "pass_non_security_use.py": {
+      "expected_findings": []
+    }
+  }
+}

@@ -496,6 +496,6 @@ doctrine exists to make it derivable from first principles in any project.
 ## See Also
 
 - [README.md](../README.md) — User-facing introduction.
-- [docs/rule-registry.md](rule-registry.md) — Source provenance for every rule.
+- [docs/rule-sources.md](rule-sources.md) — Source provenance for every rule.
 - [docs/testing-fixtures.md](testing-fixtures.md) — The fixture-first TDD rubric.
 - [CONTRIBUTING.md](../CONTRIBUTING.md) — Contributor workflow.
