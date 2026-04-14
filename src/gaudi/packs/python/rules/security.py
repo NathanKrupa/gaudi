@@ -955,6 +955,123 @@ class SubprocessShellInjection(Rule):
 
 
 # ---------------------------------------------------------------
+# SEC-012  PathTraversal
+# ---------------------------------------------------------------
+
+
+_PATH_IO_METHODS = frozenset(
+    {
+        "read_text",
+        "read_bytes",
+        "write_text",
+        "write_bytes",
+        "open",
+        "unlink",
+        "touch",
+        "mkdir",
+        "rmdir",
+        "rename",
+        "replace",
+    }
+)
+
+
+def _is_path_constructor(call: ast.Call) -> bool:
+    """True for Path(...) or pathlib.Path(...)."""
+    func = call.func
+    if isinstance(func, ast.Name) and func.id == "Path":
+        return True
+    if (
+        isinstance(func, ast.Attribute)
+        and func.attr == "Path"
+        and isinstance(func.value, ast.Name)
+        and func.value.id == "pathlib"
+    ):
+        return True
+    return False
+
+
+def _check_function_path_traversal(
+    func_def: ast.FunctionDef | ast.AsyncFunctionDef,
+) -> Iterator[tuple[int, str]]:
+    """Yield (line, sink_name) for I/O calls with tainted first args.
+
+    Sinks:
+      - open(tainted, ...)
+      - Path(tainted).<io_method>(...)  — I/O must be chained on the Path
+    """
+    tainted = _collect_tainted_names(func_def)
+    if not tainted:
+        return
+
+    for node in ast.walk(func_def):
+        if not isinstance(node, ast.Call):
+            continue
+        func = node.func
+
+        # open(tainted, ...)
+        if isinstance(func, ast.Name) and func.id == "open":
+            if node.args and isinstance(node.args[0], ast.Name) and node.args[0].id in tainted:
+                yield (node.lineno, "open")
+                continue
+
+        # <Path(tainted)>.<io_method>(...)
+        if isinstance(func, ast.Attribute) and func.attr in _PATH_IO_METHODS:
+            inner = func.value
+            if (
+                isinstance(inner, ast.Call)
+                and _is_path_constructor(inner)
+                and inner.args
+                and isinstance(inner.args[0], ast.Name)
+                and inner.args[0].id in tainted
+            ):
+                yield (node.lineno, f"Path(...).{func.attr}")
+
+
+class PathTraversal(Rule):
+    """SEC-012: Function parameter flows into open() or Path() unsanitized.
+
+    Principles: #4 (Failure must be named).
+    Source: OWASP A01:2021 — Broken Access Control; CWE-22 Path Traversal.
+
+    Uses intra-procedural taint (same model as SEC-006): parameters are
+    tainted, simple renames propagate, startswith/endswith/membership/
+    urlparse-style checks clear the taint.
+    """
+
+    code = "SEC-012"
+    severity = Severity.ERROR
+    category = Category.SECURITY
+    message_template = "Tainted path passed to '{sink}' at line {line} — path traversal risk"
+    recommendation_template = (
+        "Validate the path against an allowlist or a fixed base directory. "
+        "Resolve with Path(user_input).resolve() and check "
+        "path.is_relative_to(BASE) before opening."
+    )
+
+    def check(self, context: PythonContext) -> list[Finding]:
+        findings: list[Finding] = []
+        for f in context.files:
+            if _is_test_file(f.relative_path):
+                continue
+            tree = f.ast_tree
+            if tree is None:
+                continue
+            for node in ast.walk(tree):
+                if not isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                    continue
+                for line, sink in _check_function_path_traversal(node):
+                    findings.append(
+                        self.finding(
+                            file=f.relative_path,
+                            line=line,
+                            sink=sink,
+                        )
+                    )
+        return findings
+
+
+# ---------------------------------------------------------------
 # Exported rule instances
 # ---------------------------------------------------------------
 
@@ -969,4 +1086,5 @@ SECURITY_RULES = (
     XXEVulnerable(),
     InsecureTempFile(),
     SubprocessShellInjection(),
+    PathTraversal(),
 )

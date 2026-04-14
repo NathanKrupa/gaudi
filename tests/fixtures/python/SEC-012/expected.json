@@ -1,0 +1,33 @@
+{
+  "rule_id": "SEC-012",
+  "description": "PathTraversal -- tainted parameter flows into open() or pathlib.Path() without a containment check",
+  "fixtures": {
+    "fail_path_traversal.py": {
+      "expected_findings": [
+        {
+          "severity": "error",
+          "line": 12,
+          "message_contains": "open"
+        },
+        {
+          "severity": "error",
+          "line": 18,
+          "message_contains": "open"
+        },
+        {
+          "severity": "error",
+          "line": 22,
+          "message_contains": "Path"
+        },
+        {
+          "severity": "error",
+          "line": 26,
+          "message_contains": "open"
+        }
+      ]
+    },
+    "pass_path_guarded.py": {
+      "expected_findings": []
+    }
+  }
+}
