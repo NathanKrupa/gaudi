@@ -12,7 +12,10 @@ from __future__ import annotations
 import ast
 
 from gaudi.core import Rule, Finding, Severity, Category
+from gaudi.packs.python.ast_helpers import collect_receiver_names
 from gaudi.packs.python.context import PythonContext
+
+_TARFILE_CONSTRUCTORS = ("open", "TarFile")
 
 
 # ---------------------------------------------------------------------------
@@ -475,35 +478,7 @@ class TarfileNoFilter(Rule):
     @staticmethod
     def _find_tarfile_names(tree: ast.Module) -> set[str]:
         """Collect variable names assigned from tarfile.open() or TarFile()."""
-        names: set[str] = set()
-        for node in ast.walk(tree):
-            # Regular assignment: tf = tarfile.open(...)
-            if isinstance(node, ast.Assign):
-                val = node.value
-                if not isinstance(val, ast.Call):
-                    continue
-                func = val.func
-                if isinstance(func, ast.Attribute) and isinstance(func.value, ast.Name):
-                    if func.value.id == "tarfile" and func.attr in ("open", "TarFile"):
-                        for t in node.targets:
-                            if isinstance(t, ast.Name):
-                                names.add(t.id)
-            # Context manager: with tarfile.open(...) as tf:
-            if isinstance(node, ast.With):
-                for item in node.items:
-                    ctx = item.context_expr
-                    if not isinstance(ctx, ast.Call):
-                        continue
-                    func = ctx.func
-                    if (
-                        isinstance(func, ast.Attribute)
-                        and isinstance(func.value, ast.Name)
-                        and func.value.id == "tarfile"
-                        and func.attr in ("open", "TarFile")
-                        and isinstance(item.optional_vars, ast.Name)
-                    ):
-                        names.add(item.optional_vars.id)
-        return names
+        return collect_receiver_names(tree, "tarfile", _TARFILE_CONSTRUCTORS)
 
     @staticmethod
     def _is_tarfile_extract(node: ast.Call, tarfile_names: set[str]) -> bool:
