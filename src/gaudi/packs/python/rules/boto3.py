@@ -5,9 +5,11 @@ from __future__ import annotations
 import ast
 
 from gaudi.core import Category, Finding, Rule, Severity
+from gaudi.packs.python.ast_helpers import collect_receiver_names
 from gaudi.packs.python.context import PythonContext
 
 _BOTO3_CONSTRUCTORS = frozenset({"client", "resource", "Session"})
+_BOTO3_CLIENT_CONSTRUCTORS = ("client", "resource")
 
 _PAGINATED_PREFIXES = ("list_", "describe_", "get_log_events", "scan")
 
@@ -25,20 +27,7 @@ def _is_boto3_call(node: ast.Call) -> bool:
 
 def _find_boto3_client_names(tree: ast.Module) -> set[str]:
     """Find variable names assigned from boto3.client() or boto3.resource()."""
-    names: set[str] = set()
-    for node in ast.walk(tree):
-        if not isinstance(node, ast.Assign):
-            continue
-        if not isinstance(node.value, ast.Call):
-            continue
-        if not _is_boto3_call(node.value):
-            continue
-        func = node.value.func
-        if isinstance(func, ast.Attribute) and func.attr in ("client", "resource"):
-            for target in node.targets:
-                if isinstance(target, ast.Name):
-                    names.add(target.id)
-    return names
+    return collect_receiver_names(tree, "boto3", _BOTO3_CLIENT_CONSTRUCTORS)
 
 
 def _is_inside_try(node: ast.AST, parent_map: dict[ast.AST, ast.AST]) -> bool:
