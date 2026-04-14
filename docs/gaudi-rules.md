@@ -22,6 +22,8 @@
 - **SEC-005 UnsafeDeserialization** — pickle, marshal, and yaml.load execute arbitrary code on untrusted input. Use json, or yaml.safe_load / Loader=SafeLoader.
 - **SEC-007 WeakCryptography** — Use hashlib.sha256 or hashlib.scrypt for password/message hashing, and the 'secrets' module (token_hex, token_urlsafe, token_bytes) for tokens, keys, salts, and session identifiers.
 - **SEC-008 InsecureSSLVerification** — Leave verify at its default (True) or pass a CA bundle path. For ssl.SSLContext, use ssl.CERT_REQUIRED. Disabling verification makes the connection vulnerable to man-in-the-middle attacks.
+- **SEC-009 XXEVulnerable** — Use defusedxml (defusedxml.ElementTree.parse) for stdlib XML, or pass an lxml.etree.XMLParser(resolve_entities=False, no_network=True) via the parser= keyword. Default stdlib and lxml parsers resolve external entities and can leak files or cause billion-laughs DoS.
+- **SEC-010 InsecureTempFile** — Use tempfile.mkstemp() or tempfile.NamedTemporaryFile(). mktemp() returns a path without opening the file, so an attacker can create it as a symlink between the call and the subsequent open().
 - **SMELL-005 GlobalData** — Avoid mutable module-level variables. Use function-local state, dependency injection, or frozen data structures.
 - **SMELL-006 MutableData** — Avoid shared mutable state. Pass data as function parameters and return results.
 - **STAB-005 BlockingInAsync** — Use async equivalents (asyncio.sleep, httpx.AsyncClient) in async functions. Blocking calls freeze the event loop and starve all concurrent tasks.

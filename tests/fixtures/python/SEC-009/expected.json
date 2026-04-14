@@ -1,0 +1,43 @@
+{
+  "rule_id": "SEC-009",
+  "description": "XXEVulnerable -- XML parsing without disabling external entities / DTDs",
+  "fixtures": {
+    "fail_xxe.py": {
+      "expected_findings": [
+        {
+          "severity": "error",
+          "line": 9,
+          "message_contains": "ElementTree.parse"
+        },
+        {
+          "severity": "error",
+          "line": 13,
+          "message_contains": "ElementTree.fromstring"
+        },
+        {
+          "severity": "error",
+          "line": 17,
+          "message_contains": "ElementTree.parse"
+        },
+        {
+          "severity": "error",
+          "line": 21,
+          "message_contains": "ElementTree.fromstring"
+        },
+        {
+          "severity": "error",
+          "line": 25,
+          "message_contains": "lxml.etree.parse"
+        },
+        {
+          "severity": "error",
+          "line": 29,
+          "message_contains": "lxml.etree.fromstring"
+        }
+      ]
+    },
+    "pass_safe_xml.py": {
+      "expected_findings": []
+    }
+  }
+}

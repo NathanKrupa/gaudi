@@ -690,6 +690,188 @@ class InsecureSSLVerification(Rule):
 
 
 # ---------------------------------------------------------------
+# Import resolution helper (shared by SEC-009, SEC-010)
+# ---------------------------------------------------------------
+
+
+def _build_name_to_module(tree: ast.AST) -> tuple[dict[str, str], dict[str, str]]:
+    """Scan imports; return (module_aliases, direct_names).
+
+    - ``module_aliases`` maps a local name back to its dotted source module
+      (``import xml.etree.ElementTree as ET`` → ``{"ET": "xml.etree.ElementTree"}``).
+    - ``direct_names`` maps a directly imported symbol to its source module
+      (``from tempfile import mktemp`` → ``{"mktemp": "tempfile"}``).
+    """
+    module_aliases: dict[str, str] = {}
+    direct_names: dict[str, str] = {}
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            for alias in node.names:
+                local = alias.asname or alias.name.split(".")[0]
+                module_aliases[local] = alias.name
+        elif isinstance(node, ast.ImportFrom):
+            if not node.module:
+                continue
+            for alias in node.names:
+                direct_names[alias.asname or alias.name] = node.module
+    return module_aliases, direct_names
+
+
+def _resolve_call_target(
+    call: ast.Call,
+    module_aliases: dict[str, str],
+    direct_names: dict[str, str],
+) -> tuple[str, str] | None:
+    """Resolve a Call to (module, function).
+
+    Returns None if the call target cannot be resolved to an imported symbol.
+    Handles three shapes:
+      1. ``alias.func(...)``         → (module_aliases[alias], func)
+      2. ``a.b.func(...)``           → ("a.b", func) if a.b is an import path
+      3. ``func(...)``               → (direct_names[func], func)
+    """
+    func = call.func
+    if isinstance(func, ast.Attribute):
+        value = func.value
+        if isinstance(value, ast.Name):
+            module = module_aliases.get(value.id)
+            if module:
+                return (module, func.attr)
+        # a.b.func — walk the dotted chain
+        parts: list[str] = [func.attr]
+        cursor: ast.expr = value
+        while isinstance(cursor, ast.Attribute):
+            parts.append(cursor.attr)
+            cursor = cursor.value
+        if isinstance(cursor, ast.Name):
+            parts.append(cursor.id)
+            parts.reverse()
+            # Did the user `import a.b`? Then module_aliases[a] == "a.b".
+            root = parts[0]
+            root_module = module_aliases.get(root)
+            if root_module:
+                # Reconstruct: if `import lxml.etree`, parts=["lxml","etree","parse"]
+                # Module = "lxml.etree", function = "parse"
+                prefix = ".".join(parts[:-1])
+                if prefix == root_module or prefix.startswith(root_module + "."):
+                    return (prefix, parts[-1])
+    elif isinstance(func, ast.Name):
+        module = direct_names.get(func.id)
+        if module:
+            return (module, func.id)
+    return None
+
+
+# ---------------------------------------------------------------
+# SEC-009  XXEVulnerable
+# ---------------------------------------------------------------
+
+_XXE_UNSAFE_MODULES = frozenset({"xml.etree.ElementTree", "lxml.etree"})
+_XXE_UNSAFE_FUNCS = frozenset({"parse", "fromstring", "iterparse"})
+
+
+class XXEVulnerable(Rule):
+    """SEC-009: XML parsing without disabling external entities.
+
+    Principles: #4 (Failure must be named).
+    Source: OWASP A05:2021 — Security Misconfiguration; CWE-611 XXE.
+    """
+
+    code = "SEC-009"
+    severity = Severity.ERROR
+    category = Category.SECURITY
+    message_template = "'{call}' at line {line} — XXE risk (external entities enabled by default)"
+    recommendation_template = (
+        "Use defusedxml (defusedxml.ElementTree.parse) for stdlib XML, "
+        "or pass an lxml.etree.XMLParser(resolve_entities=False, no_network=True) "
+        "via the parser= keyword. Default stdlib and lxml parsers resolve "
+        "external entities and can leak files or cause billion-laughs DoS."
+    )
+
+    def check(self, context: PythonContext) -> list[Finding]:
+        findings: list[Finding] = []
+        for f in context.files:
+            if _is_test_file(f.relative_path):
+                continue
+            tree = f.ast_tree
+            if tree is None:
+                continue
+            module_aliases, direct_names = _build_name_to_module(tree)
+            for node in ast.walk(tree):
+                if not isinstance(node, ast.Call):
+                    continue
+                target = _resolve_call_target(node, module_aliases, direct_names)
+                if target is None:
+                    continue
+                module, func_name = target
+                if module not in _XXE_UNSAFE_MODULES:
+                    continue
+                if func_name not in _XXE_UNSAFE_FUNCS:
+                    continue
+                # A hardened parser passed via keyword clears the finding.
+                if any(kw.arg == "parser" for kw in node.keywords):
+                    continue
+                call_repr = f"{module}.{func_name}"
+                findings.append(
+                    self.finding(
+                        file=f.relative_path,
+                        line=node.lineno,
+                        call=call_repr,
+                    )
+                )
+        return findings
+
+
+# ---------------------------------------------------------------
+# SEC-010  InsecureTempFile
+# ---------------------------------------------------------------
+
+
+class InsecureTempFile(Rule):
+    """SEC-010: tempfile.mktemp() race between path selection and open.
+
+    Principles: #4 (Failure must be named).
+    Source: OWASP A01:2021 — Broken Access Control; CWE-377 Insecure Temporary File.
+    """
+
+    code = "SEC-010"
+    severity = Severity.ERROR
+    category = Category.SECURITY
+    message_template = "'{call}' at line {line} — race-prone temporary file"
+    recommendation_template = (
+        "Use tempfile.mkstemp() or tempfile.NamedTemporaryFile(). mktemp() "
+        "returns a path without opening the file, so an attacker can create "
+        "it as a symlink between the call and the subsequent open()."
+    )
+
+    def check(self, context: PythonContext) -> list[Finding]:
+        findings: list[Finding] = []
+        for f in context.files:
+            if _is_test_file(f.relative_path):
+                continue
+            tree = f.ast_tree
+            if tree is None:
+                continue
+            module_aliases, direct_names = _build_name_to_module(tree)
+            for node in ast.walk(tree):
+                if not isinstance(node, ast.Call):
+                    continue
+                target = _resolve_call_target(node, module_aliases, direct_names)
+                if target is None:
+                    continue
+                module, func_name = target
+                if module == "tempfile" and func_name == "mktemp":
+                    findings.append(
+                        self.finding(
+                            file=f.relative_path,
+                            line=node.lineno,
+                            call=f"tempfile.{func_name}",
+                        )
+                    )
+        return findings
+
+
+# ---------------------------------------------------------------
 # Exported rule instances
 # ---------------------------------------------------------------
 
@@ -701,4 +883,6 @@ SECURITY_RULES = (
     SSRFVector(),
     WeakCryptography(),
     InsecureSSLVerification(),
+    XXEVulnerable(),
+    InsecureTempFile(),
 )
