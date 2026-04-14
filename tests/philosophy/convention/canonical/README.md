@@ -252,7 +252,7 @@ implementation, where the previous four yielded four total.
 
 - [docs/philosophy/convention.md](../../../../docs/philosophy/convention.md) — The axiom sheet.
 - [docs/philosophy/canonical-task.md](../../../../docs/philosophy/canonical-task.md) — The canonical task specification.
-- [docs/rule-registry.md](../../../../docs/rule-registry.md) — The rule audit.
+- [docs/rule-sources.md](../../../../docs/rule-sources.md) — The rule audit.
 - [tests/philosophy/classical/canonical/README.md](../../classical/canonical/README.md) — Classical (OOP tree).
 - [tests/philosophy/pragmatic/canonical/README.md](../../pragmatic/canonical/README.md) — Pragmatic (one function).
 - [tests/philosophy/functional/canonical/README.md](../../functional/canonical/README.md) — Functional (pure composition).

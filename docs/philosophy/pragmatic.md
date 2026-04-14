@@ -203,5 +203,5 @@ Pragmatic badge.
 - [docs/principles.md](../principles.md) — Principles #6 (best line is the
   one not written), #8 (smallest reasonable change), and #12 (tests are the
   specification) are Pragmatic's direct contributions to the universal core.
-- [docs/rule-registry.md](../rule-registry.md) — `SMELL-014`, `SMELL-015`,
+- [docs/rule-sources.md](../rule-sources.md) — `SMELL-014`, `SMELL-015`,
   and `SMELL-018` are the catalog's current expressions of Pragmatic scope.
