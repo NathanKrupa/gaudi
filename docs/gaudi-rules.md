@@ -156,4 +156,3 @@
 - **TEST-SCALE-001 PytestFixtureScope** [pytest] — Add scope='session' or scope='module' to fixtures that create expensive resources (database connections, API clients) to avoid recreating them per test.
 - **TEST-STRUCT-001 PytestAssertMessage** [pytest] — Add a failure message to complex assertions: assert condition, 'description'. Messages make test failures easier to diagnose.
 - **TEST-STRUCT-002 PytestFixtureDependencyDepth** [pytest] — Flatten the fixture graph: inline trivial dependencies, or compose explicit setup objects in a single fixture. Deep fixture chains make failure diagnosis painful.
-
