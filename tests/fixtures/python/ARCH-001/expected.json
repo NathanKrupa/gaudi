@@ -5,7 +5,7 @@
     "fail_no_tenant/": {
       "expected_findings": [
         {
-          "severity": "warn",
+          "severity": "info",
           "message_contains": "tenant isolation"
         }
       ]

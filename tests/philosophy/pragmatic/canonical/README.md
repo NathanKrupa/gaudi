@@ -99,7 +99,7 @@ merged produces three kinds of findings, each meaningful:
 
 `process_order` is ~80 lines. The rule says functions should be
 shorter. This is a **universal** rule (`SMELL-003` was classified as
-universal in the [rule audit](../../../../docs/rule-registry.md)),
+universal in the [rule audit](../../../../docs/rule-sources.md)),
 and it fires correctly: a Pragmatic one-big-function is genuinely a
 long function, and the rule is accurately reporting a real cost to
 readability that the Pragmatic discipline accepts as a trade-off.
@@ -158,7 +158,7 @@ pressure forces a split.
 
 Neither is wrong. They are the two faithful expressions of two
 genuinely different axioms about when abstraction pays for itself.
-Gaudí's [philosophy scope audit](../../../../docs/rule-registry.md)
+Gaudí's [philosophy scope audit](../../../../docs/rule-sources.md)
 is the editorial constitution that lets both exemplars score 10/10
 against their own rubrics — the scoping system is what makes this
 pluralism defensible instead of confused.
@@ -188,5 +188,5 @@ six can be reviewed.
 
 - [docs/philosophy/pragmatic.md](../../../../docs/philosophy/pragmatic.md) — The axiom sheet.
 - [docs/philosophy/canonical-task.md](../../../../docs/philosophy/canonical-task.md) — The canonical task specification.
-- [docs/rule-registry.md](../../../../docs/rule-registry.md) — The rule audit, including the scope tags that make the Classical and Pragmatic findings diverge as they should.
+- [docs/rule-sources.md](../../../../docs/rule-sources.md) — The rule audit, including the scope tags that make the Classical and Pragmatic findings diverge as they should.
 - [tests/philosophy/classical/canonical/README.md](../../classical/canonical/README.md) — The Classical reference exemplar; read this one's Category A findings alongside that one's to see what the scope system is doing.

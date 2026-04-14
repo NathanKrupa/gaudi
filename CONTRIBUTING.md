@@ -6,10 +6,12 @@ Thanks for your interest in contributing! Gaudí is a young project and contribu
 
 1. Fork the repository
 2. Clone your fork: `git clone https://github.com/YOUR_USERNAME/gaudi.git`
-3. Install in development mode: `pip install -e ".[dev]"`
-4. Install pre-commit hooks: `pre-commit install`
-5. Run the tests: `pytest`
-6. Create a branch for your work: `git checkout -b my-feature`
+3. Create a venv: `python -m venv .venv`
+4. Activate it: `.venv\Scripts\activate` (Windows) or `source .venv/bin/activate` (Unix)
+5. Install in development mode: `pip install -e ".[dev]"`
+6. Install pre-commit hooks: `pre-commit install`
+7. Run the tests: `pytest`
+8. Create a branch for your work: `git checkout -b my-feature`
 
 ## Security Policy
 
@@ -114,6 +116,8 @@ Show people how to use Gaudí in their pipelines:
 - Run the full suite with `pytest`
 - Run `gaudi-fixture-coverage --strict` — every rule must have a complete
   fixture directory; CI enforces this
+- Run `gaudi cheat-sheet --check -o docs/gaudi-rules.md` — the committed
+  cheat-sheet must match the live rule registry; CI enforces this
 - CI enforces a minimum coverage threshold
 
 ## Pull Request Process

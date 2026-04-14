@@ -1,15 +1,20 @@
-# Gaudi Rule Source Registry
+# Gaudi Rule Sources
 
-Every rule in Gaudi traces back to a canonical source: a published text,
-a named pattern, or (where original) the project's own design principles.
-This registry provides citable provenance for each rule code and serves as
-a mining queue for planned rules.
+This file is a **curated, hand-edited** record of the canonical source texts
+Gaudi's rules draw from, the Architecture-90 curriculum that seeded the early
+catalog, the philosophy scope audit, and mining queues for planned rules.
+
+**This is not an exhaustive rule index.** The complete list of implemented
+rules lives in [gaudi-rules.md](gaudi-rules.md), which is generated from the
+live registry by `gaudi cheat-sheet` and cannot drift. Use that file when you
+need "every rule." Use this one when you need the *why* — the source text,
+the curriculum position, or the philosophy scope — for the rules it covers.
 
 The **editorial doctrine** that governs which rules enter the catalog, how
 their severity and thresholds are assigned, and when they are subsumed or cut
-lives in [principles.md](principles.md). Footnotes in this registry that
-explain rule removals (e.g. "detection too weak", "subsumed by STAB-006")
-are applications of those principles.
+lives in [principles.md](principles.md). Footnotes in this file that explain
+rule removals (e.g. "detection too weak", "subsumed by STAB-006") are
+applications of those principles.
 
 ---
 
@@ -38,7 +43,8 @@ Future source keys (not yet mined):
 
 ### Code Smell Rules (SMELL) -- Source: FOWLER
 
-All 24 rules map directly to Fowler's smell catalog in *Refactoring* (2nd ed.), Chapter 3.
+24 rules map directly to Fowler's smell catalog in *Refactoring* (2nd ed.), Chapter 3.
+SMELL-025 extends the same naming principles to identifiers via Ousterhout Ch. 14.
 
 | Code      | Class Name           | Fowler Smell                           | Chapter/Section |
 |-----------|----------------------|----------------------------------------|-----------------|
@@ -66,6 +72,7 @@ All 24 rules map directly to Fowler's smell catalog in *Refactoring* (2nd ed.), 
 | SMELL-022 | DataClassSmell       | Data Class                             | Ch. 3           |
 | SMELL-023 | RefusedBequest       | Refused Bequest                        | Ch. 3           |
 | SMELL-024 | Comments             | Comments                               | Ch. 3           |
+| SMELL-025 | TemporalIdentifier   | *(extended)* Temporal markers in identifiers | OUSTRHOUT Ch. 14 |
 
 ### Architecture 90 Rules -- Source: ARCH90
 
@@ -210,6 +217,36 @@ leakage, and undocumented error responses.
 | API-003  | LeakingInternalID       | URL pattern exposes `<int:pk>` / int PK             | OWASP API (BOLA)      |
 | API-004  | NoErrorResponseSchema   | FastAPI `response_model=` with no `responses=`      | OpenAPI specification |
 
+### Security Rules (SEC) -- Source: OWASP Top 10
+
+General Python security rules mined from the **structural slice** of the OWASP
+Top 10 (issue #142) — patterns detectable from a single file's AST without
+runtime data, taint analysis, or a whole-project graph. Principle 4 (Failure
+must be named) explicitly calls for this slice: hostile input deserves the
+same naming as a memory leak.
+
+| Code     | Class Name              | Pattern / Anti-Pattern                                       | OWASP Source                    |
+|----------|-------------------------|--------------------------------------------------------------|---------------------------------|
+| SEC-002  | RawSQLInjection         | f-string / % / concat / .format passed to execute(), raw()   | A03:2021 Injection              |
+| SEC-003  | HardcodedCredential     | Credential-named variable assigned to a string literal       | A07:2021 Identification Failures|
+| SEC-004  | EvalExecUsage           | Built-in `eval()` or `exec()` invoked                        | A03:2021 Injection              |
+| SEC-005  | UnsafeDeserialization   | `pickle.load(s)`, `marshal.load(s)`, `yaml.load` w/o SafeLoader | A08:2021 Software & Data Integrity |
+| SEC-006  | SSRFVector              | Function parameter flows into `requests`/`httpx`/`urlopen` URL unsanitized | A10:2021 SSRF          |
+| SEC-007  | WeakCryptography        | `hashlib.md5/sha1`; `random` module inside token/key/secret functions | A02:2021 Cryptographic Failures (CWE-327/338) |
+| SEC-008  | InsecureSSLVerification | `verify=False` on HTTP calls; `ssl.CERT_NONE`                | A02:2021 Cryptographic Failures (CWE-295) |
+| SEC-009  | XXEVulnerable           | `xml.etree.ElementTree.parse/fromstring` or `lxml.etree.parse/fromstring` without `parser=` hardened | A05:2021 (CWE-611) |
+| SEC-010  | InsecureTempFile        | `tempfile.mktemp()` — race between path selection and open  | A01:2021 (CWE-377)        |
+| SEC-011  | SubprocessShellInjection | `subprocess.*(..., shell=True)` with non-literal command; `os.system`/`os.popen` with non-literal | A03:2021 Injection (CWE-78) |
+| SEC-012  | PathTraversal           | Function parameter flows into `open()` or `Path()` with no startswith/membership/resolve guard | A01:2021 Broken Access Control (CWE-22) |
+
+**Overlap with `bandit`.** SEC-005/007/008 cover territory `bandit` also flags,
+but Gaudi's versions (a) carry principle citations so the reader knows *why*
+it matters, (b) ship a one-sentence actionable fix, and (c) are checked in the
+same pass as the architectural rules — one tool, one report. SEC-007's
+`random`-inside-security-function heuristic is narrower than bandit's
+`B311` (which flags every `random` call), reducing false positives for
+simulations, games, and sampling code.
+
 ### Dependency Graph Rules (DEP) -- Source: MARTIN
 
 Rules mined from *Clean Architecture*. Module-level coupling metrics that
@@ -248,6 +285,12 @@ existing Python linter covers.
 | STAB-???     | SLA Inversion                             | Ch. 4   | Low           | Requires runtime config, hard to lint    |
 
 ---
+
+## General Mining Queue
+
+| Planned Code | Pattern / Anti-Pattern                   | Source               | Detectability | Notes / Blocker                                                                |
+|--------------|------------------------------------------|----------------------|---------------|--------------------------------------------------------------------------------|
+| SMELL-???    | Defensive validation inside trust boundaries | Hunt & Thomas *Pragmatic Programmer* T24-25; Ousterhout Ch. 10 | Low | Requires type-flow or call-graph analysis. Cheapest slice: `RedundantTypeCheck` (isinstance on non-Optional param). See NathanKrupa/gaudi#132. |
 
 ## Future Mining Queues
 
@@ -313,9 +356,9 @@ away from Data-Oriented.
 
 ### Summary
 
-Of the ~124 currently implemented rules:
+Of the ~125 currently implemented rules:
 
-- **~101 (81%) are universal** — they descend from the three pillars and
+- **~102 (82%) are universal** — they descend from the three pillars and
   hold in every school.
 - **~23 (19%) are scoped** — they depend on school-specific axioms.
   (Originally 22 at Phase 1; `ARCH-013 FatScript` was moved to scoped
@@ -369,8 +412,8 @@ universal rules include:
   remaining Fowler smells (mysterious names, long functions, long
   parameter lists, global data, duplicated code, shotgun surgery, data
   clumps, repeated switches, temporary field, message chains, alternative
-  interfaces, comments) appeal directly to Truthfulness #3 and Economy #6
-  and hold in every school.
+  interfaces, comments, temporal identifiers) appeal directly to
+  Truthfulness #3 and Economy #6 and hold in every school.
 - **All of STRUCT** (010–013, 020–021) except 001. Packaging, pyproject,
   entry points, lockfiles, return types, and magic strings are universal
   infrastructure concerns.

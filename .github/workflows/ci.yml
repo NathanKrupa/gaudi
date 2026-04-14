@@ -71,3 +71,6 @@ jobs:
 
       - name: Fixture corpus coverage
         run: gaudi-fixture-coverage --strict
+
+      - name: Cheat-sheet drift guard
+        run: gaudi cheat-sheet --check -o docs/gaudi-rules.md

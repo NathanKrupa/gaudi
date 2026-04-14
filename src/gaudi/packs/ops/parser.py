@@ -24,16 +24,20 @@ from gaudi.excludes import (
 from gaudi.packs.ops.context import DockerfileInfo, DockerfileLine, OpsContext
 
 
-# Only the canonical filename ``Dockerfile`` is accepted today. Stage variants
-# (``Dockerfile.prod``, ``app.Dockerfile``) are a real Docker convention but
-# distinguishing them from source files in disguise (``dockerfile.py``,
-# ``Dockerfile.tar.gz``) requires either a denylist or a config-driven
-# allowlist. Both are speculative until a user asks. The earlier
-# ``startswith("dockerfile.")`` check matched ``dockerfile.py`` during dogfood
-# and there is no clean structural rule that distinguishes "stage" from
-# "extension". Stage-variant support is tracked as a follow-up.
+# Matches canonical ``Dockerfile`` plus stage variants like
+# ``Dockerfile.prod`` and ``app.Dockerfile``. Excludes non-Docker files
+# by rejecting extensions that are clearly source code or archives.
+_NON_DOCKER_SUFFIXES = frozenset({".py", ".sh", ".yml", ".yaml", ".json", ".toml", ".gz", ".zip"})
+
+
 def _is_dockerfile(path: Path) -> bool:
-    return path.name == "Dockerfile"
+    name = path.name
+    if name == "Dockerfile":
+        return True
+    lower = name.lower()
+    if lower.startswith("dockerfile.") or lower.endswith(".dockerfile"):
+        return path.suffix.lower() not in _NON_DOCKER_SUFFIXES
+    return False
 
 
 def _stitch_instructions(source: str) -> list[DockerfileLine]:

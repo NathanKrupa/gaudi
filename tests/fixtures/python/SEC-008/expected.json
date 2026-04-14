@@ -1,0 +1,33 @@
+{
+  "rule_id": "SEC-008",
+  "description": "InsecureSSLVerification -- verify=False on HTTP libraries and ssl.CERT_NONE disable certificate checks",
+  "fixtures": {
+    "fail_ssl_disabled.py": {
+      "expected_findings": [
+        {
+          "severity": "error",
+          "line": 9,
+          "message_contains": "verify=False"
+        },
+        {
+          "severity": "error",
+          "line": 13,
+          "message_contains": "verify=False"
+        },
+        {
+          "severity": "error",
+          "line": 17,
+          "message_contains": "verify=False"
+        },
+        {
+          "severity": "error",
+          "line": 23,
+          "message_contains": "CERT_NONE"
+        }
+      ]
+    },
+    "pass_ssl_enabled.py": {
+      "expected_findings": []
+    }
+  }
+}

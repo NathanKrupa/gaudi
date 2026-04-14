@@ -213,7 +213,7 @@ Added to `test_philosophy_matrix.py`:
 
 - [docs/philosophy/resilient.md](../../../../docs/philosophy/resilient.md) — The axiom sheet.
 - [docs/philosophy/canonical-task.md](../../../../docs/philosophy/canonical-task.md) — The canonical task specification.
-- [docs/rule-registry.md](../../../../docs/rule-registry.md) — The rule audit, unchanged by this PR.
+- [docs/rule-sources.md](../../../../docs/rule-sources.md) — The rule audit, unchanged by this PR.
 - [tests/philosophy/classical/canonical/README.md](../../classical/canonical/README.md) — Classical exemplar (layered OOP).
 - [tests/philosophy/pragmatic/canonical/README.md](../../pragmatic/canonical/README.md) — Pragmatic exemplar (one function).
 - [tests/philosophy/functional/canonical/README.md](../../functional/canonical/README.md) — Functional exemplar (pure records).

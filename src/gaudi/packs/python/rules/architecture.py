@@ -29,14 +29,15 @@ class NoTenantIsolation(Rule):
     """
 
     code = "ARCH-001"
-    severity = Severity.WARN
+    severity = Severity.INFO
     category = Category.ARCHITECTURE
     message_template = (
         "Project has {model_count} related models but no tenant isolation column detected"
     )
     recommendation_template = (
         "Consider adding a tenant_id, organization_id, or account_id ForeignKey "
-        "to models that store user data. Enforce filtering in all queries."
+        "to models that store user data. Enforce filtering in all queries. "
+        'Promote to warn with [gaudi.rules] "ARCH-001" = "warn" if multi-tenancy applies.'
     )
 
     def check(self, context: PythonContext) -> list[Finding]:

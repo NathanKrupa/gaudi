@@ -1,8 +1,9 @@
 # ABOUTME: Fowler "dispensables" code smells: things that could be removed without loss.
-# ABOUTME: Lazy elements, speculative generality, excess comments, data class smell.
+# ABOUTME: Lazy elements, speculative generality, excess comments, data class smell, temporal identifiers.
 from __future__ import annotations
 
 import ast
+import re
 
 from gaudi.core import Rule, Finding, Severity, Category
 from gaudi.packs.python.context import PythonContext
@@ -323,6 +324,147 @@ class DataClassSmell(Rule):
 
 
 # ---------------------------------------------------------------
+# SMELL-025  TemporalIdentifier
+# ---------------------------------------------------------------
+
+# Temporal markers that should not appear as standalone words in identifiers.
+_TEMPORAL_WORDS = re.compile(
+    r"(?:^|(?<=[a-z]))(?:New|Old|Legacy|Deprecated|Obsolete|Refactored)(?=[A-Z]|$)"  # camelCase
+    r"|(?:^|_)(?:new|old|legacy|deprecated|obsolete|refactored)(?:_|$)",  # snake_case
+    re.IGNORECASE,
+)
+# Version suffixes like V2, v3, _v10 — matched on split words.
+_VERSION_WORD = re.compile(r"^v\d+$", re.IGNORECASE)
+
+# Domain terms where a version number is part of the name, not a temporal marker.
+# Checked against the full identifier before reporting a version-suffix match.
+_PROTOCOL_ALLOWLIST = re.compile(
+    r"(?:IP|IPv|OAuth|HTTP|Http|http|TLS|Tls|tls|H|Python|python|SSL|ssl"
+    r"|QUIC|quic|Quic|USB|usb|Usb|HDMI|hdmi|Hdmi|MP|mp|Mp"
+    r"|WebSocket|websocket|WS|ws)v?\d",
+    re.IGNORECASE,
+)
+
+
+def _split_identifier(name: str) -> list[str]:
+    """Split an identifier into word components for matching.
+
+    Handles both snake_case and camelCase/PascalCase.
+    """
+    # Split on underscores first
+    parts = name.split("_")
+    words: list[str] = []
+    for part in parts:
+        # Split camelCase: insert boundary between lower-to-upper transitions
+        tokens = re.sub(r"([a-z])([A-Z])", r"\1_\2", part).split("_")
+        words.extend(t for t in tokens if t)
+    return words
+
+
+def _has_temporal_marker(name: str) -> bool:
+    """Check if an identifier contains a temporal marker word."""
+    words = _split_identifier(name)
+    for word in words:
+        if word.lower() in {"new", "old", "legacy", "deprecated", "obsolete", "refactored"}:
+            return True
+        # Check version suffixes on split words, but skip protocol/domain versions
+        if _VERSION_WORD.match(word) and not _PROTOCOL_ALLOWLIST.search(name):
+            return True
+
+    return False
+
+
+class TemporalIdentifier(Rule):
+    """SMELL-025: Temporal markers in identifiers.
+
+    Principles: #3 (Names are contracts).
+    Source: Ousterhout, *A Philosophy of Software Design* Ch. 14 —
+    names should describe what a thing is, not when it was added.
+
+    Fires on class names, function names, and module-level variable names
+    that contain temporal words (new, old, legacy, deprecated, obsolete,
+    refactored) or version suffixes (V2, v3).
+
+    Does NOT fire on protocol/domain versions (IPv4, IPv6, OAuth2, HTTP2,
+    Python3) — these are part of the domain name, not change history.
+    Allowlist: IP, IPv, OAuth, HTTP, TLS, H, Python, SSL, QUIC, USB,
+    HDMI, MP, WebSocket, WS.
+    """
+
+    code = "SMELL-025"
+    severity = Severity.INFO
+    category = Category.CODE_SMELL
+    message_template = (
+        "Identifier '{name}' contains temporal marker '{marker}' — "
+        "names should describe what a thing is, not when it was added"
+    )
+    recommendation_template = (
+        "Rename to describe the current purpose. If the 'old' version "
+        "is dead, delete it. If it's current, drop the temporal prefix. "
+        "For version suffixes, the canonical name belongs to the active "
+        "implementation."
+    )
+
+    def check(self, context: PythonContext) -> list[Finding]:
+        findings: list[Finding] = []
+        for f in context.files:
+            tree = f.ast_tree
+            if tree is None:
+                continue
+            for node in ast.walk(tree):
+                names_and_lines = self._extract_names(node)
+                for name, line in names_and_lines:
+                    marker = self._find_marker(name)
+                    if marker:
+                        findings.append(
+                            self.finding(
+                                file=f.relative_path,
+                                line=line,
+                                name=name,
+                                marker=marker,
+                            )
+                        )
+        return findings
+
+    @staticmethod
+    def _extract_names(node: ast.AST) -> list[tuple[str, int]]:
+        """Extract (name, lineno) pairs from AST nodes worth checking."""
+        results: list[tuple[str, int]] = []
+        if isinstance(node, ast.ClassDef):
+            results.append((node.name, node.lineno))
+        elif isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            results.append((node.name, node.lineno))
+        elif isinstance(node, ast.Assign):
+            # Module-level constants / variables
+            for target in node.targets:
+                if isinstance(target, ast.Name):
+                    results.append((target.id, node.lineno))
+        return results
+
+    @staticmethod
+    def _find_marker(name: str) -> str | None:
+        """Return the temporal marker found in name, or None."""
+        words = _split_identifier(name)
+        for word in words:
+            if word.lower() in {
+                "new",
+                "old",
+                "legacy",
+                "deprecated",
+                "obsolete",
+                "refactored",
+            }:
+                return word
+
+        words = _split_identifier(name)
+        for word in words:
+            if _VERSION_WORD.match(word) and not _PROTOCOL_ALLOWLIST.search(name):
+                return word
+
+        return None
+
+
+# ---------------------------------------------------------------
 # Exported rule instances
 # ---------------------------------------------------------------
 
@@ -331,4 +473,5 @@ DISPENSABLE_RULES = (
     SpeculativeGenerality(),
     Comments(),
     DataClassSmell(),
+    TemporalIdentifier(),
 )

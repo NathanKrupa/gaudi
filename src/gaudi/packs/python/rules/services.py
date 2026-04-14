@@ -192,17 +192,20 @@ class NoAPIVersioning(Rule):
 # ---------------------------------------------------------------
 
 
-def _importer_app(relative_path: str) -> str | None:
+def _importer_app(relative_path: str, has_apps_dir: bool = False) -> str | None:
     """Return the Django app name an importing file lives in.
 
-    Recognises ``apps/<name>/...`` layouts and falls back to the first path
-    segment for top-level app directories like ``users/views.py``.
+    Recognises ``apps/<name>/...`` layouts. When the project uses an ``apps/``
+    directory, top-level directories (``config/``, ``scripts/``) are not
+    treated as apps — they are project-level infrastructure.
     """
     parts = relative_path.replace("\\", "/").split("/")
     if len(parts) < 2:
         return None
     if parts[0] == "apps" and len(parts) >= 3:
         return parts[1]
+    if has_apps_dir:
+        return None
     return parts[0]
 
 
@@ -241,13 +244,16 @@ class SharedDatabasePattern(Rule):
     )
 
     def check(self, context: PythonContext) -> list[Finding]:
+        has_apps_dir = any(
+            fi.relative_path.replace("\\", "/").startswith("apps/") for fi in context.files
+        )
         # (owner_app, model_name) -> list[(file, line, importer_app)]
         usages: dict[tuple[str, str], list[tuple[str, int, str]]] = {}
         for fi in context.files:
             tree = fi.ast_tree
             if tree is None:
                 continue
-            importer_app = _importer_app(fi.relative_path)
+            importer_app = _importer_app(fi.relative_path, has_apps_dir)
             if importer_app is None:
                 continue
             for node in ast.walk(tree):
