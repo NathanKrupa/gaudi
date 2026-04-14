@@ -237,6 +237,7 @@ same naming as a memory leak.
 | SEC-009  | XXEVulnerable           | `xml.etree.ElementTree.parse/fromstring` or `lxml.etree.parse/fromstring` without `parser=` hardened | A05:2021 (CWE-611) |
 | SEC-010  | InsecureTempFile        | `tempfile.mktemp()` — race between path selection and open  | A01:2021 (CWE-377)        |
 | SEC-011  | SubprocessShellInjection | `subprocess.*(..., shell=True)` with non-literal command; `os.system`/`os.popen` with non-literal | A03:2021 Injection (CWE-78) |
+| SEC-012  | PathTraversal           | Function parameter flows into `open()` or `Path()` with no startswith/membership/resolve guard | A01:2021 Broken Access Control (CWE-22) |
 
 **Overlap with `bandit`.** SEC-005/007/008 cover territory `bandit` also flags,
 but Gaudi's versions (a) carry principle citations so the reader knows *why*

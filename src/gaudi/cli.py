@@ -222,7 +222,7 @@ def report(
     markdown = format_markdown_report(findings, project_path, snippet_context=snippet_context)
 
     if output:
-        Path(output).write_text(markdown, encoding="utf-8")
+        Path(output).write_text(markdown, encoding="utf-8")  # noqa: SEC-012
         console.print(f"[green]Wrote report to {output}[/green]")
     else:
         click.echo(markdown)
@@ -379,7 +379,7 @@ def cheat_sheet(output: str | None, check: bool):
         sys.exit(1)
 
     if output:
-        Path(output).write_text(rendered, encoding="utf-8")
+        Path(output).write_text(rendered, encoding="utf-8")  # noqa: SEC-012
         console.print(f"[green]Wrote cheat-sheet to {output}[/green]")
     else:
         click.echo(rendered)

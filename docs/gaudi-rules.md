@@ -25,6 +25,7 @@
 - **SEC-009 XXEVulnerable** — Use defusedxml (defusedxml.ElementTree.parse) for stdlib XML, or pass an lxml.etree.XMLParser(resolve_entities=False, no_network=True) via the parser= keyword. Default stdlib and lxml parsers resolve external entities and can leak files or cause billion-laughs DoS.
 - **SEC-010 InsecureTempFile** — Use tempfile.mkstemp() or tempfile.NamedTemporaryFile(). mktemp() returns a path without opening the file, so an attacker can create it as a symlink between the call and the subsequent open().
 - **SEC-011 SubprocessShellInjection** — Pass argv as a list (subprocess.run(['cmd', arg1, arg2])) and leave shell=False. If a shell is unavoidable, escape with shlex.quote. Never build a shell command by concatenating user input.
+- **SEC-012 PathTraversal** — Validate the path against an allowlist or a fixed base directory. Resolve with Path(user_input).resolve() and check path.is_relative_to(BASE) before opening.
 - **SMELL-005 GlobalData** — Avoid mutable module-level variables. Use function-local state, dependency injection, or frozen data structures.
 - **SMELL-006 MutableData** — Avoid shared mutable state. Pass data as function parameters and return results.
 - **STAB-005 BlockingInAsync** — Use async equivalents (asyncio.sleep, httpx.AsyncClient) in async functions. Blocking calls freeze the event loop and starve all concurrent tasks.
