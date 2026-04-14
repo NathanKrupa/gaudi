@@ -875,9 +875,7 @@ class InsecureTempFile(Rule):
 # SEC-011  SubprocessShellInjection
 # ---------------------------------------------------------------
 
-_SUBPROCESS_CALLABLES = frozenset(
-    {"run", "call", "check_call", "check_output", "Popen"}
-)
+_SUBPROCESS_CALLABLES = frozenset({"run", "call", "check_call", "check_output", "Popen"})
 
 
 def _is_literal_command(node: ast.expr) -> bool:
@@ -887,11 +885,7 @@ def _is_literal_command(node: ast.expr) -> bool:
 
 def _has_shell_true(call: ast.Call) -> bool:
     for kw in call.keywords:
-        if (
-            kw.arg == "shell"
-            and isinstance(kw.value, ast.Constant)
-            and kw.value.value is True
-        ):
+        if kw.arg == "shell" and isinstance(kw.value, ast.Constant) and kw.value.value is True:
             return True
     return False
 
