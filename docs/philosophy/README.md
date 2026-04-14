@@ -31,7 +31,7 @@ a faithful fixture of that school.
 
 These sheets are the scaffolding for three downstream pieces of work:
 
-1. **The rule audit** — every rule in [docs/rule-registry.md](../rule-registry.md)
+1. **The rule audit** — every rule in [docs/rule-sources.md](../rule-sources.md)
    gets tagged with a philosophy scope (`universal` or a specific school),
    appealing to the axiom sheet that makes the tag defensible.
 2. **The canonical task** — a single domain problem (order processing
@@ -147,7 +147,7 @@ The relationship is Thomistic by design:
   and cannot be defended against the axioms of another.
 
 When Phase 0b (the rule audit) lands, every rule in
-[docs/rule-registry.md](../rule-registry.md) will be tagged with its
+[docs/rule-sources.md](../rule-sources.md) will be tagged with its
 philosophy scope. Most rules will come back `universal` — they descend
 from the pillars and hold in every school. A smaller number will come
 back tagged with one or more specific schools, because they depend on
@@ -158,7 +158,7 @@ axioms that not every school accepts.
 ## What Is Not Here Yet
 
 - **The rule audit column** — Phase 0b. Every rule gets tagged; the
-  column lives in [docs/rule-registry.md](../rule-registry.md).
+  column lives in [docs/rule-sources.md](../rule-sources.md).
 - **The canonical task statement** — Phase 0c. The order-processing
   problem, acceptance criteria, and interface for the eight
   implementations.
@@ -174,7 +174,7 @@ axioms that not every school accepts.
 
 - [docs/principles.md](../principles.md) — The editorial constitution
   and universal core.
-- [docs/rule-registry.md](../rule-registry.md) — The rule catalog,
+- [docs/rule-sources.md](../rule-sources.md) — The rule catalog,
   which will gain a philosophy-scope column during Phase 0b.
 - [docs/testing-fixtures.md](../testing-fixtures.md) — The fixture-first
   TDD rubric; the philosophy exemplars extend this discipline to the

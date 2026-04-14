@@ -1,23 +1,33 @@
 {
   "rule_id": "SEC-005",
-  "description": "UnsafeDeserialization -- pickle.load/loads and yaml.load execute arbitrary code on hostile input",
+  "description": "UnsafeDeserialization -- pickle.load/loads, yaml.load without SafeLoader, and marshal.load/loads execute arbitrary code on hostile input",
   "fixtures": {
     "fail_unsafe_deserialization.py": {
       "expected_findings": [
         {
           "severity": "error",
-          "line": 9,
+          "line": 10,
           "message_contains": "pickle.load"
         },
         {
           "severity": "error",
-          "line": 13,
+          "line": 14,
           "message_contains": "pickle.loads"
         },
         {
           "severity": "error",
-          "line": 17,
+          "line": 18,
           "message_contains": "yaml.load"
+        },
+        {
+          "severity": "error",
+          "line": 23,
+          "message_contains": "marshal.load"
+        },
+        {
+          "severity": "error",
+          "line": 27,
+          "message_contains": "marshal.loads"
         }
       ]
     },

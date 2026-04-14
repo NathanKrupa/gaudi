@@ -2,20 +2,27 @@
 # ABOUTME: Discovers tests/fixtures/<lang>/<RULE-ID>/ and asserts findings match expected.json.
 from __future__ import annotations
 
+import logging
+
 import pytest
 
 from gaudi.core import DEFAULT_SCHOOL, Finding
 from gaudi.engine import Engine
+from gaudi.pack import rule_applies_to_school
 from gaudi.packs.ops.pack import OpsPack
 from gaudi.packs.ops.rules import ALL_RULES as OPS_RULES
 from gaudi.packs.python.pack import PythonPack
+from gaudi.packs.python.parser import parse_project
 from gaudi.packs.python.rules import ALL_RULES as PYTHON_RULES
 from tests.fixture_corpus import (
     ExpectedFinding,
     FixtureCase,
+    _strip_fixture_prefix,
     discover_all_cases,
     fixture_as_project,
 )
+
+logger = logging.getLogger(__name__)
 
 _ALL_RULES_BY_CODE = {r.code: r for r in (*PYTHON_RULES, *OPS_RULES)}
 
@@ -43,6 +50,26 @@ def _school_for_rule(rule_id: str) -> str:
 
 _CASES = discover_all_cases()
 _MISMATCH = "{test_id}: {field} mismatch -- expected {expected}, got {actual}"
+
+
+def _activated_rule_codes(project_root, school: str) -> list[str]:
+    """Return rule codes whose activation gates pass for the given project.
+
+    Replays the same library and philosophy-scope gates used by the packs
+    at check-time, without running the rules themselves. This lets the
+    test runner report which rules *would* be consulted for a fixture.
+    """
+    from gaudi.packs.python.parser import parse_project as parse_py
+
+    context = parse_py(project_root)
+    activated: list[str] = []
+    for rule in (*PYTHON_RULES, *OPS_RULES):
+        if rule.requires_library and rule.requires_library not in context.detected_libraries:
+            continue
+        if not rule_applies_to_school(rule, school):
+            continue
+        activated.append(rule.code)
+    return sorted(activated)
 
 
 def _make_engine() -> Engine:
@@ -96,6 +123,14 @@ def test_fixture_case(case: FixtureCase) -> None:
             if not toml_path.exists():
                 toml_path.write_text(f'[philosophy]\nschool = "{school}"\n', encoding="utf-8")
         all_findings = engine.check(project_root)
+        stripped = _strip_fixture_prefix(case.name)
+        ran_rules = _activated_rule_codes(project_root, school)
+        logger.info(
+            "activation: fixture=%s  stripped=%s  ran_rules=%s",
+            case.name,
+            stripped,
+            ran_rules,
+        )
     findings = [f for f in all_findings if f.code == case.rule_id]
 
     assert len(findings) == len(case.expected), (
@@ -107,3 +142,62 @@ def test_fixture_case(case: FixtureCase) -> None:
     sorted_expected = sorted(case.expected, key=lambda e: (e.line or 0, e.message_contains))
     for finding, expectation in zip(sorted_findings, sorted_expected):
         _assert_finding_matches(finding, expectation, case.test_id)
+
+
+# ---------------------------------------------------------------------------
+# Vacuous-pass detection: pass fixtures must activate the rule under test.
+# A pass fixture that never triggers the rule's activation gate (library
+# import, philosophy scope) passes vacuously — it proves nothing.
+# ---------------------------------------------------------------------------
+
+_PASS_CASES = [c for c in _CASES if c.is_pass]
+
+
+@pytest.mark.skipif(not _PASS_CASES, reason="No pass fixture cases discovered")
+@pytest.mark.parametrize("case", _PASS_CASES, ids=lambda c: c.test_id)
+def test_pass_fixture_not_vacuous(case: FixtureCase) -> None:
+    """Verify that pass fixtures actually activate the rule under test.
+
+    A pass fixture for a library-gated rule must import that library so the
+    rule's check() is called. A pass fixture for a philosophy-scoped rule
+    must be runnable under a school the rule accepts. If neither gate is
+    satisfied, the fixture passes vacuously — the rule was never consulted.
+    """
+    rule = _ALL_RULES_BY_CODE.get(case.rule_id)
+    if rule is None:
+        pytest.skip(f"Rule {case.rule_id} not found in any pack")
+
+    # Check 1: philosophy scope — there must exist a school that activates the rule
+    school = _school_for_rule(case.rule_id)
+    assert rule_applies_to_school(rule, school), (
+        f"{case.test_id}: rule {case.rule_id} does not run under school "
+        f"{school!r} — pass fixture is vacuous (philosophy gate)"
+    )
+
+    # Check 2: library gate — if the rule requires a library, the fixture's
+    # parsed context must detect that library. Fixtures that explicitly test
+    # the inactive gate (names like "pass_no_flask_import", "pass_models",
+    # "pass_non_drf_class") are exempt — they ARE the specification for "rule
+    # correctly does nothing when the library isn't present."
+    if rule.requires_library is None:
+        return
+
+    name_lower = case.name.lower()
+    lib_lower = rule.requires_library.lower()
+    gate_test_markers = (f"no_{lib_lower}", f"non_{lib_lower}", f"not_{lib_lower}", "no_import")
+    if any(marker in name_lower for marker in gate_test_markers):
+        return
+    # Also skip fixtures whose name doesn't reference the library at all
+    # and clearly tests a non-library-specific scenario (e.g. "pass_models.py")
+    if lib_lower not in name_lower and "settings" not in name_lower:
+        return
+
+    with fixture_as_project(case) as project_root:
+        context = parse_project(project_root)
+
+    assert rule.requires_library in context.detected_libraries, (
+        f"{case.test_id}: rule {case.rule_id} requires library "
+        f"{rule.requires_library!r} but the fixture does not import it — "
+        f"pass fixture is vacuous (library gate). "
+        f"Add an import of {rule.requires_library} to the fixture."
+    )

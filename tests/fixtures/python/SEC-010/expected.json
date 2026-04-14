@@ -1,0 +1,23 @@
+{
+  "rule_id": "SEC-010",
+  "description": "InsecureTempFile -- tempfile.mktemp creates a race condition between path selection and file open",
+  "fixtures": {
+    "fail_insecure_tempfile.py": {
+      "expected_findings": [
+        {
+          "severity": "error",
+          "line": 8,
+          "message_contains": "tempfile.mktemp"
+        },
+        {
+          "severity": "error",
+          "line": 15,
+          "message_contains": "mktemp"
+        }
+      ]
+    },
+    "pass_safe_tempfile.py": {
+      "expected_findings": []
+    }
+  }
+}

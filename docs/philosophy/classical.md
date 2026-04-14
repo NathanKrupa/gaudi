@@ -198,7 +198,7 @@ fewer is pastiche and should be rewritten, not patched.
   Classical axiom is the school closest to these principles, but not identical
   to them; the principles are the universal core, Classical is one material
   expression of the core.
-- [docs/rule-registry.md](../rule-registry.md) — The rule catalog and its
+- [docs/rule-sources.md](../rule-sources.md) — The rule catalog and its
   provenance column (to be extended with a `philosophy_scope` column during
   Phase 0b).
 - `docs/philosophy/README.md` — Index of all eight axiom sheets (to be written
