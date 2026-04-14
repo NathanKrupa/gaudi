@@ -175,7 +175,7 @@ class Rule:
     means the rule descends from the three pillars and holds in every school;
     a rule that depends on school-specific axioms should list the schools
     explicitly (e.g. ``{"pragmatic", "functional"}``). See
-    ``docs/philosophy/`` for the axiom sheets and ``docs/rule-registry.md``
+    ``docs/philosophy/`` for the axiom sheets and ``docs/rule-sources.md``
     for the scope audit.
 
     Example:

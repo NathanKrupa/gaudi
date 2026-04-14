@@ -135,7 +135,7 @@ purpose is to read stdin, loop over records, and write stdout.
 ### The audit revision this PR makes
 
 This PR amends the [philosophy scope audit in
-docs/rule-registry.md](../../../../docs/rule-registry.md) to move
+docs/rule-sources.md](../../../../docs/rule-sources.md) to move
 ``ARCH-013 FatScript`` from the universal list to the scoped list,
 excluding it from ``unix``. The scope is tagged on the rule class in
 ``src/gaudi/packs/python/rules/layers.py`` with an inline comment
@@ -157,7 +157,7 @@ After this PR:
 
 - `ARCH-013` is scoped to everything *except* `unix`, fires on seven
   of eight schools on the Unix exemplar, **23 scoped rules total**.
-  The audit summary in [docs/rule-registry.md](../../../../docs/rule-registry.md)
+  The audit summary in [docs/rule-sources.md](../../../../docs/rule-sources.md)
   is updated from "22 (18%)" to "23 (19%)".
 
 ### Remaining findings (all universal, all correct)
@@ -213,7 +213,7 @@ proves universal rules are scope-invariant.
 
 - [docs/philosophy/unix.md](../../../../docs/philosophy/unix.md) — The axiom sheet.
 - [docs/philosophy/canonical-task.md](../../../../docs/philosophy/canonical-task.md) — The canonical task specification.
-- [docs/rule-registry.md](../../../../docs/rule-registry.md) — The rule audit, including the new ARCH-013 row.
+- [docs/rule-sources.md](../../../../docs/rule-sources.md) — The rule audit, including the new ARCH-013 row.
 - [tests/philosophy/classical/canonical/README.md](../../classical/canonical/README.md) — Classical exemplar (OOP tree).
 - [tests/philosophy/pragmatic/canonical/README.md](../../pragmatic/canonical/README.md) — Pragmatic exemplar (one big function).
 - [tests/philosophy/functional/canonical/README.md](../../functional/canonical/README.md) — Functional exemplar (pure composition).

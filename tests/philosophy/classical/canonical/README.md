@@ -86,7 +86,7 @@ without a line changing.
 Running `gaudi check` against this exemplar at the project level produces
 twelve findings, which fall into three categories. The categorization
 itself is the forcing-function evidence for the Phase 1 engine change
-that [docs/rule-registry.md](../../../../docs/rule-registry.md)
+that [docs/rule-sources.md](../../../../docs/rule-sources.md)
 (Philosophy Scope Audit section) exists to justify.
 
 ### Category A — audit-validating false positives (SMELL-014, ×6)
@@ -98,7 +98,7 @@ behavior. The rule says "consider inlining"; the Classical discipline
 says "no — these classes exist to implement the Repository Protocol,
 and inlining them would destroy the abstraction boundary."
 
-The audit in [docs/rule-registry.md](../../../../docs/rule-registry.md)
+The audit in [docs/rule-sources.md](../../../../docs/rule-sources.md)
 already tags `SMELL-014` as scoped to `{pragmatic, unix, functional,
 data-oriented}` — explicitly **not** Classical. **These six findings
 are exactly what the audit predicted would be false positives when the
@@ -185,5 +185,5 @@ become visible.
 
 - [docs/philosophy/classical.md](../../../../docs/philosophy/classical.md) — The axiom sheet.
 - [docs/philosophy/canonical-task.md](../../../../docs/philosophy/canonical-task.md) — The canonical task specification.
-- [docs/rule-registry.md](../../../../docs/rule-registry.md) — The rule audit, including the scope tag for SMELL-014.
+- [docs/rule-sources.md](../../../../docs/rule-sources.md) — The rule audit, including the scope tag for SMELL-014.
 - [docs/principles.md](../../../../docs/principles.md) — The universal core this exemplar satisfies.

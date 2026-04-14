@@ -1,15 +1,20 @@
-# Gaudi Rule Source Registry
+# Gaudi Rule Sources
 
-Every rule in Gaudi traces back to a canonical source: a published text,
-a named pattern, or (where original) the project's own design principles.
-This registry provides citable provenance for each rule code and serves as
-a mining queue for planned rules.
+This file is a **curated, hand-edited** record of the canonical source texts
+Gaudi's rules draw from, the Architecture-90 curriculum that seeded the early
+catalog, the philosophy scope audit, and mining queues for planned rules.
+
+**This is not an exhaustive rule index.** The complete list of implemented
+rules lives in [gaudi-rules.md](gaudi-rules.md), which is generated from the
+live registry by `gaudi cheat-sheet` and cannot drift. Use that file when you
+need "every rule." Use this one when you need the *why* — the source text,
+the curriculum position, or the philosophy scope — for the rules it covers.
 
 The **editorial doctrine** that governs which rules enter the catalog, how
 their severity and thresholds are assigned, and when they are subsumed or cut
-lives in [principles.md](principles.md). Footnotes in this registry that
-explain rule removals (e.g. "detection too weak", "subsumed by STAB-006")
-are applications of those principles.
+lives in [principles.md](principles.md). Footnotes in this file that explain
+rule removals (e.g. "detection too weak", "subsumed by STAB-006") are
+applications of those principles.
 
 ---
 
