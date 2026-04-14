@@ -872,6 +872,89 @@ class InsecureTempFile(Rule):
 
 
 # ---------------------------------------------------------------
+# SEC-011  SubprocessShellInjection
+# ---------------------------------------------------------------
+
+_SUBPROCESS_CALLABLES = frozenset({"run", "call", "check_call", "check_output", "Popen"})
+
+
+def _is_literal_command(node: ast.expr) -> bool:
+    """Return True if a command argument is a safe literal (str/bytes constant)."""
+    return isinstance(node, ast.Constant) and isinstance(node.value, (str, bytes))
+
+
+def _has_shell_true(call: ast.Call) -> bool:
+    for kw in call.keywords:
+        if kw.arg == "shell" and isinstance(kw.value, ast.Constant) and kw.value.value is True:
+            return True
+    return False
+
+
+class SubprocessShellInjection(Rule):
+    """SEC-011: subprocess with shell=True on a non-literal, or os.system/popen with a non-literal.
+
+    Principles: #4 (Failure must be named).
+    Source: OWASP A03:2021 — Injection; CWE-78 OS Command Injection.
+    """
+
+    code = "SEC-011"
+    severity = Severity.ERROR
+    category = Category.SECURITY
+    message_template = "{detail} at line {line} — command injection risk"
+    recommendation_template = (
+        "Pass argv as a list (subprocess.run(['cmd', arg1, arg2])) and leave "
+        "shell=False. If a shell is unavoidable, escape with shlex.quote. "
+        "Never build a shell command by concatenating user input."
+    )
+
+    def check(self, context: PythonContext) -> list[Finding]:
+        findings: list[Finding] = []
+        for f in context.files:
+            if _is_test_file(f.relative_path):
+                continue
+            tree = f.ast_tree
+            if tree is None:
+                continue
+            module_aliases, direct_names = _build_name_to_module(tree)
+            for node in ast.walk(tree):
+                if not isinstance(node, ast.Call):
+                    continue
+                target = _resolve_call_target(node, module_aliases, direct_names)
+                if target is None:
+                    continue
+                module, func_name = target
+                # subprocess.<callable> with shell=True and a non-literal command
+                if module == "subprocess" and func_name in _SUBPROCESS_CALLABLES:
+                    if not _has_shell_true(node):
+                        continue
+                    if not node.args:
+                        continue
+                    if _is_literal_command(node.args[0]):
+                        continue
+                    findings.append(
+                        self.finding(
+                            file=f.relative_path,
+                            line=node.lineno,
+                            detail=f"subprocess.{func_name}(shell=True, ...)",
+                        )
+                    )
+                # os.system / os.popen with a non-literal command
+                elif module == "os" and func_name in ("system", "popen"):
+                    if not node.args:
+                        continue
+                    if _is_literal_command(node.args[0]):
+                        continue
+                    findings.append(
+                        self.finding(
+                            file=f.relative_path,
+                            line=node.lineno,
+                            detail=f"os.{func_name}",
+                        )
+                    )
+        return findings
+
+
+# ---------------------------------------------------------------
 # Exported rule instances
 # ---------------------------------------------------------------
 
@@ -885,4 +968,5 @@ SECURITY_RULES = (
     InsecureSSLVerification(),
     XXEVulnerable(),
     InsecureTempFile(),
+    SubprocessShellInjection(),
 )
