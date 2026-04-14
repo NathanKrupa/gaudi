@@ -9,5 +9,5 @@ pluggy==1.6.0
 Pygments==2.20.0
 pytest==9.0.3
 pytest-cov==7.1.0
-rich==14.3.3
+rich==15.0.0
 ruff==0.15.10
