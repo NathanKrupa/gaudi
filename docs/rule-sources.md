@@ -217,6 +217,32 @@ leakage, and undocumented error responses.
 | API-003  | LeakingInternalID       | URL pattern exposes `<int:pk>` / int PK             | OWASP API (BOLA)      |
 | API-004  | NoErrorResponseSchema   | FastAPI `response_model=` with no `responses=`      | OpenAPI specification |
 
+### Security Rules (SEC) -- Source: OWASP Top 10
+
+General Python security rules mined from the **structural slice** of the OWASP
+Top 10 (issue #142) — patterns detectable from a single file's AST without
+runtime data, taint analysis, or a whole-project graph. Principle 4 (Failure
+must be named) explicitly calls for this slice: hostile input deserves the
+same naming as a memory leak.
+
+| Code     | Class Name              | Pattern / Anti-Pattern                                       | OWASP Source                    |
+|----------|-------------------------|--------------------------------------------------------------|---------------------------------|
+| SEC-002  | RawSQLInjection         | f-string / % / concat / .format passed to execute(), raw()   | A03:2021 Injection              |
+| SEC-003  | HardcodedCredential     | Credential-named variable assigned to a string literal       | A07:2021 Identification Failures|
+| SEC-004  | EvalExecUsage           | Built-in `eval()` or `exec()` invoked                        | A03:2021 Injection              |
+| SEC-005  | UnsafeDeserialization   | `pickle.load(s)`, `marshal.load(s)`, `yaml.load` w/o SafeLoader | A08:2021 Software & Data Integrity |
+| SEC-006  | SSRFVector              | Function parameter flows into `requests`/`httpx`/`urlopen` URL unsanitized | A10:2021 SSRF          |
+| SEC-007  | WeakCryptography        | `hashlib.md5/sha1`; `random` module inside token/key/secret functions | A02:2021 Cryptographic Failures (CWE-327/338) |
+| SEC-008  | InsecureSSLVerification | `verify=False` on HTTP calls; `ssl.CERT_NONE`                | A02:2021 Cryptographic Failures (CWE-295) |
+
+**Overlap with `bandit`.** SEC-005/007/008 cover territory `bandit` also flags,
+but Gaudi's versions (a) carry principle citations so the reader knows *why*
+it matters, (b) ship a one-sentence actionable fix, and (c) are checked in the
+same pass as the architectural rules — one tool, one report. SEC-007's
+`random`-inside-security-function heuristic is narrower than bandit's
+`B311` (which flags every `random` call), reducing false positives for
+simulations, games, and sampling code.
+
 ### Dependency Graph Rules (DEP) -- Source: MARTIN
 
 Rules mined from *Clean Architecture*. Module-level coupling metrics that
