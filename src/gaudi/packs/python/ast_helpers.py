@@ -42,9 +42,7 @@ def collect_receiver_names(
     return names
 
 
-def _matches_module_ctor(
-    func: ast.expr, module: str, constructors: frozenset[str]
-) -> bool:
+def _matches_module_ctor(func: ast.expr, module: str, constructors: frozenset[str]) -> bool:
     return (
         isinstance(func, ast.Attribute)
         and func.attr in constructors
