@@ -2,6 +2,46 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.0] — 2026-04-14
+
+### Added
+- **OWASP Top 10 structural slice** — new security rules covering
+  deserialization, weak crypto, SSL verification, XXE, insecure tempfiles,
+  subprocess shell injection, and path traversal (#142, #202–#205)
+- **SEC-006 SSRFVector** — intra-procedural taint tracking for server-side
+  request forgery vectors (#196)
+- **`gaudi cheat-sheet` command** — generates rule cheat-sheet from the live
+  registry (#130)
+- **SMELL-025 TemporalIdentifier** — flags temporal markers ("new", "old",
+  "legacy", "v2") in identifiers (#131)
+- **Drift guard** — CI check that `docs/gaudi-rules.md` matches
+  `gaudi cheat-sheet` output (#133)
+- **Vacuous-pass detection** for the fixture corpus — catches fixtures where
+  the rule was never activated (#99)
+- **Activation visibility logging** — surfaces which rules activated per file
+  and why (#112)
+- **DEP pack boundary fixtures** — replaces legacy `test_dependency_rules.py`
+  with fixture-first coverage (#101)
+
+### Fixed
+- **LOG-002** — tightened sensitive-name matching to reduce false positives (#129)
+- **SVC-004** — corrected app detection so top-level dirs of one project are
+  not treated as separate apps (#149)
+- **ARCH-011** — guard patterns prevent parser/cache decisions from being
+  misclassified as business logic (#154)
+- **PYD-ARCH-001** — no longer fires on `model_config` class variable (#148)
+- **ARCH-001** — multi-tenant rule now opts in instead of firing on
+  non-tenant projects (#150)
+- **Ops pack** — supports Dockerfile stage variants (Dockerfile.prod,
+  app.Dockerfile) (#140)
+- Shared `collect_receiver_names` helper replaces duplicated inline
+  implementations (#199)
+
+### Changed
+- **Project environment** switched from Oversteward conda env to project-local
+  `.venv/` (#103)
+- Rule keying and activation gates hardened after fixture migration (#112)
+
 ## [0.1.2] — 2026-04-13
 
 ### Added
