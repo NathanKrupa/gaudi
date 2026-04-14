@@ -281,7 +281,7 @@ class UnsafeDeserialization(Rule):
     category = Category.SECURITY
     message_template = "Unsafe deserialization '{call}' at line {line}"
     recommendation_template = (
-        "pickle and yaml.load can execute arbitrary code on untrusted "
+        "pickle, marshal, and yaml.load execute arbitrary code on untrusted "
         "input. Use json, or yaml.safe_load / Loader=SafeLoader."
     )
 
@@ -308,6 +308,16 @@ class UnsafeDeserialization(Rule):
                             file=f.relative_path,
                             line=node.lineno,
                             call=f"pickle.{attr}",
+                        )
+                    )
+                    continue
+                # marshal.load / marshal.loads
+                if module == "marshal" and attr in ("load", "loads"):
+                    findings.append(
+                        self.finding(
+                            file=f.relative_path,
+                            line=node.lineno,
+                            call=f"marshal.{attr}",
                         )
                     )
                     continue
@@ -513,6 +523,173 @@ class SSRFVector(Rule):
 
 
 # ---------------------------------------------------------------
+# SEC-007  WeakCryptography
+# ---------------------------------------------------------------
+
+_WEAK_HASHES = frozenset({"md5", "sha1"})
+
+_SECURITY_TOKEN_NAME_RE = re.compile(
+    r"(?:^|_)(token|key|secret|password|nonce|salt|session|otp|signature|csrf)(?:$|_)",
+    re.IGNORECASE,
+)
+
+_RANDOM_CALLABLES = frozenset(
+    {
+        "random",
+        "randint",
+        "randrange",
+        "choice",
+        "choices",
+        "sample",
+        "randbytes",
+        "getrandbits",
+        "uniform",
+    }
+)
+
+
+def _has_security_context(name: str | None) -> bool:
+    """Return True if an identifier name signals security-sensitive use."""
+    if not name:
+        return False
+    return bool(_SECURITY_TOKEN_NAME_RE.search(name))
+
+
+class WeakCryptography(Rule):
+    """SEC-007: hashlib.md5/sha1 used for security, or random module used for tokens.
+
+    Principles: #4 (Failure must be named).
+    Source: OWASP A02 — Cryptographic Failures; CWE-327 / CWE-338.
+    """
+
+    code = "SEC-007"
+    severity = Severity.ERROR
+    category = Category.SECURITY
+    message_template = "Weak cryptography '{call}' at line {line}"
+    recommendation_template = (
+        "Use hashlib.sha256 or hashlib.scrypt for password/message hashing, "
+        "and the 'secrets' module (token_hex, token_urlsafe, token_bytes) "
+        "for tokens, keys, salts, and session identifiers."
+    )
+
+    def check(self, context: PythonContext) -> list[Finding]:
+        findings: list[Finding] = []
+        for f in context.files:
+            if _is_test_file(f.relative_path):
+                continue
+            tree = f.ast_tree
+            if tree is None:
+                continue
+            # Pass 1: hashlib.md5 / hashlib.sha1 — flag unconditionally.
+            for node in ast.walk(tree):
+                if not isinstance(node, ast.Call):
+                    continue
+                func = node.func
+                if (
+                    isinstance(func, ast.Attribute)
+                    and isinstance(func.value, ast.Name)
+                    and func.value.id == "hashlib"
+                    and func.attr in _WEAK_HASHES
+                ):
+                    findings.append(
+                        self.finding(
+                            file=f.relative_path,
+                            line=node.lineno,
+                            call=f"hashlib.{func.attr}",
+                        )
+                    )
+            # Pass 2: random.<callable>() inside a function whose name signals
+            # security context (generate_token, api_key, make_session, etc.).
+            for fn in ast.walk(tree):
+                if not isinstance(fn, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                    continue
+                if not _has_security_context(fn.name):
+                    continue
+                for node in ast.walk(fn):
+                    if not isinstance(node, ast.Call):
+                        continue
+                    func = node.func
+                    if (
+                        isinstance(func, ast.Attribute)
+                        and isinstance(func.value, ast.Name)
+                        and func.value.id == "random"
+                        and func.attr in _RANDOM_CALLABLES
+                    ):
+                        findings.append(
+                            self.finding(
+                                file=f.relative_path,
+                                line=node.lineno,
+                                call=f"random.{func.attr}",
+                            )
+                        )
+        return findings
+
+
+# ---------------------------------------------------------------
+# SEC-008  InsecureSSLVerification
+# ---------------------------------------------------------------
+
+
+class InsecureSSLVerification(Rule):
+    """SEC-008: TLS certificate verification disabled via verify=False or ssl.CERT_NONE.
+
+    Principles: #4 (Failure must be named).
+    Source: OWASP A02 — Cryptographic Failures; CWE-295 Improper Certificate Validation.
+    """
+
+    code = "SEC-008"
+    severity = Severity.ERROR
+    category = Category.SECURITY
+    message_template = "{detail} at line {line} — TLS verification disabled"
+    recommendation_template = (
+        "Leave verify at its default (True) or pass a CA bundle path. "
+        "For ssl.SSLContext, use ssl.CERT_REQUIRED. Disabling verification "
+        "makes the connection vulnerable to man-in-the-middle attacks."
+    )
+
+    def check(self, context: PythonContext) -> list[Finding]:
+        findings: list[Finding] = []
+        for f in context.files:
+            if _is_test_file(f.relative_path):
+                continue
+            tree = f.ast_tree
+            if tree is None:
+                continue
+            for node in ast.walk(tree):
+                # verify=False on any call
+                if isinstance(node, ast.Call):
+                    for kw in node.keywords:
+                        if (
+                            kw.arg == "verify"
+                            and isinstance(kw.value, ast.Constant)
+                            and kw.value.value is False
+                        ):
+                            findings.append(
+                                self.finding(
+                                    file=f.relative_path,
+                                    line=node.lineno,
+                                    detail="verify=False",
+                                )
+                            )
+                            break
+                # ssl.CERT_NONE reference
+                if (
+                    isinstance(node, ast.Attribute)
+                    and isinstance(node.value, ast.Name)
+                    and node.value.id == "ssl"
+                    and node.attr == "CERT_NONE"
+                ):
+                    findings.append(
+                        self.finding(
+                            file=f.relative_path,
+                            line=node.lineno,
+                            detail="ssl.CERT_NONE",
+                        )
+                    )
+        return findings
+
+
+# ---------------------------------------------------------------
 # Exported rule instances
 # ---------------------------------------------------------------
 
@@ -522,4 +699,6 @@ SECURITY_RULES = (
     EvalExecUsage(),
     UnsafeDeserialization(),
     SSRFVector(),
+    WeakCryptography(),
+    InsecureSSLVerification(),
 )

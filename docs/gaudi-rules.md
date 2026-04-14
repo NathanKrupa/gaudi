@@ -19,7 +19,9 @@
 - **SEC-002 RawSQLInjection** — Use parameterized queries: pass values as a separate tuple/dict argument to execute() instead of formatting them into the SQL string.
 - **SEC-003 HardcodedCredential** — Read secrets from environment variables (os.getenv) or a secrets manager. Hardcoded credentials leak through git history.
 - **SEC-004 EvalExecUsage** — eval() and exec() execute arbitrary code. Use ast.literal_eval for safe expression parsing, or refactor to avoid dynamic execution.
-- **SEC-005 UnsafeDeserialization** — pickle and yaml.load can execute arbitrary code on untrusted input. Use json, or yaml.safe_load / Loader=SafeLoader.
+- **SEC-005 UnsafeDeserialization** — pickle, marshal, and yaml.load execute arbitrary code on untrusted input. Use json, or yaml.safe_load / Loader=SafeLoader.
+- **SEC-007 WeakCryptography** — Use hashlib.sha256 or hashlib.scrypt for password/message hashing, and the 'secrets' module (token_hex, token_urlsafe, token_bytes) for tokens, keys, salts, and session identifiers.
+- **SEC-008 InsecureSSLVerification** — Leave verify at its default (True) or pass a CA bundle path. For ssl.SSLContext, use ssl.CERT_REQUIRED. Disabling verification makes the connection vulnerable to man-in-the-middle attacks.
 - **SMELL-005 GlobalData** — Avoid mutable module-level variables. Use function-local state, dependency injection, or frozen data structures.
 - **SMELL-006 MutableData** — Avoid shared mutable state. Pass data as function parameters and return results.
 - **STAB-005 BlockingInAsync** — Use async equivalents (asyncio.sleep, httpx.AsyncClient) in async functions. Blocking calls freeze the event loop and starve all concurrent tasks.
@@ -154,3 +156,4 @@
 - **TEST-SCALE-001 PytestFixtureScope** [pytest] — Add scope='session' or scope='module' to fixtures that create expensive resources (database connections, API clients) to avoid recreating them per test.
 - **TEST-STRUCT-001 PytestAssertMessage** [pytest] — Add a failure message to complex assertions: assert condition, 'description'. Messages make test failures easier to diagnose.
 - **TEST-STRUCT-002 PytestFixtureDependencyDepth** [pytest] — Flatten the fixture graph: inline trivial dependencies, or compose explicit setup objects in a single fixture. Deep fixture chains make failure diagnosis painful.
+
