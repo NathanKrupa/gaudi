@@ -234,6 +234,8 @@ same naming as a memory leak.
 | SEC-006  | SSRFVector              | Function parameter flows into `requests`/`httpx`/`urlopen` URL unsanitized | A10:2021 SSRF          |
 | SEC-007  | WeakCryptography        | `hashlib.md5/sha1`; `random` module inside token/key/secret functions | A02:2021 Cryptographic Failures (CWE-327/338) |
 | SEC-008  | InsecureSSLVerification | `verify=False` on HTTP calls; `ssl.CERT_NONE`                | A02:2021 Cryptographic Failures (CWE-295) |
+| SEC-009  | XXEVulnerable           | `xml.etree.ElementTree.parse/fromstring` or `lxml.etree.parse/fromstring` without `parser=` hardened | A05:2021 (CWE-611) |
+| SEC-010  | InsecureTempFile        | `tempfile.mktemp()` — race between path selection and open  | A01:2021 (CWE-377)        |
 
 **Overlap with `bandit`.** SEC-005/007/008 cover territory `bandit` also flags,
 but Gaudi's versions (a) carry principle citations so the reader knows *why*
