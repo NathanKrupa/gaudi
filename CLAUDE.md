@@ -117,6 +117,22 @@ a numeric threshold.
 CI runs `gaudi-fixture-coverage --strict`. Any rule without a complete
 fixture directory fails CI — there is no warn-mode escape hatch.
 
+**Before opening the PR, two more checks the fixture suite does not cover:**
+
+1. **Self-dogfood.** Run `gaudi check .` against Gaudi's own tree. The new
+   rule must either come up clean or have every hit acknowledged (a
+   `# noqa: <CODE>` on the line, with the reason obvious from context). A
+   rule that fires noisily on its own author's codebase is either wrong or
+   needs a narrower heuristic — fix it before merge, not after.
+2. **Overlap-with-existing-tool.** If the rule covers territory another
+   widely-used static analyzer already flags (e.g. `bandit`, `ruff`,
+   `mypy`), state in the PR body why Gaudi's version adds detection power:
+   narrower heuristic, principle citation, one-sentence fix, same-pass
+   reporting, or a combination. This is question #3 of the Rule Acceptance
+   Test (Subsumption, [docs/principles.md](docs/principles.md#L341))
+   applied externally rather than internally. If the only answer is "we
+   already have this pack" — drop the rule.
+
 ## Shared AST helpers (rule authors)
 
 Before writing AST-walking boilerplate inside a rule file, check
