@@ -60,6 +60,15 @@ Gaudi rule decision.
 - **gaudi.toml** — Runtime configuration (severity overrides, exclusions)
 - **docs/rule-sources.md** — Rule provenance and mining queues
 
+## Tool Registry
+
+**When looking for a CLI tool, script, or entry point — read `data/tool_registry.md` first.**
+
+Regenerate after adding/removing tools:
+```bash
+uv run python scripts/tools/generate_tool_registry.py
+```
+
 ## PR Workflow
 
 **Every piece of work flows through a PR. PRs are the project's task board.**
