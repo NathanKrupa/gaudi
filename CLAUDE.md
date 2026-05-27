@@ -49,6 +49,7 @@ Gaudi rule decision.
 - **src/gaudi/config.py** — TOML config loader (gaudi.toml)
 - **src/gaudi/cli.py** — Click-based CLI (`gaudi check`)
 - **src/gaudi/packs/python/** — Python language pack (79 rules: 64 general + 15 library-specific)
+- **src/gaudi/packs/python/ast_helpers.py** — shared AST helpers for rule authors (e.g. `collect_receiver_names` tracks variables bound to `module.ctor(...)` across both `=` assignments and `with ... as x:` blocks)
 - **tests/** — pytest suite with fixtures
 - **docs/rule-sources.md** — Curated source texts, ARCH-90 curriculum, philosophy scope audit, mining queues (not exhaustive; see docs/gaudi-rules.md for every rule)
 
@@ -115,6 +116,23 @@ a numeric threshold.
 
 CI runs `gaudi-fixture-coverage --strict`. Any rule without a complete
 fixture directory fails CI — there is no warn-mode escape hatch.
+
+## Shared AST helpers (rule authors)
+
+Before writing AST-walking boilerplate inside a rule file, check
+[src/gaudi/packs/python/ast_helpers.py](src/gaudi/packs/python/ast_helpers.py).
+The most common reusable shape is **receiver-variable tracking**: when a rule
+needs the set of local names bound to `some_module.Constructor(...)` (either
+via `x = mod.ctor(...)` or `with mod.ctor(...) as x:`), call
+`collect_receiver_names(tree, module, constructors)` rather than open-coding
+the walk. `boto3.py` and `py314.py` are the canonical call sites.
+
+Duplication rule: if you find yourself writing the same AST walk a rule
+file already contains, **extract to `ast_helpers.py`** in the same PR — do
+not copy. The threshold is two; do not wait for three. New helpers should
+be module-scoped functions with a single clear purpose, type-annotated, and
+exercised by the fixture corpus of at least one calling rule (no separate
+unit tests for the helper).
 
 ## Known Issues (Alpha)
 
