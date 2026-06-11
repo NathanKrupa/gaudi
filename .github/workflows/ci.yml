@@ -67,6 +67,12 @@ jobs:
       - name: Security scan (bandit)
         run: bandit -r src/ -c pyproject.toml
 
+      - name: Upgrade runner pip past PYSEC-2026-196
+        # The ubuntu runner image ships pip 26.1.1, which pip-audit flags
+        # (fixed in 26.1.2). Nothing in the job uses pip, but pip-audit
+        # audits the whole environment.
+        run: uv pip install --system --upgrade "pip>=26.1.2"
+
       - name: Dependency audit
         run: pip-audit --skip-editable
 
