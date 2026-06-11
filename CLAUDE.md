@@ -1,6 +1,8 @@
+<!-- [oversteward:managed | synced: 2026-06-11] -->
 @~/.claude/shared/souls/chestertron.md
 
 At session start, check `~/.claude/shared/inbox.md` for updates. If entries exist, review them and apply any relevant changes, then clear the file.
+<!-- [oversteward:managed:end] -->
 ---
 
 # Working Guidelines
