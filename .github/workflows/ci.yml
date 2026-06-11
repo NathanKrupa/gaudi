@@ -20,8 +20,19 @@ jobs:
         with:
           python-version: "3.12"
 
+      - name: Set up uv
+        # uv does the install; enable-cache persists its wheel cache between
+        # runs, keyed on pyproject.toml. --system below targets the
+        # setup-python interpreter on PATH so ruff / pytest / bandit / the
+        # gaudi console scripts keep resolving as bare commands.
+        # (Transfer of grantspider PR #1276.)
+        uses: astral-sh/setup-uv@v8.2.0
+        with:
+          enable-cache: true
+          cache-dependency-glob: pyproject.toml
+
       - name: Install dependencies
-        run: pip install -e ".[dev]"
+        run: uv pip install --system -e ".[dev]"
 
       - name: Check formatting
         run: ruff format --check .
@@ -39,8 +50,19 @@ jobs:
         with:
           python-version: "3.12"
 
+      - name: Set up uv
+        # uv does the install; enable-cache persists its wheel cache between
+        # runs, keyed on pyproject.toml. --system below targets the
+        # setup-python interpreter on PATH so ruff / pytest / bandit / the
+        # gaudi console scripts keep resolving as bare commands.
+        # (Transfer of grantspider PR #1276.)
+        uses: astral-sh/setup-uv@v8.2.0
+        with:
+          enable-cache: true
+          cache-dependency-glob: pyproject.toml
+
       - name: Install dependencies
-        run: pip install -e ".[dev]"
+        run: uv pip install --system -e ".[dev]"
 
       - name: Security scan (bandit)
         run: bandit -r src/ -c pyproject.toml
@@ -63,8 +85,19 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
+      - name: Set up uv
+        # uv does the install; enable-cache persists its wheel cache between
+        # runs, keyed on pyproject.toml. --system below targets the
+        # setup-python interpreter on PATH so ruff / pytest / bandit / the
+        # gaudi console scripts keep resolving as bare commands.
+        # (Transfer of grantspider PR #1276.)
+        uses: astral-sh/setup-uv@v8.2.0
+        with:
+          enable-cache: true
+          cache-dependency-glob: pyproject.toml
+
       - name: Install dependencies
-        run: pip install -e ".[dev]"
+        run: uv pip install --system -e ".[dev]"
 
       - name: Test with coverage
         run: pytest --tb=short --cov=gaudi --cov-report=term-missing --cov-fail-under=60
