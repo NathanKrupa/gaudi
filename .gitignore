@@ -18,5 +18,10 @@ env/
 htmlcov/
 .mypy_cache/
 .tox/
-.claude/
+# Claude Code — track team-shared config (settings.json, hooks), ignore
+# operator-local artifacts only. (GS .gitignore pattern.)
+.claude/projects/
+.claude/scheduled_tasks.lock
+.claude/worktrees/
+.claude/settings.local.json
 CLAUDE.md

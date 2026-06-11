@@ -93,5 +93,7 @@ testpaths = ["tests"]
 norecursedirs = ["fixtures"]
 
 [tool.bandit]
-exclude_dirs = ["tests"]
+# .claude/hooks holds the OverSteward-canonical worktree guard (dev tooling,
+# byte-identical across the estate — not shipped package code).
+exclude_dirs = ["tests", ".claude"]
 skips = ["B101", "B110", "B112"]
