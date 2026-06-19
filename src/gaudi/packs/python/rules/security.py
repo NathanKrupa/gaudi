@@ -137,6 +137,24 @@ def _looks_like_credential_name(name: str) -> bool:
 
 _TEST_PREFIXES = ("test-", "test_", "test.", "fake-", "fake_", "dummy-", "dummy_")
 
+# A constant that holds the NAME of an environment variable, not a secret.
+# Signalled either by the holder's name (an ``_env``-suffixed constant whose
+# value is a var name) or by the value's shape: an env-var name is a bare
+# UPPER_SNAKE_CASE identifier, whereas a real secret is mixed-case or carries
+# punctuation (an "sk-"/"ghp_" token, a "my-super-secret" phrase).
+_ENV_NAME_HOLDER_SUFFIXES = ("_env", "_var", "_env_var", "_name", "_key_name", "_envvar")
+_ENV_VAR_NAME_VALUE = re.compile(r"^[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)+$")
+
+
+def _names_an_env_var(holder_name: str, value: str) -> bool:
+    """True if the assignment names an env var rather than carrying a secret."""
+    lowered = holder_name.lower()
+    if any(lowered.endswith(suffix) for suffix in _ENV_NAME_HOLDER_SUFFIXES):
+        return True
+    # An UPPER_SNAKE_CASE value is the conventional shape of an env-var name,
+    # not of an opaque secret token.
+    return bool(_ENV_VAR_NAME_VALUE.match(value))
+
 
 def _looks_like_placeholder_value(value: str) -> bool:
     if value.lower() in _PLACEHOLDER_VALUES:
@@ -151,6 +169,12 @@ def _looks_like_placeholder_value(value: str) -> bool:
 
 class HardcodedCredential(Rule):
     """SEC-003: Credential-named variable assigned to a string literal.
+
+    Distinguishes a literal secret from a constant naming an environment
+    variable. A constant whose value has UPPER_SNAKE env-var-name shape (or
+    whose holder carries an ``_env`` suffix) holds the var's NAME, not its
+    secret, and is exempt; a mixed-case or punctuated value (an "sk-"/"ghp_"
+    token) is a real secret and still fires.
 
     Principles: #5 (State must be visible), #4 (Failure must be named).
     Source: OWASP A07 — secrets are configuration, not code.
@@ -195,6 +219,8 @@ class HardcodedCredential(Rule):
                     elif isinstance(target, ast.Attribute):
                         name = target.attr
                     if name is None:
+                        continue
+                    if _names_an_env_var(name, value.value):
                         continue
                     if _looks_like_credential_name(name):
                         findings.append(

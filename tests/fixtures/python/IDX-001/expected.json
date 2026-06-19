@@ -26,6 +26,17 @@
     },
     "pass_non_lookup_charfields.py": {
       "expected_findings": []
+    },
+    "fail_trailing_composite_column.py": {
+      "expected_findings": [
+        {
+          "severity": "warn",
+          "message_contains": "code"
+        }
+      ]
+    },
+    "pass_covering_composite_index.py": {
+      "expected_findings": []
     }
   }
 }

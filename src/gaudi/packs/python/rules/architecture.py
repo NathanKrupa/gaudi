@@ -114,7 +114,19 @@ class GodModel(Rule):
 
 class NullableForeignKeySprawl(Rule):
     """
-    ARCH-003: Multiple nullable ForeignKeys suggest missing join table or polymorphism.
+    ARCH-003: A join-table-shaped model whose ForeignKeys are all nullable.
+
+    A model whose only fields are ForeignKeys is shaped like a join table —
+    it exists to associate other entities. When every one of those FKs is
+    nullable, the row can exist while pointing at nothing, which defeats the
+    join: the association it is meant to record may be absent. That is the
+    genuine smell (a malformed join table or a polymorphic relationship
+    smuggled in via optional FKs).
+
+    A model that ALSO carries real fields (a CharField, an amount, a
+    timestamp) is a first-class entity that happens to have optional
+    relationships — a by-design pattern, not a missing join table. Such
+    models are exempt.
 
     Principles: #1 (The structure tells the story).
     Source: FWDOCS Django relationship patterns — nullable FK sprawl signals a missing entity.
@@ -124,28 +136,34 @@ class NullableForeignKeySprawl(Rule):
     severity = Severity.INFO
     category = Category.ARCHITECTURE
     message_template = (
-        "Model '{model}' has {count} nullable ForeignKeys — "
-        "this may indicate an optional relationship better modeled as a join table"
+        "Join-table model '{model}' has {count} nullable ForeignKeys and no other fields — "
+        "a join row that points at nothing defeats the association"
     )
     recommendation_template = (
-        "Review whether nullable ForeignKeys represent truly optional relationships "
-        "or if the model is trying to handle multiple relationship types. "
-        "Consider a join table or polymorphic pattern."
+        "A model whose only fields are nullable ForeignKeys is a join table that "
+        "can exist while recording no association. Make the ForeignKeys required, "
+        "or model the optional relationships as a first-class entity with its own fields."
     )
 
     def check(self, context: PythonContext) -> list[Finding]:
         findings = []
         for model in context.models:
             nullable_fks = model.nullable_foreign_keys
-            if len(nullable_fks) >= 2:
-                findings.append(
-                    self.finding(
-                        file=model.source_file,
-                        line=model.source_line,
-                        model=model.name,
-                        count=len(nullable_fks),
-                    )
+            if len(nullable_fks) < 2:
+                continue
+            # Require the true join-table shape: every column is a ForeignKey.
+            # A model with non-FK fields is a first-class entity with optional
+            # relationships, not a missing join table.
+            if any(not col.is_foreign_key for col in model.columns):
+                continue
+            findings.append(
+                self.finding(
+                    file=model.source_file,
+                    line=model.source_line,
+                    model=model.name,
+                    count=len(nullable_fks),
                 )
+            )
         return findings
 
 
@@ -160,6 +178,10 @@ class MissingStringIndex(Rule):
 
     CharField fields with common lookup names (email, slug, username, code, etc.)
     should have db_index=True.
+
+    A field that leads a composite index (Meta.indexes, index_together, or
+    unique_together) is already served by that index for prefix lookups, so it
+    is exempt — adding a standalone index would duplicate coverage.
 
     Principles: #4 (Failure must be named).
     Source: FWDOCS Django query optimization — missing indexes fail under load.
@@ -188,11 +210,13 @@ class MissingStringIndex(Rule):
     def check(self, context: PythonContext) -> list[Finding]:
         findings = []
         for model in context.models:
+            covered = model.composite_index_leading_columns
             for col in model.columns:
                 if (
                     col.field_type in {"CharField", "SlugField", "EmailField"}
                     and not col.has_index
                     and not col.has_unique
+                    and col.name not in covered
                     and any(p in col.name.lower() for p in self.LOOKUP_PATTERNS)
                 ):
                     findings.append(

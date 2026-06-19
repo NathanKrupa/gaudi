@@ -20,8 +20,29 @@ def _is_pydantic_class(cls: ast.ClassDef) -> bool:
     )
 
 
+def _is_classvar_annotation(annotation: ast.expr) -> bool:
+    """True if the annotation is ``ClassVar`` or ``ClassVar[...]``.
+
+    A ClassVar is a class attribute, not a Pydantic instance field, so a
+    mutable value there is shared by design — not the per-instance shared-state
+    trap the rule targets. Matched on ``ClassVar`` and ``typing.ClassVar``,
+    bare or subscripted.
+    """
+    if isinstance(annotation, ast.Subscript):
+        annotation = annotation.value
+    if isinstance(annotation, ast.Name):
+        return annotation.id == "ClassVar"
+    if isinstance(annotation, ast.Attribute):
+        return annotation.attr == "ClassVar"
+    return False
+
+
 class PydanticMutableDefault(Rule):
     """Detect mutable default values in Pydantic models.
+
+    ClassVar-annotated attributes are class attributes, not per-instance
+    fields, so a mutable value there is shared by design and is exempt. A bare
+    instance field with a mutable default (``items: list = []``) still fires.
 
     Principles: #5 (State must be visible).
     Source: FWDOCS Pydantic validators — mutable defaults are shared hidden state.
@@ -58,6 +79,11 @@ class PydanticMutableDefault(Rule):
                         isinstance(t, ast.Name) and t.id in _PYDANTIC_CLASS_VARS
                         for t in item.targets
                     ):
+                        continue
+                    # Skip ClassVar-annotated attributes — these are class
+                    # attributes, not per-instance fields, so a mutable value
+                    # is shared by design rather than a hidden-state trap.
+                    if isinstance(item, ast.AnnAssign) and _is_classvar_annotation(item.annotation):
                         continue
                     value = item.value if isinstance(item, ast.AnnAssign) else item.value
                     if value is None:

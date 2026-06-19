@@ -21,6 +21,12 @@
     },
     "pass_unrelated_append.py": {
       "expected_findings": []
+    },
+    "pass_entrypoint_bootstrap.py": {
+      "expected_findings": []
+    },
+    "pass_scripts_dir_bootstrap/": {
+      "expected_findings": []
     }
   }
 }

@@ -2,6 +2,36 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.2] — 2026-06-19
+
+### Fixed
+Rule-precision pass on the false-positive cluster (#239) — each rule keeps
+catching genuine violations but stops firing on a by-design pattern, so repos
+can drop the corresponding `# noqa` accretions:
+
+- **DOM-001** — exempt intentional telemetry/event/value tables (names ending
+  in event, impression, log, audit, metric, snapshot, feedback, ...). Their
+  behavior belongs to the aggregator that reads them.
+- **ARCH-003** — require the true join-table shape (only ForeignKeys, no other
+  fields). A first-class entity with two optional FKs plus real fields no
+  longer fires.
+- **IDX-001** — don't fire on a lookup column already served by a covering
+  composite index (leading column of `Meta.indexes` / `index_together` /
+  `unique_together`).
+- **ARCH-011** — exempt connector parse-layer dispatch (branching on an XML
+  element tag, an XPath hit, or a parser method result is format translation,
+  not a business decision).
+- **SMELL-025** — exempt a constant whose version-suffix name pins its string
+  value (`SCHEMA_V1 = "v1"`): a persisted/DB-pinned literal, not change history.
+- **SEC-003** — distinguish an env-var NAME constant (`API_KEY_ENV =
+  "MYAPP_API_KEY"`, or any UPPER_SNAKE env-var-name value) from a literal
+  secret.
+- **PYD-ARCH-001** — don't fire on `ClassVar`-annotated attributes; these are
+  class attributes, not per-instance defaults.
+- **STRUCT-010** — exempt executable entrypoints (files under scripts/bin/tools,
+  manage.py / conftest.py, or files with an `if __name__ == "__main__":` guard)
+  that bootstrap `sys.path` to locate siblings before install.
+
 ## [0.2.1] — 2026-06-19
 
 ### Fixed
