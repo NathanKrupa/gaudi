@@ -389,6 +389,11 @@ class TemporalIdentifier(Rule):
     Python3) — these are part of the domain name, not change history.
     Allowlist: IP, IPv, OAuth, HTTP, TLS, H, Python, SSL, QUIC, USB,
     HDMI, MP, WebSocket, WS.
+
+    Also does NOT fire on a constant whose version-suffix marker pins its
+    string value (``SCHEMA_V1 = "v1"``): the literal is a persisted/DB-pinned
+    contract, and the ``_V1`` names the version the value encodes rather than
+    recording change history.
     """
 
     code = "SMELL-025"
@@ -415,16 +420,40 @@ class TemporalIdentifier(Rule):
                 names_and_lines = self._extract_names(node)
                 for name, line in names_and_lines:
                     marker = self._find_marker(name)
-                    if marker:
-                        findings.append(
-                            self.finding(
-                                file=f.relative_path,
-                                line=line,
-                                name=name,
-                                marker=marker,
-                            )
+                    if not marker:
+                        continue
+                    if self._is_pinned_version_literal(node, marker):
+                        continue
+                    findings.append(
+                        self.finding(
+                            file=f.relative_path,
+                            line=line,
+                            name=name,
+                            marker=marker,
                         )
+                    )
         return findings
+
+    @staticmethod
+    def _is_pinned_version_literal(node: ast.AST, marker: str) -> bool:
+        """Exempt a constant whose name's version marker pins its string value.
+
+        ``SCHEMA_V1 = "v1"`` / ``PROMPT_VERSION_V1 = "...v1"`` is a persisted,
+        DB-pinned literal: the ``_V1`` in the name is not change history, it
+        names the version the stored value encodes. The literal IS the
+        contract. Only a version-suffix marker (V\\d) whose digits appear in a
+        string-literal value qualifies — a temporal WORD ('old', 'legacy') or
+        a non-string value (``OLD_API_TIMEOUT = 30``) never does.
+        """
+        if not _VERSION_WORD.match(marker):
+            return False
+        if not isinstance(node, ast.Assign):
+            return False
+        value = node.value
+        if not (isinstance(value, ast.Constant) and isinstance(value.value, str)):
+            return False
+        version_digits = marker[1:]  # 'V1' -> '1'
+        return version_digits in value.value
 
     @staticmethod
     def _extract_names(node: ast.AST) -> list[tuple[str, int]]:

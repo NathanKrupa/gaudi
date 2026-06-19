@@ -52,6 +52,11 @@ class ModelInfo:
     columns: list[ColumnInfo] = field(default_factory=list)
     has_meta: bool = False
     meta_options: dict = field(default_factory=dict)
+    # Composite indexes declared in Meta (Meta.indexes, index_together,
+    # unique_together). Each entry is the ordered tuple of column names the
+    # index covers. A query filtering on a leading column is served by the
+    # index, so these inform index-coverage rules.
+    composite_indexes: list[tuple[str, ...]] = field(default_factory=list)
     bases: list[str] = field(default_factory=list)
     framework: str = ""  # "django" or "sqlalchemy"
 
@@ -69,6 +74,17 @@ class ModelInfo:
     @property
     def nullable_foreign_keys(self) -> list[ColumnInfo]:
         return [c for c in self.foreign_keys if c.nullable]
+
+    @property
+    def composite_index_leading_columns(self) -> set[str]:
+        """Columns that lead a composite index.
+
+        A B-tree composite index on ``(a, b)`` serves queries that filter on
+        its leading column ``a`` (and prefixes thereof), so ``a`` is covered
+        without a standalone index. Trailing columns are not served on their
+        own and remain uncovered.
+        """
+        return {idx[0] for idx in self.composite_indexes if idx}
 
     @property
     def unindexed_columns(self) -> list[ColumnInfo]:

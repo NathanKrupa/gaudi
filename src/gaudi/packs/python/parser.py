@@ -317,10 +317,67 @@ def _extract_models(filepath: Path, root: Path, framework: str) -> list[ModelInf
                         for target in meta_item.targets:
                             if isinstance(target, ast.Name):
                                 model.meta_options[target.id] = True
+                                model.composite_indexes.extend(
+                                    _extract_composite_indexes(target.id, meta_item.value)
+                                )
 
         models.append(model)
 
     return models
+
+
+def _string_list(node: ast.expr) -> tuple[str, ...]:
+    """Extract a tuple of string constants from a list/tuple AST node."""
+    if not isinstance(node, (ast.List, ast.Tuple)):
+        return ()
+    names: list[str] = []
+    for elt in node.elts:
+        if isinstance(elt, ast.Constant) and isinstance(elt.value, str):
+            names.append(elt.value)
+    return tuple(names)
+
+
+def _index_fields_from_call(node: ast.Call) -> tuple[str, ...]:
+    """Extract the ``fields=[...]`` argument from a ``models.Index(...)`` call."""
+    for kw in node.keywords:
+        if kw.arg == "fields":
+            return _string_list(kw.value)
+    return ()
+
+
+def _extract_composite_indexes(meta_name: str, value: ast.expr) -> list[tuple[str, ...]]:
+    """Extract composite-index column tuples from a Meta assignment.
+
+    Recognizes ``indexes = [models.Index(fields=[...]), ...]`` and the legacy
+    ``index_together`` / ``unique_together`` (a list of field-name lists, or a
+    single flat field-name list).
+    """
+    if meta_name == "indexes":
+        if not isinstance(value, (ast.List, ast.Tuple)):
+            return []
+        result: list[tuple[str, ...]] = []
+        for elt in value.elts:
+            if isinstance(elt, ast.Call):
+                fields = _index_fields_from_call(elt)
+                if fields:
+                    result.append(fields)
+        return result
+
+    if meta_name in {"index_together", "unique_together"}:
+        if not isinstance(value, (ast.List, ast.Tuple)) or not value.elts:
+            return []
+        # Either a flat tuple of names, or a list of name-tuples.
+        if all(isinstance(elt, ast.Constant) for elt in value.elts):
+            flat = _string_list(value)
+            return [flat] if flat else []
+        result = []
+        for elt in value.elts:
+            fields = _string_list(elt)
+            if fields:
+                result.append(fields)
+        return result
+
+    return []
 
 
 def _parse_field_assignment(

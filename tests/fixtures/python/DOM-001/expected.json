@@ -40,6 +40,9 @@
     },
     "pass_manager_generic_type.py": {
       "expected_findings": []
+    },
+    "pass_telemetry_event_table.py": {
+      "expected_findings": []
     }
   }
 }

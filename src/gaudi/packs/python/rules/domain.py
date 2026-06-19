@@ -6,6 +6,7 @@ ABOUTME: DOM-001 AnemicDomainModel, DOM-002 WrongLayerPlacement, DOM-003 ActiveR
 from __future__ import annotations
 
 import ast
+import re
 
 from gaudi.core import Category, Finding, Rule, Severity
 from gaudi.packs.python.context import PythonContext
@@ -27,6 +28,47 @@ _DOMAIN_BASE_HINTS = frozenset(
 )
 
 _MANAGER_BASE_HINTS = frozenset({"Manager", "BaseManager"})
+
+# Telemetry / event / value records are anemic by design: they are
+# immutable observations whose only job is to hold fields. Behavior would
+# belong to the aggregator that reads them, never to the record. Matched on
+# the final word of the class name, which is the by-design naming convention
+# for these tables (MatchImpression, FeedbackEvent, RequestLog, AuditEntry,
+# Feedback, ...).
+_TELEMETRY_NAME_WORDS = frozenset(
+    {
+        "event",
+        "impression",
+        "log",
+        "audit",
+        "metric",
+        "metrics",
+        "telemetry",
+        "snapshot",
+        "stat",
+        "stats",
+        "datapoint",
+        "measurement",
+        "sample",
+        "ping",
+        "heartbeat",
+        "feedback",
+        "view",
+        "click",
+    }
+)
+
+
+def _split_class_name(name: str) -> list[str]:
+    """Split a CamelCase class name into lowercase words."""
+    return [w.lower() for w in re.findall(r"[A-Z]+(?=[A-Z][a-z])|[A-Z]?[a-z]+|[A-Z]+", name)]
+
+
+def _is_telemetry_record(cls: ast.ClassDef) -> bool:
+    """An event/telemetry/value table whose final name word marks it anemic by design."""
+    words = _split_class_name(cls.name)
+    return bool(words) and words[-1] in _TELEMETRY_NAME_WORDS
+
 
 _NON_BEHAVIOR_DUNDERS = frozenset(
     {
@@ -140,6 +182,11 @@ class AnemicDomainModel(Rule):
     domain logic must live elsewhere. Plain ``@dataclass`` records are out
     of scope — see SMELL-022 for the general data-class smell.
 
+    Telemetry / event / value tables (names ending in event, impression, log,
+    audit, metric, snapshot, feedback, ...) are anemic by design: they are
+    immutable observations whose behavior belongs to the aggregator that reads
+    them. They are exempt.
+
     Principles: #1 (The structure tells the story), #9 (Dependencies flow
     toward stability — domain models should be the most-depended-upon code
     and therefore the place behavior lives).
@@ -175,6 +222,8 @@ class AnemicDomainModel(Rule):
                 if not isinstance(node, ast.ClassDef):
                     continue
                 if not _inherits_domain_base(node):
+                    continue
+                if _is_telemetry_record(node):
                     continue
                 field_count = max(
                     _count_django_fields(node),

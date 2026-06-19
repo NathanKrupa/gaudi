@@ -12,8 +12,50 @@ from gaudi.packs.python.context import PythonContext
 # ---------------------------------------------------------------
 
 
+_SCRIPT_DIR_KEYWORDS = ("scripts/", "/scripts/", "bin/", "/bin/", "tools/", "/tools/")
+# Standalone entrypoint files that are run directly, not imported as packages.
+_ENTRYPOINT_FILENAMES = frozenset({"manage.py", "conftest.py"})
+
+
+def _is_entrypoint_bootstrap(relative_path: str, tree: ast.Module) -> bool:
+    """True if the file is an executable entrypoint, where a sys.path bootstrap is expected.
+
+    Entrypoints are run directly (``python scripts/foo.py``) rather than
+    imported, so they can't rely on the package being installed and legitimately
+    prepend their own location to ``sys.path``. Detected by living under a
+    scripts/bin/tools directory, by a known entrypoint filename, or by carrying
+    an ``if __name__ == "__main__":`` guard.
+    """
+    norm = relative_path.replace("\\", "/").lower()
+    if any(kw in norm for kw in _SCRIPT_DIR_KEYWORDS):
+        return True
+    if norm.rsplit("/", 1)[-1] in _ENTRYPOINT_FILENAMES:
+        return True
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.If):
+            continue
+        test = node.test
+        if (
+            isinstance(test, ast.Compare)
+            and isinstance(test.left, ast.Name)
+            and test.left.id == "__name__"
+            and len(test.comparators) == 1
+            and isinstance(test.comparators[0], ast.Constant)
+            and test.comparators[0].value == "__main__"
+        ):
+            return True
+    return False
+
+
 class PathHacks(Rule):
     """Detect sys.path manipulation (path hacks).
+
+    Exempts executable entrypoints — files under scripts/bin/tools, known
+    entrypoint filenames (manage.py, conftest.py), or files with an
+    ``if __name__ == "__main__":`` guard. These are run directly rather than
+    imported, so a self-locating ``sys.path`` bootstrap is the by-design way to
+    find siblings before the package is installed. A library module that hacks
+    ``sys.path`` still fires.
 
     Principles: #1 (The structure tells the story), #9 (Dependencies flow toward stability).
     Source: ARCH90 Day 1 — proper packaging over sys.path hacks.
@@ -32,6 +74,8 @@ class PathHacks(Rule):
         for fi in context.files:
             tree = fi.ast_tree
             if tree is None:
+                continue
+            if _is_entrypoint_bootstrap(fi.relative_path, tree):
                 continue
             for node in ast.walk(tree):
                 if not isinstance(node, ast.Call):

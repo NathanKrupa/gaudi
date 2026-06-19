@@ -1,14 +1,17 @@
 {
   "rule_id": "ARCH-003",
-  "description": "NullableForeignKeySprawl -- model with multiple nullable ForeignKeys",
+  "description": "NullableForeignKeySprawl -- a join-table-shaped model whose FKs are all nullable",
   "fixtures": {
-    "fail_nullable_fk_sprawl.py": {
+    "fail_join_table_nullable_fks.py": {
       "expected_findings": [
         {
           "severity": "info",
-          "message_contains": "Activity"
+          "message_contains": "Enrollment"
         }
       ]
+    },
+    "pass_entity_with_optional_relations.py": {
+      "expected_findings": []
     },
     "pass_required_fks.py": {
       "expected_findings": []

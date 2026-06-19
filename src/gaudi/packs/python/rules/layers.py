@@ -99,8 +99,57 @@ def _is_guard_pattern(node: ast.If) -> bool:
     return False
 
 
+# Parse-layer operations: when a connector branches on what it finds in a
+# parsed external payload (XML element shape, XPath hit, response format), the
+# branch is format translation, not a business decision. These are the method
+# and attribute names that mark a test as inspecting a parsed structure.
+_PARSE_METHOD_NAMES = frozenset(
+    {
+        "find",
+        "findall",
+        "findtext",
+        "iter",
+        "iterfind",
+        "xpath",
+        "getroot",
+        "match",
+        "search",
+        "fullmatch",
+        "select",
+        "select_one",
+        "css",
+    }
+)
+_PARSE_ATTR_NAMES = frozenset({"tag", "attrib", "text", "tail", "nodeName", "nodeType"})
+
+
+def _is_parse_dispatch(node: ast.If) -> bool:
+    """Return True if the if-test inspects a parsed payload (XML/XPath/format).
+
+    A connector that branches on the shape of an external response (an XML
+    element's tag, an XPath hit, a parser method result) is doing format
+    translation, not business decision-making. That is the connector's job.
+    Detected structurally: the test sub-tree contains a parse-layer method
+    call (.find/.findall/.xpath/.match/...) or a parsed-element attribute
+    access (.tag/.attrib/.text/...).
+    """
+    for child in ast.walk(node.test):
+        if isinstance(child, ast.Call) and isinstance(child.func, ast.Attribute):
+            if child.func.attr in _PARSE_METHOD_NAMES:
+                return True
+        if isinstance(child, ast.Attribute) and child.attr in _PARSE_ATTR_NAMES:
+            return True
+    return False
+
+
 class ConnectorLogicLeak(Rule):
     """Detect data-layer files containing business logic (connector logic leak).
+
+    Defensive guards (``is None``, ``not x``, ``isinstance``) and parse-layer
+    dispatch (branching on a parsed payload's shape — an XML element's tag, an
+    XPath hit, a parser method result) are format translation, not business
+    decisions, and do not fire. A genuine leak branches on a business value (a
+    mode parameter, a status string) to choose an outcome.
 
     Principles: #10 (Boundaries are real or fictional).
     Source: ARCH90 Day 3 — connectors translate, services decide.
@@ -131,6 +180,8 @@ class ConnectorLogicLeak(Rule):
                 for child in ast.walk(node):
                     if isinstance(child, ast.If) and child.orelse:
                         if _is_guard_pattern(child):
+                            continue
+                        if _is_parse_dispatch(child):
                             continue
                         findings.append(
                             self.finding(

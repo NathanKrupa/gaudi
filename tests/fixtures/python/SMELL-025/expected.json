@@ -55,6 +55,9 @@
     },
     "pass_protocol_version.py": {
       "expected_findings": []
+    },
+    "pass_pinned_version_literal.py": {
+      "expected_findings": []
     }
   }
 }
