@@ -15,6 +15,20 @@
     },
     "pass_flask_with_ready/": {
       "expected_findings": []
+    },
+    "fail_django_root_no_health/": {
+      "expected_findings": [
+        {
+          "severity": "info",
+          "message_contains": "health"
+        }
+      ]
+    },
+    "pass_django_root_with_health/": {
+      "expected_findings": []
+    },
+    "pass_django_included_app_no_health/": {
+      "expected_findings": []
     }
   }
 }
