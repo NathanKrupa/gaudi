@@ -5,7 +5,7 @@ from __future__ import annotations
 import ast
 
 from gaudi.core import Category, Finding, Rule, Severity
-from gaudi.packs.python.context import PythonContext
+from gaudi.packs.python.context import FileInfo, PythonContext
 
 
 def _parse_safe(source: str) -> ast.Module | None:
@@ -694,10 +694,21 @@ class MissingHealthEndpoint(Rule):
     def check(self, context: PythonContext) -> list[Finding]:
         if not (context.detected_libraries & _WEB_LIBRARIES):
             return []
+        if "django" in context.detected_libraries:
+            return self._check_django(context)
+        return self._check_aggregate(context.files)
+
+    def _check_aggregate(self, files: list[FileInfo]) -> list[Finding]:
+        """Single-app frameworks (FastAPI, Flask): one app owns every route.
+
+        Health may live in any file, so routes and the health check are
+        pooled across the whole project. The finding lands on the first
+        file that declared a route.
+        """
         any_route = False
         has_health = False
         first_route_file: str | None = None
-        for fi in context.files:
+        for fi in files:
             tree = _parse_safe(fi.source)
             if tree is None:
                 continue
@@ -705,11 +716,131 @@ class MissingHealthEndpoint(Rule):
                 any_route = True
                 if first_route_file is None:
                     first_route_file = fi.relative_path
-                if any(token in path.lower() for token in _HEALTH_TOKENS):
+                if self._is_health_path(path):
                     has_health = True
         if not any_route or has_health:
             return []
         return [self.finding(file=first_route_file, line=1)]
+
+    def _check_django(self, context: PythonContext) -> list[Finding]:
+        """Django: only the ROOT URLConf owns /health.
+
+        A Django project has exactly one root URLConf (named by
+        ``ROOT_URLCONF``, e.g. ``config/urls.py``) plus many included app
+        URLConfs. The root is where /health belongs; included app
+        URLConfs correctly carry their own routes and must NOT each be
+        required to expose a health endpoint. Pooling routes across every
+        URLConf would flag those app files (or let an app's stray /health
+        satisfy a root that lacks one) — both are wrong. So health is
+        evaluated against the root URLConf alone.
+        """
+        urlconf_files = [fi for fi in context.files if self._route_paths_for_file(fi)]
+        if not urlconf_files:
+            return []
+        root = self._root_urlconf_file(context, urlconf_files)
+        if root is None:
+            return []
+        paths = self._route_paths_for_file(root)
+        if not paths:
+            return []
+        if any(self._is_health_path(p) for p in paths):
+            return []
+        return [self.finding(file=root.relative_path, line=1)]
+
+    @classmethod
+    def _root_urlconf_file(
+        cls, context: PythonContext, urlconf_files: list[FileInfo]
+    ) -> FileInfo | None:
+        """Pick the single root URLConf among candidate URLConf files.
+
+        Resolution order:
+        1. ``ROOT_URLCONF = "config.urls"`` declared in a settings file —
+           the authoritative pointer Django itself uses.
+        2. The URLConf that no other URLConf ``include()``s — a root is
+           never mounted under another URLConf.
+        """
+        declared = cls._declared_root_module(context.files)
+        if declared is not None:
+            match = cls._file_matching_module(declared, urlconf_files)
+            if match is not None:
+                return match
+        included = cls._included_modules(urlconf_files)
+        not_included = [
+            fi for fi in urlconf_files if not cls._file_matches_any_module(fi, included)
+        ]
+        if len(not_included) == 1:
+            return not_included[0]
+        return None
+
+    @staticmethod
+    def _declared_root_module(files: list[FileInfo]) -> str | None:
+        """Read ``ROOT_URLCONF = "..."`` from any settings-like file."""
+        for fi in files:
+            tree = _parse_safe(fi.source)
+            if tree is None:
+                continue
+            for node in ast.walk(tree):
+                if not isinstance(node, ast.Assign):
+                    continue
+                if not any(
+                    isinstance(t, ast.Name) and t.id == "ROOT_URLCONF" for t in node.targets
+                ):
+                    continue
+                value = node.value
+                if isinstance(value, ast.Constant) and isinstance(value.value, str):
+                    return value.value
+        return None
+
+    @staticmethod
+    def _included_modules(urlconf_files: list[FileInfo]) -> set[str]:
+        """Collect every module string passed to ``include("app.urls")``."""
+        modules: set[str] = set()
+        for fi in urlconf_files:
+            tree = _parse_safe(fi.source)
+            if tree is None:
+                continue
+            for node in ast.walk(tree):
+                if not isinstance(node, ast.Call):
+                    continue
+                func = node.func
+                is_include = (isinstance(func, ast.Name) and func.id == "include") or (
+                    isinstance(func, ast.Attribute) and func.attr == "include"
+                )
+                if not is_include or not node.args:
+                    continue
+                arg = node.args[0]
+                if isinstance(arg, ast.Constant) and isinstance(arg.value, str):
+                    modules.add(arg.value)
+        return modules
+
+    @staticmethod
+    def _module_to_suffix(module: str) -> str:
+        """``config.urls`` -> ``config/urls.py`` (a path suffix to match on)."""
+        return module.replace(".", "/") + ".py"
+
+    @classmethod
+    def _file_matching_module(cls, module: str, urlconf_files: list[FileInfo]) -> FileInfo | None:
+        suffix = cls._module_to_suffix(module)
+        for fi in urlconf_files:
+            if fi.relative_path.replace("\\", "/").endswith(suffix):
+                return fi
+        return None
+
+    @classmethod
+    def _file_matches_any_module(cls, fi: FileInfo, modules: set[str]) -> bool:
+        normalized = fi.relative_path.replace("\\", "/")
+        return any(normalized.endswith(cls._module_to_suffix(m)) for m in modules)
+
+    @classmethod
+    def _route_paths_for_file(cls, fi: FileInfo) -> list[str]:
+        tree = _parse_safe(fi.source)
+        if tree is None:
+            return []
+        return cls._iter_route_paths(tree)
+
+    @staticmethod
+    def _is_health_path(path: str) -> bool:
+        return any(token in path.lower() for token in _HEALTH_TOKENS)
 
     @staticmethod
     def _iter_route_paths(tree: ast.Module) -> list[str]:

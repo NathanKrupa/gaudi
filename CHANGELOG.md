@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.1] — 2026-06-19
+
+### Fixed
+- **STAB-011** — made the missing-health-endpoint check root-URLConf-aware.
+  Django projects mount one root URLConf (named by `ROOT_URLCONF`, e.g.
+  `config/urls.py`) plus many included app URLConfs; only the root owns
+  `/health`. The rule now evaluates health against the root URLConf alone,
+  so included app `urls.py` files are no longer false-positives while a
+  genuinely missing health endpoint on the root still flags.
+
 ## [0.2.0] — 2026-04-14
 
 ### Added
