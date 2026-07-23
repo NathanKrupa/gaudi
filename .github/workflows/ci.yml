@@ -34,6 +34,13 @@ jobs:
       - name: Install dependencies
         run: uv pip install --system -e ".[dev]"
 
+      # ruff is pinned: an unpinned ruff here reddened every PR when 0.16
+      # (new markdown formatting + new lint rules, 273 errors repo-wide)
+      # released between main runs. 0.15.0 is the newest version the tree is
+      # green under. Upgrade deliberately, together with the pre-commit pin.
+      - name: Pin ruff to the repo standard
+        run: uv pip install --system "ruff==0.15.0"
+
       - name: Check formatting
         run: ruff format --check .
 
