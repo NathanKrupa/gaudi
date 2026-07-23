@@ -30,7 +30,8 @@ skips** by default (local gates are primary, CI is the watchdog — matching the
 estate's pre-launch posture). Set ``SECRET_SCAN_REQUIRED=1`` (CI does) to
 **fail closed** instead, so the watchdog cannot be silently no-op'd.
 
-Exit codes: ``0`` clean or skipped, ``1`` findings, ``2`` required-but-unavailable.
+Exit codes: ``0`` clean or skipped, ``1`` findings, ``2`` required-but-unavailable
+or the scan ran but could not see the diff (partial scan — always fail-closed).
 """
 
 from __future__ import annotations
@@ -98,6 +99,48 @@ def docker_available() -> bool:
     )
 
 
+class PartialScanError(RuntimeError):
+    """gitleaks ran but could not see the repo/diff — the report is not trustworthy."""
+
+
+# Marker strings gitleaks emits when a scan ran on incomplete data. A partial
+# scan writes an EMPTY report and exits 0, which the gate would otherwise read
+# as clean — the exact failure mode found in linked worktrees (2026-07-23).
+_INCOMPLETE_MARKERS = ("partial scan", "fatal:")
+
+
+def scan_incomplete(stderr_text: str) -> bool:
+    """True when gitleaks stderr shows the scan ran on incomplete data."""
+    low = stderr_text.lower()
+    return any(marker in low for marker in _INCOMPLETE_MARKERS)
+
+
+def git_mounts(repo: Path) -> list[str]:
+    """Docker ``-v`` args exposing everything git needs, at host-identical paths.
+
+    The repo mounts read-only at its own absolute path so every absolute path
+    git stores (the worktree ``.git`` pointer file, the admin back-pointer)
+    resolves identically inside the container. A linked worktree keeps its real
+    git dir under the main repo's ``.git/worktrees/<name>`` — outside the
+    worktree tree — so that common dir is mounted too, else gitleaks sees
+    ``fatal: not a git repository`` and silently produces an empty report.
+    """
+    mounts = ["-v", f"{repo}:{repo}:ro"]
+    probe = subprocess.run(
+        ["git", "-C", str(repo), "rev-parse", "--git-common-dir"],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if probe.returncode == 0:
+        common = Path(probe.stdout.strip())
+        if not common.is_absolute():
+            common = (repo / common).resolve()
+        if not common.is_relative_to(repo):
+            mounts += ["-v", f"{common}:{common}:ro"]
+    return mounts
+
+
 def build_gitleaks_cmd(
     repo: Path, out_report: Path, image: str, *, staged: bool, rev_range: str | None
 ) -> list[str]:
@@ -112,18 +155,16 @@ def build_gitleaks_cmd(
         "docker",
         "run",
         "--rm",
-        "-v",
-        f"{repo}:/repo:ro",
+        *git_mounts(repo),
         "-v",
         f"{out_report.parent}:/out",
         image,
         sub,
-        "--source=/repo",
+        f"--source={repo}",
         "--redact",
         "--report-format=json",
         f"--report-path=/out/{out_report.name}",
         "--exit-code=0",
-        "--log-level=error",
     ]
     if staged:
         cmd.append("--staged")
@@ -148,6 +189,15 @@ def run_scan(
             # here are config/plumbing) and treat as a scan failure.
             msg = proc.stderr.decode("utf-8", "replace").strip()
             raise RuntimeError(f"gitleaks produced no report: {msg or 'unknown error'}")
+        stderr_text = proc.stderr.decode("utf-8", "replace")
+        if scan_incomplete(stderr_text):
+            # An empty report from a partial scan is indistinguishable from a
+            # clean one — never trust it (gitleaks logs carry no secret values;
+            # findings details live only in the redacted report).
+            raise PartialScanError(
+                "gitleaks partial scan — git metadata not fully visible to the "
+                "container (linked worktree?); refusing to treat as clean"
+            )
         return parse_report(report.read_text(encoding="utf-8"))
 
 
@@ -179,6 +229,13 @@ def main(argv: list[str] | None = None) -> int:
     repo = Path(args.repo).resolve()
     try:
         findings = run_scan(repo, args.image, staged=staged, rev_range=args.rev_range)
+    except PartialScanError as exc:
+        # The scan RAN but could not see the diff; an empty report proves
+        # nothing. Fail closed regardless of SECRET_SCAN_REQUIRED — unlike
+        # docker-unavailable, this is a live misconfiguration, not missing
+        # tooling.
+        print(f"secret-scan: {exc} — failing closed.", file=sys.stderr)
+        return 2
     except (RuntimeError, json.JSONDecodeError) as exc:
         print(f"secret-scan: scan failed — {exc}", file=sys.stderr)
         return 2 if required else 0
