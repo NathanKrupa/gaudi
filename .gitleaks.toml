@@ -1,0 +1,9 @@
+# Repo-local gitleaks config for the estate secret-scan gate (OS#221).
+# .secrets.baseline is detect-secrets' hashed allowlist — its entries are
+# secret-shaped BY DESIGN and can never be live values. Same disposition as
+# the Tier-0 triage (OS#220).
+[extend]
+useDefault = true
+
+[allowlist]
+paths = ['''\.secrets\.baseline$''']

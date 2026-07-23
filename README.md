@@ -131,6 +131,7 @@ Every finding follows a consistent schema:
 ```python
 from gaudi import Rule, Severity, Category
 
+
 class CheckTenantIsolation(Rule):
     code = "ARCH-001"
     severity = Severity.ERROR
@@ -192,7 +193,7 @@ Suppress findings on a single line with `# noqa`:
 
 ```python
 SECRET_KEY = "test-only"  # noqa: DJ-SEC-001
-urlpatterns = [...]       # noqa
+urlpatterns = [...]  # noqa
 ```
 
 `# noqa` (bare) suppresses all findings on that line. `# noqa: CODE1, CODE2` suppresses only the listed rules.
