@@ -1,0 +1,6 @@
+# gitleaks fingerprint allowlist (red-team Tier-1 baseline, OS#221).
+# One `commit:file:rule:startline` fingerprint per line = an accepted/inert
+# finding the continuous secret-scan gate must ignore. gaudi's two Tier-0
+# hits (OS#220) are gaudi's OWN SEC-003 secret-detector test fixtures.
+d4cf212b20e41bf5129ebc1ffb7aa37d8457ad43:tests/fixtures/python/SEC-003/fail_hardcoded_credentials.py:generic-api-key:4
+6d0e9b9f8aee9ad31d8fdad875cebf5b2998b462:tests/fixtures/sec_hardcoded_credential.py:generic-api-key:8

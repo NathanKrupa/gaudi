@@ -119,7 +119,7 @@
 - **API-003 LeakingInternalID** — Replace <int:pk> with <uuid:pk> or a slug. Sequential integer IDs leak row counts and enable BOLA-style enumeration attacks.
 - **API-004 NoErrorResponseSchema** — Add a responses={{404: {{'model': Error}}, ...}} kwarg so the OpenAPI document describes both the success and error shapes.
 - **ARCH-001 NoTenantIsolation** — Consider adding a tenant_id, organization_id, or account_id ForeignKey to models that store user data. Enforce filtering in all queries. Promote to warn with [gaudi.rules] "ARCH-001" = "warn" if multi-tenancy applies.
-- **ARCH-003 NullableForeignKeySprawl** — A model whose only fields are nullable ForeignKeys is a join table that can exist while recording no association. Make the ForeignKeys required, or model the optional relationships as a first-class entity with its own fields.
+- **ARCH-003 NullableForeignKeySprawl** — Review whether nullable ForeignKeys represent truly optional relationships or if the model is trying to handle multiple relationship types. Consider a join table or polymorphic pattern.
 - **ASYNC-004 NoGracefulShutdown** — Register a signal.signal(SIGTERM, ...) handler before asyncio.run() so the service can drain in-flight work on shutdown.
 - **CPLX-001 ShallowModule** — Deepen the module by combining trivial helpers or hiding them behind fewer, richer entry points. Ousterhout: 'modules should be deep' -- the cost of a public name is the documentation and cognitive load it imposes on every caller.
 - **CPLX-004 ConjoinedMethods** — Conjoined methods force callers to remember a specific call order. Combine '{setter}' and '{checker}' into one operation, use a context manager, or pass the state explicitly so the order is impossible to get wrong.
