@@ -84,6 +84,9 @@ where = ["src"]
 [tool.ruff]
 target-version = "py310"
 line-length = 100
+# Vendored estate byte-copy (canonical: OverSteward shared/scripts/dev/) —
+# formatting it here would break the byte-identity /sync-status enforces.
+extend-exclude = ["scripts/dev/secret_scan.py"]
 
 [tool.ruff.lint.per-file-ignores]
 "tests/fixtures/*" = ["F401", "F841", "E402", "E722"]
@@ -93,7 +96,7 @@ testpaths = ["tests"]
 norecursedirs = ["fixtures"]
 
 [tool.bandit]
-# .claude/hooks holds the OverSteward-canonical worktree guard (dev tooling,
-# byte-identical across the estate — not shipped package code).
-exclude_dirs = ["tests", ".claude"]
+# .claude/hooks and scripts/dev hold OverSteward-canonical byte-copies (dev
+# tooling, byte-identical across the estate — not shipped package code).
+exclude_dirs = ["tests", ".claude", "scripts/dev"]
 skips = ["B101", "B110", "B112"]
