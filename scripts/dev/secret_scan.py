@@ -25,6 +25,14 @@ Modes:
 A repo-local ``.gitleaksignore`` (fingerprints of the Tier-0 inert findings) is
 read automatically by gitleaks, so baselined noise never trips the gate.
 
+A repo-local ``.gitleaks.toml`` at the scan root is likewise read automatically
+(gitleaks precedence: ``--config`` > ``$GITLEAKS_CONFIG`` > ``(--source)/.gitleaks.toml``;
+we pass only ``--source``, so the root file wins). It ``[extend] useDefault=true``
+to keep every built-in rule and adds the estate's custom rules — notably the
+WordPress application-password shape (``xxxx xxxx xxxx xxxx``), which no default
+rule covers. Both this script and that config are canonical in OverSteward's
+``shared/scripts/dev/`` and byte-copied estate-wide.
+
 Fail-open vs fail-closed: if docker/gitleaks is unavailable the gate **warns and
 skips** by default (local gates are primary, CI is the watchdog — matching the
 estate's pre-launch posture). Set ``SECRET_SCAN_REQUIRED=1`` (CI does) to

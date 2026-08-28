@@ -86,7 +86,11 @@ target-version = "py310"
 line-length = 100
 # Vendored estate byte-copy (canonical: OverSteward shared/scripts/dev/) —
 # formatting it here would break the byte-identity /sync-status enforces.
-extend-exclude = ["scripts/dev/secret_scan.py"]
+extend-exclude = [
+    "scripts/dev/secret_scan.py",
+    ".claude/hooks",
+]
+force-exclude = true
 
 [tool.ruff.lint.per-file-ignores]
 "tests/fixtures/*" = ["F401", "F841", "E402", "E722"]
