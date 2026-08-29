@@ -26,7 +26,7 @@ jobs:
         # setup-python interpreter on PATH so ruff / pytest / bandit / the
         # gaudi console scripts keep resolving as bare commands.
         # (Transfer of grantspider PR #1276.)
-        uses: astral-sh/setup-uv@v8.2.0
+        uses: astral-sh/setup-uv@v8.3.2
         with:
           enable-cache: true
           cache-dependency-glob: pyproject.toml
@@ -63,7 +63,7 @@ jobs:
         # setup-python interpreter on PATH so ruff / pytest / bandit / the
         # gaudi console scripts keep resolving as bare commands.
         # (Transfer of grantspider PR #1276.)
-        uses: astral-sh/setup-uv@v8.2.0
+        uses: astral-sh/setup-uv@v8.3.2
         with:
           enable-cache: true
           cache-dependency-glob: pyproject.toml
@@ -104,7 +104,7 @@ jobs:
         # setup-python interpreter on PATH so ruff / pytest / bandit / the
         # gaudi console scripts keep resolving as bare commands.
         # (Transfer of grantspider PR #1276.)
-        uses: astral-sh/setup-uv@v8.2.0
+        uses: astral-sh/setup-uv@v8.3.2
         with:
           enable-cache: true
           cache-dependency-glob: pyproject.toml
