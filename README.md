@@ -197,9 +197,16 @@ with their reason in every output format, so "could not look" never reads as
   went unasked, so a broken install cannot report as a clean project. The usual
   cause is a partial or mismatched install; reinstall `gaudi-linter`.
 
-`gaudi count` uses the same exit `2` for the same reason: a count taken over a
-missing rule catalog is an undercount, and a ratchet would read the missing
-findings as progress.
+`gaudi count` and `gaudi report` use the same exit `2` for the same reason, and
+without needing a flag: a count taken over a missing rule catalog is an
+undercount that a ratchet reads as progress, and a Markdown briefing that never
+saw a rule catalog would be read by an LLM as the whole truth about the project.
+`report` names what was not examined in an **Incomplete run** block at the top,
+and says "Structurally sound" only over a run that examined everything.
+
+Naming a pack that failed to load (`--pack <name>`) exits `2` and prints its
+load error. Only a pack name Gaudi has never heard of is an "Unknown pack(s)"
+error, exit `1`.
 
 ### Prompt Fragment for AI Agents
 
