@@ -13,13 +13,14 @@ from __future__ import annotations
 import json
 import sys
 from pathlib import Path
+from typing import NamedTuple
 
 import click
 from rich.console import Console
 from rich.text import Text
 
 from gaudi.config import get_rule_overrides, get_school, load_config
-from gaudi.core import CheckResult, Severity
+from gaudi.core import CheckResult, PackError, Severity
 from gaudi.engine import Engine
 from gaudi.formats import format_github, format_markdown_report
 from gaudi.services.ratchet import RATCHET_RULE_CODES, count_by_code
@@ -27,32 +28,33 @@ from gaudi.services.ratchet import RATCHET_RULE_CODES, count_by_code
 console = Console()
 
 
-def _reject_unusable_packs(engine: Engine, pack_names: list[str]) -> None:
-    """Refuse a run whose named packs are missing, and say which kind of missing.
+def _reject_unusable_packs(engine: Engine, pack_names: list[str]) -> list[PackError]:
+    """Separate a misspelled pack name from an installed pack that did not load.
 
     A pack the caller named that *failed to load* is not an unknown pack: it is
     installed, it is the pack they meant, and the run is incomplete rather than
-    misspelled. The two exit differently for the same reason `check` does --
-    ``1`` says the report is not empty or the invocation was wrong, ``2`` says
-    the seeing was incomplete.
+    misspelled. It is **returned**, not rendered here: how an incomplete run
+    reaches the caller is the calling command's decision, and this function
+    cannot know it. Rendering prose on stdout made ``check --format json``
+    unparseable and cost ``count`` the integer a ratchet reads.
+
+    An unknown name is a caller error and still exits ``1`` here, because there
+    is no run to report. A failed pack outranks it, on the same precedence
+    ``check`` uses for its exit codes: ``2`` says the seeing was incomplete,
+    which is the wider news than a name that was never a pack.
     """
     failed = {e.pack: e for e in engine.pack_errors}
     requested_failed = [failed[name] for name in pack_names if name in failed]
-    unknown = [name for name in pack_names if name not in engine.packs and name not in failed]
-
     if requested_failed:
-        _print_incomplete(
-            engine.format_pack_errors(requested_failed),
-            [(e.pack, e.error) for e in requested_failed],
-            "This is the pack you asked for. It is installed; it did not load.",
-            "bold red",
-        )
-        sys.exit(2)
+        return requested_failed
 
+    unknown = [name for name in pack_names if name not in engine.packs]
     if unknown:
         console.print(f"[red]Unknown pack(s): {', '.join(unknown)}[/red]")
         console.print(_available_packs_line(engine))
         sys.exit(1)
+
+    return []
 
 
 def _available_packs_line(engine: Engine) -> str:
@@ -70,7 +72,21 @@ def _available_packs_line(engine: Engine) -> str:
     return "Available packs: none installed"
 
 
-def _run_check(path: str, pack: tuple[str, ...], severity: str) -> tuple[Engine, Path, CheckResult]:
+class _CheckRun(NamedTuple):
+    """One resolved run, and whether the caller asked for a pack that never loaded.
+
+    ``named_failed`` is the subset of ``result.pack_errors`` the caller named on
+    the command line. It rides here rather than being rendered at validation
+    time so that every command reports it in the shape its own caller expects.
+    """
+
+    engine: Engine
+    project_path: Path
+    result: CheckResult
+    named_failed: list[PackError]
+
+
+def _run_check(path: str, pack: tuple[str, ...], severity: str) -> _CheckRun:
     """Resolve config, build the engine, and run one check.
 
     Every subcommand that inspects a project needs the same six steps in the
@@ -88,8 +104,7 @@ def _run_check(path: str, pack: tuple[str, ...], severity: str) -> tuple[Engine,
 
     # CLI --pack flags override config; config packs override auto-detect
     pack_names = list(pack) if pack else (config["packs"] or None)
-    if pack_names:
-        _reject_unusable_packs(engine, pack_names)
+    named_failed = _reject_unusable_packs(engine, pack_names) if pack_names else []
 
     result = engine.check_result(
         project_path,
@@ -98,7 +113,7 @@ def _run_check(path: str, pack: tuple[str, ...], severity: str) -> tuple[Engine,
         school=get_school(config),
         rule_overrides=get_rule_overrides(config),
     )
-    return engine, project_path, result
+    return _CheckRun(engine, project_path, result, named_failed)
 
 
 def _print_incomplete(header: str, rows: list[tuple[str, str]], footer: str, style: str) -> None:
@@ -169,7 +184,7 @@ def check(
     exit_code: bool,
 ):
     """Check a project or file for architectural issues."""
-    engine, project_path, result = _run_check(path, pack, severity)
+    engine, project_path, result, named_failed = _run_check(path, pack, severity)
     findings = result.findings
     skipped = result.skipped
     pack_errors = result.pack_errors
@@ -274,6 +289,14 @@ def check(
     # already filtered to that threshold, so the run fails exactly when the
     # report it just printed is not empty -- a caller who asks for a
     # warn-level gate gets one that can fail on a warning.
+    #
+    # A pack the caller named on the command line is the exception to the flag:
+    # they asked for that catalog by name and did not get it, so the run failed
+    # to do the one thing it was told to do. That exits 2 whether or not a gate
+    # was requested, as `count` and `report` already do for any pack error.
+    if named_failed:
+        sys.exit(2)
+
     if exit_code:
         if pack_errors or skipped:
             sys.exit(2)
@@ -319,7 +342,7 @@ def report(
     autofix — Gaudi's rules are judgment calls, and the report is the
     opening move in a conversation, not a patch.
     """
-    _, project_path, result = _run_check(path, pack, severity)
+    _, project_path, result, _ = _run_check(path, pack, severity)
     markdown = format_markdown_report(
         result.findings,
         project_path,
@@ -395,7 +418,7 @@ def count(
         console.print("--ratchet already names the set of codes to count.")
         sys.exit(1)
 
-    engine, _, result = _run_check(path, pack, severity)
+    engine, _, result, _ = _run_check(path, pack, severity)
 
     if code:
         codes: list[str] | None = [code]

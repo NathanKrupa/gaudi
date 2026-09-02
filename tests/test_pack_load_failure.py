@@ -565,3 +565,105 @@ class TestCheckTextRendererDoesNotCertifyAnIncompleteRun:
         result = CliRunner().invoke(main, ["check", str(clean_project)])
 
         assert "No architectural issues found. Structurally sound." in result.output
+
+
+class TestNamingAFailedPackKeepsTheRequestedFormat:
+    """`--pack <failed>` rendered prose on stdout whatever `--format` asked for.
+
+    So `check --format json --pack <failed>` could not be parsed and
+    `count --pack <failed>` lost the integer a ratchet reads.
+    """
+
+    def test_json_output_still_parses_when_the_named_pack_failed(
+        self, one_broken_pack: None, clean_project: Path
+    ):
+        result = CliRunner().invoke(
+            main, ["check", str(clean_project), "--format", "json", "--pack", "broken"]
+        )
+
+        payload = json.loads(result.stdout)
+        assert [entry["pack"] for entry in payload["pack_errors"]] == ["broken"]
+        assert IMPORT_MESSAGE in payload["pack_errors"][0]["error"]
+        assert result.exit_code == 2
+
+    def test_json_output_still_parses_on_a_wholly_broken_install(
+        self, monkeypatch: pytest.MonkeyPatch, clean_project: Path
+    ):
+        _install(monkeypatch, _BrokenEntryPoint())
+
+        result = CliRunner().invoke(
+            main, ["check", str(clean_project), "--format", "json", "--pack", "broken"]
+        )
+
+        payload = json.loads(result.stdout)
+        assert [entry["pack"] for entry in payload["pack_errors"]] == ["broken"]
+        assert result.exit_code == 2
+
+    def test_github_output_still_annotates_when_the_named_pack_failed(
+        self, one_broken_pack: None, clean_project: Path
+    ):
+        result = CliRunner().invoke(
+            main, ["check", str(clean_project), "--format", "github", "--pack", "broken"]
+        )
+
+        assert "::error title=Pack load failure::" in result.stdout
+        assert "broken" in result.stdout
+        assert result.exit_code == 2
+
+    def test_the_text_renderer_still_names_the_pack_the_caller_asked_for(
+        self, one_broken_pack: None, clean_project: Path
+    ):
+        result = CliRunner().invoke(main, ["check", str(clean_project), "--pack", "broken"])
+
+        assert "1 pack failed to load" in result.output
+        assert IMPORT_MESSAGE in result.output
+        assert "Unknown pack" not in result.output
+        assert result.exit_code == 2
+
+    def test_count_keeps_the_integer_on_stdout_when_the_named_pack_failed(
+        self, one_broken_pack: None, clean_project: Path
+    ):
+        result = CliRunner().invoke(main, ["count", str(clean_project), "--pack", "broken"])
+
+        assert result.stdout.strip().isdigit()
+        assert result.exit_code == 2
+
+    def test_count_names_the_failed_pack_off_stdout_when_it_is_named(
+        self, one_broken_pack: None, clean_project: Path
+    ):
+        result = CliRunner().invoke(main, ["count", str(clean_project), "--pack", "broken"])
+
+        assert "broken" not in result.stdout
+        assert "broken" in result.stderr
+        assert IMPORT_MESSAGE in result.stderr
+        assert "undercount" in result.stderr
+
+    def test_count_json_still_parses_when_the_named_pack_failed(
+        self, one_broken_pack: None, clean_project: Path
+    ):
+        result = CliRunner().invoke(
+            main, ["count", str(clean_project), "--format", "json", "--pack", "broken"]
+        )
+
+        assert isinstance(json.loads(result.stdout), dict)
+        assert result.exit_code == 2
+
+    def test_report_still_names_the_pack_the_caller_asked_for(
+        self, one_broken_pack: None, clean_project: Path
+    ):
+        result = CliRunner().invoke(main, ["report", str(clean_project), "--pack", "broken"])
+
+        assert "Incomplete run" in result.stdout
+        assert "broken" in result.stdout
+        assert result.exit_code == 2
+
+    def test_naming_a_working_pack_alongside_a_failed_one_still_runs_it(
+        self, one_broken_pack: None, clean_project: Path
+    ):
+        """The control: the packs that loaded still do their work."""
+        result = CliRunner().invoke(
+            main, ["check", str(clean_project), "--format", "json", "--pack", "python"]
+        )
+
+        payload = json.loads(result.stdout)
+        assert [entry["pack"] for entry in payload["pack_errors"]] == ["broken"]
