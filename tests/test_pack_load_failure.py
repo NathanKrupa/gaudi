@@ -516,3 +516,52 @@ class TestCountNamesWhatItCouldNotCount:
         result = CliRunner().invoke(main, ["count", str(clean_project)])
 
         assert result.stderr == ""
+
+
+class TestCheckTextRendererDoesNotCertifyAnIncompleteRun:
+    """The text renderer is the second renderer of the same `CheckResult`.
+
+    `format_markdown_report` stopped calling an incomplete run "structurally
+    sound"; `check`'s own text output said it anyway, in green, immediately
+    above the block naming the pack that never ran.
+    """
+
+    def test_the_text_renderer_does_not_call_a_failed_pack_structurally_sound(
+        self, one_broken_pack: None, clean_project: Path
+    ):
+        result = CliRunner().invoke(main, ["check", str(clean_project)])
+
+        assert "Structurally sound" not in result.output
+
+    def test_the_text_renderer_says_what_it_actually_examined(
+        self, one_broken_pack: None, clean_project: Path
+    ):
+        result = CliRunner().invoke(main, ["check", str(clean_project)])
+
+        assert "No architectural issues found in the parts that were examined." in result.output
+
+    def test_a_skipped_file_also_withholds_structurally_sound(
+        self, all_packs_load: None, skipping_project: Path
+    ):
+        """The same rule for the other kind of incomplete run."""
+        result = CliRunner().invoke(main, ["check", str(skipping_project)])
+
+        assert "Structurally sound" not in result.output
+        assert "No architectural issues found in the parts that were examined." in result.output
+
+    def test_the_incomplete_run_block_is_still_printed(
+        self, one_broken_pack: None, clean_project: Path
+    ):
+        """The wording change must not cost the report the block that names the pack."""
+        result = CliRunner().invoke(main, ["check", str(clean_project)])
+
+        assert "1 pack failed to load" in result.output
+        assert IMPORT_MESSAGE in result.output
+
+    def test_a_complete_clean_run_is_still_called_structurally_sound(
+        self, all_packs_load: None, clean_project: Path
+    ):
+        """The control: the claim survives where it is true."""
+        result = CliRunner().invoke(main, ["check", str(clean_project)])
+
+        assert "No architectural issues found. Structurally sound." in result.output

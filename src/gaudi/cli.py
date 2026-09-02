@@ -198,8 +198,18 @@ def check(
         )
     else:
         if not findings:
+            # "Structurally sound" is a claim about the whole project, and an
+            # incomplete run has not seen the whole project. The same rule
+            # `format_markdown_report` follows, in the same words, because the
+            # two renderers render the same CheckResult.
             console.print()
-            console.print("[green]No architectural issues found. Structurally sound.[/green]")
+            if pack_errors or skipped:
+                console.print(
+                    "[yellow]No architectural issues found in the parts "
+                    "that were examined.[/yellow]"
+                )
+            else:
+                console.print("[green]No architectural issues found. Structurally sound.[/green]")
             console.print()
         else:
             console.print()
