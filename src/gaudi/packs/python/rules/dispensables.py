@@ -416,7 +416,12 @@ class TemporalIdentifier(Rule):
             tree = f.ast_tree
             if tree is None:
                 continue
+            durable_assigns = self._durable_assign_ids(tree)
             for node in ast.walk(tree):
+                if isinstance(node, (ast.Assign, ast.AnnAssign)) and (
+                    id(node) not in durable_assigns
+                ):
+                    continue
                 names_and_lines = self._extract_names(node)
                 for name, line in names_and_lines:
                     marker = self._find_marker(name)
@@ -433,6 +438,29 @@ class TemporalIdentifier(Rule):
                         )
                     )
         return findings
+
+    @staticmethod
+    def _durable_assign_ids(tree: ast.Module) -> set[int]:
+        """Assignments that create a durable name: module-level and class-body.
+
+        A local variable inside a function is ephemeral — it has no callers, no
+        importers, and dies at the end of the call. ``new`` there is the
+        ordinary English adjective (``new = tuple(i for i in issues if i not in
+        ruled)`` means the issues not seen before), and renaming it makes the
+        code worse. The rule's subject is names that outlive the moment they
+        were written, which is what its docstring always said: it walked every
+        assignment in the file regardless.
+        """
+        durable: set[int] = set()
+        bodies: list[list[ast.stmt]] = [list(tree.body)]
+        for node in ast.walk(tree):
+            if isinstance(node, ast.ClassDef):
+                bodies.append(list(node.body))
+        for body in bodies:
+            for stmt in body:
+                if isinstance(stmt, (ast.Assign, ast.AnnAssign)):
+                    durable.add(id(stmt))
+        return durable
 
     @staticmethod
     def _is_pinned_version_literal(node: ast.AST, marker: str) -> bool:

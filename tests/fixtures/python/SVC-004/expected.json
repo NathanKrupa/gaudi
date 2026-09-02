@@ -19,6 +19,9 @@
     },
     "pass_owning_app_self_use/": {
       "expected_findings": []
+    },
+    "pass_django_orm_helpers": {
+      "expected_findings": []
     }
   }
 }

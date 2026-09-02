@@ -22,6 +22,12 @@
     },
     "pass_filter_only.py": {
       "expected_findings": []
+    },
+    "pass_limit_bounded.py": {
+      "expected_findings": []
+    },
+    "pass_slice_bounded.py": {
+      "expected_findings": []
     }
   }
 }

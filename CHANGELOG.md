@@ -53,6 +53,28 @@ All notable changes to this project will be documented in this file.
   project is never adopted by it — this is why one estate repo carried six
   app-scoped copies of it.
 - **STRUCT-013 recognises `uv.lock`** as a dependency lock file.
+- **SEC-002** no longer fires on `SET <parameter> = {value}` (#256 item 8).
+  Postgres accepts no bind parameter in `SET`, so there is no parameterized
+  form to recommend and every estate hit was a cosmetic hoist of the same
+  f-string. The parameter *name* must be literal: `SET {name} = 5` interpolates
+  the identifier and still fires.
+- **SEC-003** no longer treats a filesystem path as a credential (#256 item 6).
+  `SECRET_SCAN_SCRIPT = "scripts/dev/secret_scan.py"` names a tool; one estate
+  repo renamed a constant purely to dodge the finding.
+- **SMELL-025** no longer fires on a local variable (#256 item 6). Its subject
+  is names that outlive the moment they are written — classes, functions,
+  module and class attributes — which is what its docstring always said while
+  it walked every assignment in the file. `new = tuple(i for i in issues if i
+  not in ruled)` inside a function is the ordinary English adjective;
+  `new_billing_handler` as a function name still fires.
+- **STAB-001** recognises `.limit(n)` and slicing (`[:n]`) as bounding (#245).
+  The rule's own recommendation says "Add `.limit()`", so following its advice
+  did not clear it — ten sites across one estate repo carried a permanent
+  `# noqa: STAB-001` for correctly-bounded queries.
+- **SVC-004** no longer treats framework `models` modules as project apps
+  (#214). `from django.db.models import Count, Q` was read as app `db` owning
+  models `Count` and `Q`, making every app that aggregates a coupled consumer
+  of it.
 - **ERR-003** now keys on the swallow rather than on the log level (#256 item
   1). `except …:` that logs at *any* level and does not re-raise fires;
   previously only `error` and `exception` did. One estate repo carried 127
