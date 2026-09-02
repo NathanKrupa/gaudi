@@ -63,6 +63,11 @@ If you want CI to *fail* on errors (rather than just annotate), add a second
 step that runs the same check with `--severity error --exit-code`. Keep it
 separate so the annotation step always runs even when the gating step fails.
 
+`--exit-code` gates at whatever `--severity` selected, so name the tier you
+actually want to break the build on. `--severity error` is the recommended
+one: warn and info findings are the material for the conversation this
+workflow is about, not a reason to fail a build.
+
 ## 2. `gaudi report` for LLM conversations
 
 `gaudi report` generates a Markdown briefing designed to be the opening move

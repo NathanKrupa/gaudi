@@ -168,8 +168,20 @@ them apart is not a gate:
 | code | meaning |
 | --- | --- |
 | `0` | Every file was parsed, and nothing at or above the severity threshold was found. |
-| `1` | Error-severity findings exist. |
+| `1` | The report is not empty — at least one finding at or above the threshold. |
 | `2` | At least one file could not be parsed. The run is incomplete — whatever it reported, it did not look everywhere. |
+
+**The gate is the threshold `--severity` selected.** `--severity error
+--exit-code` fails on an error; `--severity warn --exit-code` fails on a
+warning as well, and `--severity info --exit-code` (the default threshold)
+fails on anything the report shows. A flag that names a severity and then
+gates on a different one is a false green, so `--exit-code` fails exactly
+when the report it just printed is not empty.
+
+Pick the threshold deliberately. Gaudi's own CI gates at `--severity error`,
+because an error finding is a structural defect with no defensible by-design
+reading, while warn and info findings are reviewer input to discuss rather
+than a build to break.
 
 `2` outranks `1`: findings describe what was seen, and a skip says the seeing
 was incomplete. Skipped files are listed with their reason in every output

@@ -2,6 +2,28 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+
+### Fixed
+
+- **`--exit-code` now gates at the severity `--severity` selected** (#267).
+  It counted error-severity findings only, whatever threshold the caller
+  asked for, so `gaudi check . --severity warn --exit-code` exited `0` with
+  96 warnings on the report — a gate that could not fail. The flag names a
+  threshold; it now honours it.
+
+### Migration
+
+- **`--exit-code` paired with `--severity error` is unchanged.** That is the
+  documented shape, and every example in this repo, its CI, and
+  `docs/llm-workflow.md` already uses it.
+- **`--exit-code` paired with `--severity warn` or `--severity info` will now
+  go red where it was silently green.** That is the fix, not a regression: the
+  run was failing the threshold all along and reporting success.
+- **Bare `--exit-code` with no `--severity` now gates at `info`,** because
+  `info` is the default reporting threshold. A gate that wants the old
+  behaviour must say what it always meant: `--severity error --exit-code`.
+
 ## [0.3.0] — 2026-09-02
 
 The overhaul release (#256). A 2026-08-31 estate audit measured what Gaudi was
