@@ -34,6 +34,15 @@
     },
     "pass_transaction_without_io.py": {
       "expected_findings": []
+    },
+    "pass_http_in_non_transaction_with.py": {
+      "expected_findings": []
+    },
+    "pass_transaction_calls_only_the_db.py": {
+      "expected_findings": []
+    },
+    "pass_client_construction_in_transaction.py": {
+      "expected_findings": []
     }
   }
 }
