@@ -23,6 +23,15 @@ All notable changes to this project will be documented in this file.
   route pooled across the project) and **SVC-006** (paired test module), the
   two rules aigranthelper had disabled repo-wide for exactly this reason.
 
+- **`gaudi count`** (#228) — findings per rule code, machine-readable. Text
+  output is a bare integer (`baseline=$(gaudi count . --ratchet)`); `--format
+  json` emits a `{code: count}` map. `--code CODE` counts one rule;
+  `--ratchet` counts only the debt set (`DEP-001`, `DEP-004`, `SMELL-003`,
+  `SMELL-007`, `STAB-006`), so repos stop hand-building the filter and stop
+  counting style-tier findings as debt. Exit **2** when any file was skipped:
+  the number printed is then an undercount, and a ratchet comparing it against
+  a complete baseline would read the missing findings as progress.
+
 ### Changed
 - **STRUCT-021** and **CPLX-002** demoted from `warn` to `info` (#256 items 4
   and 5). Both are style-tier: STRUCT-021's count threshold cannot tell a magic
