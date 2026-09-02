@@ -85,7 +85,11 @@ class MagicStrings(Rule):
     """
 
     code = "STRUCT-021"
-    severity = Severity.WARN
+    # Style tier. The count threshold cannot distinguish a magic string from a
+    # Django field name in an admin declaration, a LOGGING dict key, or the
+    # literal a test exists to assert on — 58% of one estate repo's warnings,
+    # none of them debt. Reportable, never a gate.
+    severity = Severity.INFO
     category = Category.STRUCTURE
     message_template = "String '{value}' appears {count} times — consider using a constant"
     recommendation_template = "Extract repeated string literals into named constants or enums."

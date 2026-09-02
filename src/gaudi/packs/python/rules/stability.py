@@ -673,6 +673,9 @@ class MissingHealthEndpoint(Rule):
     code = "STAB-011"
     severity = Severity.INFO
     category = Category.STABILITY
+    # Routes and the health endpoint that clears them are pooled across the
+    # whole project; one file rarely holds both.
+    requires_project_context = True
     # Health checks are a long-lived-service concept. One-shot Unix
     # scripts and Data-Oriented batch jobs have no meaningful health.
     philosophy_scope = frozenset(

@@ -5,7 +5,7 @@
     "fail_pass_through.py": {
       "expected_findings": [
         {
-          "severity": "warn",
+          "severity": "info",
           "line": 5,
           "message_contains": "Parameter 'config' is threaded through 4 functions"
         }

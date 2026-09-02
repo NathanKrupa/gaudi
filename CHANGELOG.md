@@ -17,6 +17,21 @@ All notable changes to this project will be documented in this file.
   identical to a clean run.
 - `Engine.check_result()` and `Pack.check_result()` return findings alongside
   the skipped files; `check()` still returns findings only.
+- `Rule.requires_project_context` — a rule whose clearing evidence lives in a
+  sibling file declares it, and packs sit that rule out of single-file
+  invocations rather than firing unconditionally. Set on **STAB-011** (health
+  route pooled across the project) and **SVC-006** (paired test module), the
+  two rules aigranthelper had disabled repo-wide for exactly this reason.
+
+### Changed
+- **STRUCT-021** and **CPLX-002** demoted from `warn` to `info` (#256 items 4
+  and 5). Both are style-tier: STRUCT-021's count threshold cannot tell a magic
+  string from a Django field name or the literal a test asserts on (58% of one
+  estate repo's warnings), and CPLX-002 fires on the explicit parameter
+  threading config-injection architecture prescribes (that repo's
+  most-suppressed rule, 54 `noqa`). They stay in the catalog and stay
+  reportable; `--severity warn` no longer surfaces them. SMELL-025 was already
+  `info` and is unchanged.
 
 ## [0.2.2] — 2026-06-19
 

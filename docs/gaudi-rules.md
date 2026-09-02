@@ -48,7 +48,6 @@
 - **AWS-SCALE-001 UnpaginatedList** [boto3] — Use client.get_paginator('{method}') instead of calling {method} directly. Without pagination, results are truncated at AWS default limits.
 - **CELERY-ARCH-001 CeleryNoRetry** [celery] — Add autoretry_for, max_retries, and retry_backoff to tasks that call external services. Tasks without retry config fail permanently on transient errors.
 - **CELERY-SCALE-001 CeleryNoTimeLimit** [celery] — Add time_limit and soft_time_limit to prevent runaway tasks from consuming workers.
-- **CPLX-002 PassThroughVariable** — Pass-through variables signal a wrong abstraction boundary. Consider grouping the threaded values into a context object, or moving the work that needs '{param}' down to the layer that already has it.
 - **CPLX-003 InformationLeakage** — Information leakage couples callers to implementation details. Either widen '{leaked}' to a public type/protocol or make '{func}' itself private. Ousterhout: 'each module should hide information about how it works.'
 - **DEP-002 FanOutExplosion** — Split this module into smaller, focused modules. High fan-out means a module has too many responsibilities and is fragile to changes in any dependency.
 - **DEP-004 UnstableDependency** — Stabilize this module by reducing its outgoing dependencies, or depend on an abstraction instead. Per the Stable Dependencies Principle, modules that others depend on should be stable (low instability).
@@ -106,7 +105,6 @@
 - **STRUCT-001 SingleFileModels** — Convert models.py into a models/ package with separate files per domain. Create models/__init__.py that imports all models for Django compatibility.
 - **STRUCT-011 MissingPyproject** — Add a pyproject.toml for modern Python packaging, dependency management, and tool configuration.
 - **STRUCT-012 NoEntryPoint** — Register this script as a console_scripts entry point in pyproject.toml.
-- **STRUCT-021 MagicStrings** — Extract repeated string literals into named constants or enums.
 - **SVC-001 HardcodedServiceURL** — Inject service URLs via configuration (environment variables or config files). Hardcoded URLs break when services move, scale, or deploy to new environments.
 - **SVC-004 SharedDatabasePattern** [django] — Two services reading the same table is a hidden contract no one signed. Expose the data through the owning app's service layer (a function or API) so the schema can change without breaking unrelated apps.
 - **SVC-005 SynchronousCouplingChain** — Sequential sync calls to multiple services tie the caller's latency and reliability to the slowest peer. Fan out in parallel (asyncio.gather, a thread pool) or pull the data through a single aggregating endpoint.
@@ -122,6 +120,7 @@
 - **ARCH-003 NullableForeignKeySprawl** — A model whose only fields are nullable ForeignKeys is a join table that can exist while recording no association. Make the ForeignKeys required, or model the optional relationships as a first-class entity with its own fields.
 - **ASYNC-004 NoGracefulShutdown** — Register a signal.signal(SIGTERM, ...) handler before asyncio.run() so the service can drain in-flight work on shutdown.
 - **CPLX-001 ShallowModule** — Deepen the module by combining trivial helpers or hiding them behind fewer, richer entry points. Ousterhout: 'modules should be deep' -- the cost of a public name is the documentation and cognitive load it imposes on every caller.
+- **CPLX-002 PassThroughVariable** — Pass-through variables signal a wrong abstraction boundary. Consider grouping the threaded values into a context object, or moving the work that needs '{param}' down to the layer that already has it.
 - **CPLX-004 ConjoinedMethods** — Conjoined methods force callers to remember a specific call order. Combine '{setter}' and '{checker}' into one operation, use a context manager, or pass the state explicitly so the order is impossible to get wrong.
 - **DEP-003 FanInConcentration** — Consider whether this module is doing too much. A module imported everywhere becomes a fragile hub — any change risks breaking the entire project.
 - **DOM-003 ActiveRecordMisuse** — Extract the external call into a service that takes the model as input. Persistence and orchestration are separate responsibilities.
@@ -153,6 +152,7 @@
 - **STAB-011 MissingHealthEndpoint** — Add a /health or /ready route so orchestrators and load balancers can detect failure. A service with no health endpoint is invisible to its operators.
 - **STRUCT-013 NoLockFile** — Add a lock file (pip freeze > requirements-lock.txt) to pin exact dependency versions for reproducible builds.
 - **STRUCT-020 MissingReturnTypes** — Add return type annotations to public functions for documentation and type-checker support.
+- **STRUCT-021 MagicStrings** — Extract repeated string literals into named constants or enums.
 - **SVC-002 ChattyIntegration** — Multiple sequential HTTP calls to external services suggest a missing batch or aggregate endpoint. Consolidate into fewer, larger requests.
 - **SVC-003 NoAPIVersioning** — Add a version prefix (e.g. '/v1/...') to API routes. Versioned APIs allow safe evolution without breaking existing clients.
 - **SVC-006 MissingContractTests** [requests] — A module that talks to an external service is a contract surface. Add a test that exercises the request shape -- even a mock-based one -- so a remote API change cannot pass CI silently.

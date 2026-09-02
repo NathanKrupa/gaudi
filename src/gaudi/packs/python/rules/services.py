@@ -448,6 +448,9 @@ class MissingContractTests(Rule):
     severity = Severity.INFO
     category = Category.ARCHITECTURE
     requires_library = "requests"
+    # The clearing evidence is a sibling file (test_<module>.py). A single-file
+    # invocation can never contain one, so the rule would fire unconditionally.
+    requires_project_context = True
     message_template = (
         "Module '{module}' calls external services but has no paired test"
         " (expected test_{module}.py)"

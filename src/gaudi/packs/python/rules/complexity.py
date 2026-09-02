@@ -169,7 +169,11 @@ class PassThroughVariable(Rule):
     """
 
     code = "CPLX-002"
-    severity = Severity.WARN
+    # Style tier. Explicit parameter threading is what config-injection
+    # architecture prescribes, so the rule fires hardest on codebases that
+    # follow it — the most-suppressed rule in one estate repo (54 noqa).
+    # Reportable, never a gate.
+    severity = Severity.INFO
     category = Category.COMPLEXITY
     message_template = (
         "Parameter '{param}' is threaded through {count} functions in this module "

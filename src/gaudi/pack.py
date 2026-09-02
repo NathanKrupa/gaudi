@@ -28,6 +28,18 @@ def context_skips(context: Any) -> list[FileSkip]:
     return list(getattr(context, "skipped", ()) or ())
 
 
+def rule_has_the_context_it_needs(rule: Rule, context: Any) -> bool:
+    """False when a project-scoped rule was handed a single file.
+
+    Such a rule's clearing evidence lives in files this run never read, so it
+    would fire on every invocation. Sitting it out is the honest answer: the
+    question was not asked, rather than asked and answered badly.
+    """
+    if not rule.requires_project_context:
+        return True
+    return not getattr(context, "single_file", False)
+
+
 def rule_applies_to_school(rule: Rule, school: str) -> bool:
     """Return True iff this rule should run under the given school.
 
@@ -102,6 +114,8 @@ class Pack:
         findings: list[Finding] = []
         for rule in self._rules:
             if not rule_applies_to_school(rule, active_school):
+                continue
+            if not rule_has_the_context_it_needs(rule, context):
                 continue
             results = rule.check(context)
             if results:

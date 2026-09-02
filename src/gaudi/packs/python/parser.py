@@ -119,7 +119,7 @@ def parse_project(path: Path, extra_excludes: list[str] | None = None) -> Python
     project-relative POSIX path.
     """
     root = path if path.is_dir() else path.parent
-    context = PythonContext(root=root)
+    context = PythonContext(root=root, single_file=path.is_file())
 
     if path.is_file():
         py_files = [path]
