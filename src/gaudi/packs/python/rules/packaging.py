@@ -123,7 +123,9 @@ class MissingPyproject(Rule):
     )
 
     def check(self, context: PythonContext) -> list[Finding]:
-        if not (context.root / "pyproject.toml").exists():
+        # Asked of the project, not of the checked path: `gaudi check apps/x`
+        # in a packaged repo was reporting the repo unpackaged.
+        if not (context.project / "pyproject.toml").exists():
             return [self.finding()]
         return []
 
@@ -199,6 +201,7 @@ _LOCK_FILES = (
     "poetry.lock",
     "Pipfile.lock",
     "pdm.lock",
+    "uv.lock",
 )
 
 
@@ -220,7 +223,7 @@ class NoLockFile(Rule):
     )
 
     def check(self, context: PythonContext) -> list[Finding]:
-        root = context.root
+        root = context.project
         for name in _LOCK_FILES:
             if (root / name).exists():
                 return []

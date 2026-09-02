@@ -23,6 +23,7 @@ from gaudi.packs.python.context import (
     ModelInfo,
     PythonContext,
 )
+from gaudi.project import find_project_root
 
 # Maps import prefixes to library activation keys
 _IMPORT_TO_LIBRARY: dict[str, str] = {
@@ -119,7 +120,11 @@ def parse_project(path: Path, extra_excludes: list[str] | None = None) -> Python
     project-relative POSIX path.
     """
     root = path if path.is_dir() else path.parent
-    context = PythonContext(root=root, single_file=path.is_file())
+    context = PythonContext(
+        root=root,
+        project_root=find_project_root(root),
+        single_file=path.is_file(),
+    )
 
     if path.is_file():
         py_files = [path]

@@ -44,6 +44,15 @@ All notable changes to this project will be documented in this file.
   dataflow. DJ-ARCH-004 gains `urllib` coverage from the shared helper.
 
 ### Fixed
+- **Project-level questions resolve against the project root** (#256 items 7
+  and 10). `gaudi check apps/billing` in a packaged repo reported STRUCT-011
+  ("no pyproject.toml") and STRUCT-013 ("no lock file") because both rules
+  looked only at the path passed to `check`. They now resolve the project root
+  by walking up to the nearest packaging marker or `.git`. `gaudi.toml` is
+  found the same way, bounded at the project root so a config outside the
+  project is never adopted by it — this is why one estate repo carried six
+  app-scoped copies of it.
+- **STRUCT-013 recognises `uv.lock`** as a dependency lock file.
 - **ERR-003** now keys on the swallow rather than on the log level (#256 item
   1). `except …:` that logs at *any* level and does not re-raise fires;
   previously only `error` and `exception` did. One estate repo carried 127
