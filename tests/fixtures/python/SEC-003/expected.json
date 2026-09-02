@@ -37,6 +37,9 @@
     },
     "pass_env_var_name_constant.py": {
       "expected_findings": []
+    },
+    "pass_path_constant_naming_a_secret_tool.py": {
+      "expected_findings": []
     }
   }
 }

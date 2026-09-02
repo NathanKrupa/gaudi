@@ -31,6 +31,18 @@
     },
     "pass_static_sql.py": {
       "expected_findings": []
+    },
+    "pass_set_session_parameter.py": {
+      "expected_findings": []
+    },
+    "fail_interpolated_set_target.py": {
+      "expected_findings": [
+        {
+          "severity": "error",
+          "line": 9,
+          "message_contains": "SQL injection risk"
+        }
+      ]
     }
   }
 }

@@ -209,11 +209,22 @@ def _importer_app(relative_path: str, has_apps_dir: bool = False) -> str | None:
     return parts[0]
 
 
+# Framework packages that expose a ``models`` module of their own. These are
+# not project apps: ``from django.db.models import Count, Q`` imports ORM
+# primitives, and reading ``db`` as an app name made every app that aggregates
+# a coupled consumer of a nonexistent ``db`` app (#214).
+_FRAMEWORK_MODULE_ROOTS = frozenset(
+    {"django", "rest_framework", "sqlalchemy", "flask", "peewee", "tortoise", "mongoengine"}
+)
+
+
 def _model_module_owner(module: str) -> str | None:
     """Given an import module like ``apps.users.models``, return ``users``."""
     if not module:
         return None
     segments = module.split(".")
+    if segments[0] in _FRAMEWORK_MODULE_ROOTS:
+        return None
     if "models" not in segments:
         return None
     idx = segments.index("models")

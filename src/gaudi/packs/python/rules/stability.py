@@ -22,6 +22,11 @@ def _parse_safe(source: str) -> ast.Module | None:
 
 _ORM_ALL_ATTRS = frozenset({"all"})
 _BOUNDING_TERMINALS = frozenset({"first", "last", "get", "count", "exists", "aggregate"})
+# Applied *before* the terminal, these cap the row count the database returns.
+# The rule's own recommendation says "Add .limit()", so a query that has one
+# must clear the finding — otherwise following the advice cannot satisfy the
+# rule, and correctly-bounded queries carry a permanent noqa instead (#245).
+_BOUNDING_MODIFIERS = frozenset({"limit", "slice"})
 
 
 class UnboundedResultSet(Rule):
@@ -47,6 +52,7 @@ class UnboundedResultSet(Rule):
             if tree is None:
                 continue
             bounded = self._collect_bounded_call_ids(tree)
+            bounded |= self._collect_sliced_call_ids(tree)
             for node in ast.walk(tree):
                 if not isinstance(node, ast.Call):
                     continue
@@ -56,6 +62,8 @@ class UnboundedResultSet(Rule):
                 if not isinstance(func, ast.Attribute):
                     continue
                 if func.attr not in _ORM_ALL_ATTRS:
+                    continue
+                if self._chain_is_bounded(func.value):
                     continue
                 if self._is_orm_chain(func):
                     findings.append(
@@ -81,6 +89,47 @@ class UnboundedResultSet(Rule):
                 continue
             UnboundedResultSet._mark_chain_bounded(func.value, bounded)
         return bounded
+
+    @staticmethod
+    def _collect_sliced_call_ids(tree: ast.Module) -> set[int]:
+        """ORM Call nodes consumed by a slice — ``Model.objects.all()[:20]``.
+
+        Django compiles a slice to ``LIMIT``, so the result set is bounded
+        before it reaches memory.
+        """
+        sliced: set[int] = set()
+        for node in ast.walk(tree):
+            if (
+                isinstance(node, ast.Subscript)
+                and isinstance(node.slice, ast.Slice)
+                and isinstance(node.value, ast.Call)
+            ):
+                sliced.add(id(node.value))
+        return sliced
+
+    @staticmethod
+    def _chain_is_bounded(node: ast.expr) -> bool:
+        """True when a receiver chain already caps the row count.
+
+        Walks down from the terminal looking for ``.limit(n)`` / ``.slice(...)``
+        or a slice subscript: ``session.query(M).filter(...).limit(50).all()``.
+        """
+        while True:
+            if isinstance(node, ast.Call):
+                func = node.func
+                if not isinstance(func, ast.Attribute):
+                    return False
+                if func.attr in _BOUNDING_MODIFIERS:
+                    return True
+                node = func.value
+            elif isinstance(node, ast.Attribute):
+                node = node.value
+            elif isinstance(node, ast.Subscript):
+                if isinstance(node.slice, ast.Slice):
+                    return True
+                node = node.value
+            else:
+                return False
 
     @staticmethod
     def _mark_chain_bounded(node: ast.expr, bounded: set[int]) -> None:

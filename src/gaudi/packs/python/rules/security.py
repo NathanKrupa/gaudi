@@ -26,8 +26,47 @@ def _is_test_file(relative_path: str) -> bool:
 _SQL_EXEC_METHODS = frozenset({"execute", "executemany", "executescript", "raw"})
 
 
+# A session-parameter SET whose parameter name is literal. Postgres does not
+# accept bind parameters in SET, so `SET statement_timeout = %s` is a syntax
+# error rather than a safer query — there is no parameterized form to
+# recommend. The identifier must be literal: `SET {name} = 5` interpolates the
+# parameter name and is exactly the injection the rule exists to catch.
+_LITERAL_SET_STATEMENT = re.compile(r"^\s*SET\s+[A-Za-z_][A-Za-z0-9_.]*\s*(?:=|\bTO\b|$)", re.I)
+
+
+def _leading_literal(arg: ast.expr) -> str | None:
+    """The literal text an interpolated SQL expression starts with, if any."""
+    if isinstance(arg, ast.JoinedStr):
+        first = arg.values[0] if arg.values else None
+        if isinstance(first, ast.Constant) and isinstance(first.value, str):
+            return first.value
+        return None
+    if isinstance(arg, ast.BinOp) and isinstance(arg.op, (ast.Add, ast.Mod)):
+        if isinstance(arg.left, ast.Constant) and isinstance(arg.left.value, str):
+            return arg.left.value
+        return None
+    if isinstance(arg, ast.Call):
+        func = arg.func
+        if (
+            isinstance(func, ast.Attribute)
+            and func.attr == "format"
+            and isinstance(func.value, ast.Constant)
+            and isinstance(func.value.value, str)
+        ):
+            return func.value.value
+    return None
+
+
+def _is_set_session_parameter(arg: ast.expr) -> bool:
+    """True for `SET <literal identifier> = <interpolated value>`."""
+    leading = _leading_literal(arg)
+    return leading is not None and bool(_LITERAL_SET_STATEMENT.match(leading))
+
+
 def _is_unsafe_sql_arg(arg: ast.expr) -> bool:
     """Return True if the SQL string argument is built from interpolation."""
+    if _is_set_session_parameter(arg):
+        return False
     # f-string
     if isinstance(arg, ast.JoinedStr):
         return True
@@ -146,6 +185,23 @@ _ENV_NAME_HOLDER_SUFFIXES = ("_env", "_var", "_env_var", "_name", "_key_name", "
 _ENV_VAR_NAME_VALUE = re.compile(r"^[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)+$")
 
 
+# A value that is a filesystem path names a *file*, whatever the file is
+# called. `SECRET_SCAN_SCRIPT = "scripts/dev/secret_scan.py"` carries no
+# secret; one estate repo renamed such a constant purely to dodge this
+# finding, which is the tool distorting the code rather than the code
+# carrying a defect.
+_PATH_VALUE = re.compile(
+    r"^(?:[./~]|[A-Za-z]:[\\/])"  # ./x, ../x, /x, ~/x, C:\x
+    r"|^[\w.-]+(?:[/\\][\w.-]+)+$"  # a/b/c, a\b\c
+    r"|\.(?:py|json|ya?ml|toml|ini|cfg|txt|pem|crt|key|sh|md)$",  # a known file extension
+)
+
+
+def _is_path_value(value: str) -> bool:
+    """True when a string literal is a filesystem path rather than a secret."""
+    return bool(_PATH_VALUE.search(value))
+
+
 def _names_an_env_var(holder_name: str, value: str) -> bool:
     """True if the assignment names an env var rather than carrying a secret."""
     lowered = holder_name.lower()
@@ -206,6 +262,8 @@ class HardcodedCredential(Rule):
                 if not isinstance(value.value, str):
                     continue
                 if _looks_like_placeholder_value(value.value):
+                    continue
+                if _is_path_value(value.value):
                     continue
                 targets: list[ast.expr] = []
                 if isinstance(node, ast.Assign):
