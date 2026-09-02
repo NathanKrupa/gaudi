@@ -169,7 +169,7 @@ them apart is not a gate:
 | --- | --- |
 | `0` | Every file was parsed, and nothing at or above the severity threshold was found. |
 | `1` | The report is not empty — at least one finding at or above the threshold. |
-| `2` | At least one file could not be parsed. The run is incomplete — whatever it reported, it did not look everywhere. |
+| `2` | The run was incomplete — a pack failed to load, or a file could not be parsed. Whatever it reported, it did not look everywhere. |
 
 **The gate is the threshold `--severity` selected.** `--severity error
 --exit-code` fails on an error; `--severity warn --exit-code` fails on a
@@ -183,12 +183,23 @@ because an error finding is a structural defect with no defensible by-design
 reading, while warn and info findings are reviewer input to discuss rather
 than a build to break.
 
-`2` outranks `1`: findings describe what was seen, and a skip says the seeing
-was incomplete. Skipped files are listed with their reason in every output
-format (`text`, `json` under a `skipped` key, and `github` as annotations on
-the file), so "could not look" never reads as "found nothing". The usual cause
-is a file whose syntax is newer than the interpreter Gaudi is running under —
-install Gaudi on the same Python your project targets.
+`2` outranks `1`: findings describe what was seen, and an incomplete run says
+the seeing was partial. Two things make a run incomplete, and both are listed
+with their reason in every output format, so "could not look" never reads as
+"found nothing":
+
+- **A file the parser could not read** — `text` block, `json` under `skipped`,
+  `github` as an annotation on the file. The usual cause is a file whose syntax
+  is newer than the interpreter Gaudi is running under; install Gaudi on the
+  same Python your project targets.
+- **A pack that failed to load** — `text` block, `json` under `pack_errors`,
+  `github` as a workflow-level `error` annotation. Every rule that pack owns
+  went unasked, so a broken install cannot report as a clean project. The usual
+  cause is a partial or mismatched install; reinstall `gaudi-linter`.
+
+`gaudi count` uses the same exit `2` for the same reason: a count taken over a
+missing rule catalog is an undercount, and a ratchet would read the missing
+findings as progress.
 
 ### Prompt Fragment for AI Agents
 

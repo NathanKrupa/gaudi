@@ -6,6 +6,19 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 
+- **A pack that fails to load is now reported and exits `2`** (#260).
+  `Engine.discover_packs()` logged the failure at warning level and continued
+  without the pack, so a broken install made `gaudi check` report **zero
+  findings and exit `0`** — every rule that pack owns silently unasked, and a
+  CI gate keyed on `--exit-code` green over it. Nothing reads Gaudi's logger in
+  CI, so the log line was not a signal. A pack-load failure now rides the same
+  channel as an unparsable file (#257): it is recorded on `CheckResult`, named
+  with the pack and the exception in `text`, `json` (a `pack_errors` list) and
+  `github` output, and exits `2` under `--exit-code`, ahead of the severity
+  gate. `gaudi count` exits `2` for it too, since the count is an undercount.
+  `gaudi list-packs` names the pack that failed rather than reporting "No
+  language packs installed". The `logger.warning` stays.
+
 - **`--exit-code` now gates at the severity `--severity` selected** (#267).
   It counted error-severity findings only, whatever threshold the caller
   asked for, so `gaudi check . --severity warn --exit-code` exited `0` with
@@ -14,6 +27,13 @@ All notable changes to this project will be documented in this file.
 
 ### Migration
 
+- **A run with a broken pack that exited `0` now exits `2`.** If a project's
+  `gaudi check --exit-code` starts failing with `2` and no findings on the
+  report, the install is broken and always was — the pack named in the new
+  block never loaded. That is the fix, not a regression: the previous `0` was
+  reporting a rule catalog that never ran as a clean project. Reinstall the
+  pack. `--pack` does not suppress it: a pack error describes the *install*,
+  and the packs a caller happens to name do not make a broken one whole.
 - **`--exit-code` paired with `--severity error` is unchanged.** That is the
   documented shape, and every example in this repo, its CI, and
   `docs/llm-workflow.md` already uses it.
