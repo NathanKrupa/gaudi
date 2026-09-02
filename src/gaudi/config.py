@@ -20,6 +20,7 @@ else:
 
 
 from gaudi.core import DEFAULT_SCHOOL, VALID_SCHOOLS, Severity
+from gaudi.project import find_config_file
 
 DEFAULT_CONFIG: dict[str, Any] = {
     "packs": [],  # empty = auto-detect
@@ -32,17 +33,25 @@ DEFAULT_CONFIG: dict[str, Any] = {
 _VALID_SEVERITIES = frozenset(s.value for s in Severity)
 
 
+CONFIG_FILENAME = "gaudi.toml"
+
+
 def load_config(project_path: Path) -> dict[str, Any]:
     """
-    Load configuration from gaudi.toml in the project root.
+    Load configuration from the nearest ``gaudi.toml`` at or above ``project_path``.
+
+    The search walks up to the project root and stops there, so a config
+    outside the project is never adopted by it. Reading the file only from the
+    exact path passed to ``check`` is why one estate repo carried six
+    app-scoped copies of ``gaudi.toml``.
 
     Falls back to defaults if no config file exists. Merges the
     ``[gaudi]`` table (general settings) with the ``[philosophy]``
     table (architectural school selection).
     """
-    config_path = project_path / "gaudi.toml"
+    config_path = find_config_file(project_path, CONFIG_FILENAME)
 
-    if not config_path.exists():
+    if config_path is None:
         return _clone_defaults()
 
     with open(config_path, "rb") as f:

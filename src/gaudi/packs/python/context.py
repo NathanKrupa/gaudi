@@ -166,6 +166,11 @@ class PythonContext:
     """
 
     root: Path
+    # The project this code belongs to, which is not always what `check` was
+    # pointed at. `root` anchors relative paths in findings; `project_root`
+    # answers project-level questions (is there a pyproject.toml? a lock
+    # file?) that a subdirectory cannot answer for itself.
+    project_root: Path | None = None
     models: list[ModelInfo] = field(default_factory=list)
     files: list[FileInfo] = field(default_factory=list)
     # Files the parser found but could not read. Rules never see these, so
@@ -183,6 +188,11 @@ class PythonContext:
     # The architectural school this project has declared in gaudi.toml.
     # Defaults to "classical" when unset, matching the engine default.
     school: str = "classical"
+
+    @property
+    def project(self) -> Path:
+        """The project root, falling back to the checked path when unresolved."""
+        return self.project_root or self.root
 
     @property
     def model_names(self) -> set[str]:
