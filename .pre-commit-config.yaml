@@ -29,7 +29,7 @@ repos:
         always_run: true
       - id: gaudi-cheat-sheet
         name: gaudi cheat-sheet drift guard
-        entry: gaudi cheat-sheet --check -o docs/gaudi-rules.md
+        entry: python3 scripts/lint/cheat_sheet_check.py
         language: system
         pass_filenames: false
         always_run: true
