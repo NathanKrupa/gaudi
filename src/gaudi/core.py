@@ -167,8 +167,12 @@ class PackError:
     Like a :class:`FileSkip` this is the absence of evidence rather than a
     finding: every rule the pack owns went unasked. It differs only in scope —
     not one file the parser could not read, but a whole rule catalog that never
-    ran. It travels on its own channel for the same reason, so a broken install
-    can never report as a clean project.
+    ran. It travels on its own channel for the same reason.
+
+    Every command that reads a project carries it: ``check`` (text, json,
+    github, and exit 2 under ``--exit-code``), ``count`` and ``report``
+    (exit 2, unconditionally), and ``list-packs``. Naming a failed pack with
+    ``--pack`` exits 2 rather than reporting it as an unknown pack.
     """
 
     pack: str

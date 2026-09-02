@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import json
 import logging
+import shutil
 from pathlib import Path
 from typing import Any
 
@@ -15,6 +16,8 @@ from gaudi.cli import main
 from gaudi.engine import Engine
 from gaudi.packs.ops import OpsPack
 from gaudi.packs.python import PythonPack
+
+UNPARSABLE = Path(__file__).parent / "fixtures" / "skip_accounting" / "unparsable.py.txt"
 
 IMPORT_MESSAGE = "no module named 'libclang'"
 INSTANTIATION_MESSAGE = "rule catalog is empty"
@@ -109,6 +112,13 @@ def clean_project(tmp_path: Path) -> Path:
         encoding="utf-8",
     )
     return root
+
+
+@pytest.fixture
+def skipping_project(clean_project: Path) -> Path:
+    """The same well-formed project, plus one file no interpreter can parse."""
+    shutil.copyfile(UNPARSABLE, clean_project / "unparsable.py")
+    return clean_project
 
 
 @pytest.fixture
@@ -354,6 +364,7 @@ class TestListPacksNamesWhatFailed:
 
         result = CliRunner().invoke(main, ["list-packs"])
 
+        assert "No language packs installed" not in result.output
         assert "broken" in result.output
         assert "ImportError" in result.output
 
@@ -361,3 +372,147 @@ class TestListPacksNamesWhatFailed:
         result = CliRunner().invoke(main, ["list-packs"])
 
         assert "failed to load" not in result.output.lower()
+
+
+class TestReportNamesAnIncompleteRun:
+    """`gaudi report` is step 2 of docs/llm-workflow.md; a lying briefing is worse than none."""
+
+    def test_report_names_the_failed_pack(self, one_broken_pack: None, clean_project: Path):
+        result = CliRunner().invoke(main, ["report", str(clean_project)])
+
+        assert "broken" in result.output
+        assert "ImportError" in result.output
+
+    def test_report_does_not_call_an_incomplete_run_structurally_sound(
+        self, one_broken_pack: None, clean_project: Path
+    ):
+        result = CliRunner().invoke(main, ["report", str(clean_project)])
+
+        assert "Structurally sound" not in result.output
+
+    def test_report_exits_two_on_a_pack_error(self, one_broken_pack: None, clean_project: Path):
+        result = CliRunner().invoke(main, ["report", str(clean_project)])
+
+        assert result.exit_code == 2
+
+    def test_report_names_a_skipped_file(self, all_packs_load: None, skipping_project: Path):
+        result = CliRunner().invoke(main, ["report", str(skipping_project)])
+
+        assert "unparsable.py" in result.output
+        assert result.exit_code == 2
+
+    def test_the_markdown_still_reaches_the_output_file(
+        self, one_broken_pack: None, clean_project: Path, tmp_path: Path
+    ):
+        """The briefing is still the best available answer; the exit code says it is partial."""
+        destination = tmp_path / "report.md"
+
+        result = CliRunner().invoke(
+            main, ["report", str(clean_project), "--output", str(destination)]
+        )
+
+        assert result.exit_code == 2
+        assert "broken" in destination.read_text(encoding="utf-8")
+
+    def test_a_healthy_report_still_says_structurally_sound(
+        self, all_packs_load: None, clean_project: Path
+    ):
+        result = CliRunner().invoke(main, ["report", str(clean_project)])
+
+        assert "Structurally sound" in result.output
+        assert result.exit_code == 0
+
+    def test_a_healthy_report_does_not_mention_an_incomplete_run(
+        self, all_packs_load: None, clean_project: Path
+    ):
+        result = CliRunner().invoke(main, ["report", str(clean_project)])
+
+        assert "Incomplete run" not in result.output
+
+
+class TestNamingTheFailedPackOnTheCommandLine:
+    """`--pack <broken>` used to exit 1 as 'Unknown pack(s)' -- a misdiagnosis."""
+
+    def test_naming_the_failed_pack_reports_it_as_a_pack_error(
+        self, one_broken_pack: None, clean_project: Path
+    ):
+        result = CliRunner().invoke(main, ["check", str(clean_project), "--pack", "broken"])
+
+        assert result.exit_code == 2
+        assert "ImportError" in result.output
+        assert "Unknown pack" not in result.output
+
+    def test_naming_the_failed_pack_on_a_wholly_broken_install(
+        self, monkeypatch: pytest.MonkeyPatch, clean_project: Path
+    ):
+        _install(monkeypatch, _BrokenEntryPoint())
+
+        result = CliRunner().invoke(main, ["check", str(clean_project), "--pack", "broken"])
+
+        assert result.exit_code == 2
+        assert "none installed" not in result.output
+        assert "ImportError" in result.output
+
+    def test_an_unknown_pack_over_a_broken_install_is_not_called_none_installed(
+        self, monkeypatch: pytest.MonkeyPatch, clean_project: Path
+    ):
+        """'none installed' sends the reader to install what is already there."""
+        _install(monkeypatch, _BrokenEntryPoint())
+
+        result = CliRunner().invoke(main, ["check", str(clean_project), "--pack", "rust"])
+
+        assert result.exit_code == 1
+        assert "none installed" not in result.output
+        assert "broken" in result.output
+
+    def test_a_truly_unknown_pack_still_exits_one(self, all_packs_load: None, clean_project: Path):
+        """The control: an unknown name is a caller error, not an incomplete run."""
+        result = CliRunner().invoke(main, ["check", str(clean_project), "--pack", "rust"])
+
+        assert result.exit_code == 1
+        assert "Unknown pack(s): rust" in result.output
+
+    def test_count_reports_the_named_failed_pack_too(
+        self, one_broken_pack: None, clean_project: Path
+    ):
+        """Every command routes through _run_check, so none of them can misdiagnose it."""
+        result = CliRunner().invoke(main, ["count", str(clean_project), "--pack", "broken"])
+
+        assert result.exit_code == 2
+
+    def test_naming_a_pack_that_loaded_is_unaffected(
+        self, one_broken_pack: None, clean_project: Path
+    ):
+        """The control: a working pack named on the command line still runs."""
+        result = CliRunner().invoke(main, ["check", str(clean_project), "--pack", "python"])
+
+        assert "Unknown pack" not in result.output
+
+
+class TestCountNamesWhatItCouldNotCount:
+    """A stderr block nothing asserts on is a block that can be deleted silently."""
+
+    def test_the_pack_error_names_the_pack_and_the_error_on_stderr(
+        self, one_broken_pack: None, clean_project: Path
+    ):
+        result = CliRunner().invoke(main, ["count", str(clean_project)])
+
+        assert "broken" in result.stderr
+        assert IMPORT_MESSAGE in result.stderr
+        assert "undercount" in result.stderr
+
+    def test_the_skip_reason_names_the_file_on_stderr(
+        self, all_packs_load: None, skipping_project: Path
+    ):
+        result = CliRunner().invoke(main, ["count", str(skipping_project)])
+
+        assert "unparsable.py" in result.stderr
+        assert "syntax" in result.stderr.lower()
+        assert "undercount" in result.stderr
+
+    def test_a_healthy_count_says_nothing_on_stderr(
+        self, all_packs_load: None, clean_project: Path
+    ):
+        result = CliRunner().invoke(main, ["count", str(clean_project)])
+
+        assert result.stderr == ""

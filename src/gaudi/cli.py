@@ -27,6 +27,49 @@ from gaudi.services.ratchet import RATCHET_RULE_CODES, count_by_code
 console = Console()
 
 
+def _reject_unusable_packs(engine: Engine, pack_names: list[str]) -> None:
+    """Refuse a run whose named packs are missing, and say which kind of missing.
+
+    A pack the caller named that *failed to load* is not an unknown pack: it is
+    installed, it is the pack they meant, and the run is incomplete rather than
+    misspelled. The two exit differently for the same reason `check` does --
+    ``1`` says the report is not empty or the invocation was wrong, ``2`` says
+    the seeing was incomplete.
+    """
+    failed = {e.pack: e for e in engine.pack_errors}
+    requested_failed = [failed[name] for name in pack_names if name in failed]
+    unknown = [name for name in pack_names if name not in engine.packs and name not in failed]
+
+    if requested_failed:
+        _print_incomplete(
+            engine.format_pack_errors(requested_failed),
+            [(e.pack, e.error) for e in requested_failed],
+            "This is the pack you asked for. It is installed; it did not load.",
+            "bold red",
+        )
+        sys.exit(2)
+
+    if unknown:
+        console.print(f"[red]Unknown pack(s): {', '.join(unknown)}[/red]")
+        console.print(_available_packs_line(engine))
+        sys.exit(1)
+
+
+def _available_packs_line(engine: Engine) -> str:
+    """Name what a caller can actually ask for, without misdiagnosing a broken install.
+
+    "none installed" over a pack that failed to load sends the reader to install
+    what is already there, and hides the reason every rule it owns has gone
+    quiet.
+    """
+    if engine.packs:
+        return f"Available packs: {', '.join(engine.packs.keys())}"
+    if engine.pack_errors:
+        failures = ", ".join(f"{e.pack} ({e.error})" for e in engine.pack_errors)
+        return f"No pack loaded. Installed but failing: {failures}"
+    return "Available packs: none installed"
+
+
 def _run_check(path: str, pack: tuple[str, ...], severity: str) -> tuple[Engine, Path, CheckResult]:
     """Resolve config, build the engine, and run one check.
 
@@ -46,11 +89,7 @@ def _run_check(path: str, pack: tuple[str, ...], severity: str) -> tuple[Engine,
     # CLI --pack flags override config; config packs override auto-detect
     pack_names = list(pack) if pack else (config["packs"] or None)
     if pack_names:
-        missing = [p for p in pack_names if p not in engine.packs]
-        if missing:
-            console.print(f"[red]Unknown pack(s): {', '.join(missing)}[/red]")
-            console.print(f"Available packs: {', '.join(engine.packs.keys()) or 'none installed'}")
-            sys.exit(1)
+        _reject_unusable_packs(engine, pack_names)
 
     result = engine.check_result(
         project_path,
@@ -272,7 +311,11 @@ def report(
     """
     _, project_path, result = _run_check(path, pack, severity)
     markdown = format_markdown_report(
-        result.findings, project_path, snippet_context=snippet_context
+        result.findings,
+        project_path,
+        snippet_context=snippet_context,
+        skipped=result.skipped,
+        pack_errors=result.pack_errors,
     )
 
     if output:
@@ -280,6 +323,13 @@ def report(
         console.print(f"[green]Wrote report to {output}[/green]")
     else:
         click.echo(markdown)
+
+    # The briefing is still the best available answer, so it is written either
+    # way; the exit code is what says it is partial. Same code and same reason
+    # as `count`: a reader who gates on this command must not be told a run
+    # that never saw the whole project was clean.
+    if result.skipped or result.pack_errors:
+        sys.exit(2)
 
 
 @main.command()
