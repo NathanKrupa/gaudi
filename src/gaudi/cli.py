@@ -92,7 +92,9 @@ def main():
     default=False,
     help=(
         "Exit non-zero on an incomplete or failing run: 2 if any file could not "
-        "be parsed, 1 if error-severity findings exist, 0 otherwise."
+        "be parsed, 1 if the report is not empty, 0 otherwise. The gate is the "
+        "threshold --severity selected, so --severity warn --exit-code fails on "
+        "a warning."
     ),
 )
 def check(
@@ -182,10 +184,15 @@ def check(
     # Exit code. A skip outranks a finding: findings describe what was seen,
     # and a skip says the seeing was incomplete, so the report cannot be
     # trusted to be exhaustive whatever it contains.
+    #
+    # Below that, the gate is whatever --severity selected. `findings` is
+    # already filtered to that threshold, so the run fails exactly when the
+    # report it just printed is not empty -- a caller who asks for a
+    # warn-level gate gets one that can fail on a warning.
     if exit_code:
         if skipped:
             sys.exit(2)
-        if any(f.severity == Severity.ERROR for f in findings):
+        if findings:
             sys.exit(1)
 
 

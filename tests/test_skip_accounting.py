@@ -128,7 +128,19 @@ class TestExitCode:
         assert result.exit_code == 2
 
     def test_a_clean_run_still_exits_zero(self, clean_project: Path):
-        result = CliRunner().invoke(main, ["check", str(clean_project), "--exit-code"])
+        """The control for the skip case: no skip, no error, exit 0.
+
+        Pinned at the error tier because the fixture directory is not a
+        well-formed project -- it has no pyproject.toml or lock file, so the
+        project-scope rules report one warning and four infos about the
+        directory itself. Since #267 the gate is the threshold the caller
+        selected, and those findings would fail an info-tier gate honestly.
+        ``tests/test_exit_code_severity.py`` carries the project that is
+        clean at every tier.
+        """
+        result = CliRunner().invoke(
+            main, ["check", str(clean_project), "--severity", "error", "--exit-code"]
+        )
 
         assert result.exit_code == 0
 

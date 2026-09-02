@@ -1,0 +1,15 @@
+# ABOUTME: Negative fixture -- carries exactly one WARN finding (STAB-004) and nothing else.
+# ABOUTME: It is what makes `--severity warn --exit-code` provably able to go red.
+#
+# The defect this pins: `gaudi check --severity warn --exit-code` counted error
+# findings only, so a caller who asked for a warn-level gate got one that could
+# not fail. This file has no error-severity finding, so under the old behaviour
+# the gate stayed green with a finding on the report.
+
+from functools import cache
+
+
+@cache
+def double(value: int) -> int:
+    """Double a number."""
+    return value * 2

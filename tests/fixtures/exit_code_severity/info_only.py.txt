@@ -1,0 +1,7 @@
+# ABOUTME: Negative fixture -- carries exactly one INFO finding (STRUCT-020) and nothing else.
+# ABOUTME: Proves the gate rises with the threshold: red at `info`, green at `warn` and `error`.
+
+
+def add(left, right):
+    """Add two numbers."""
+    return left + right

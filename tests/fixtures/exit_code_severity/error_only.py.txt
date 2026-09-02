@@ -1,0 +1,7 @@
+# ABOUTME: Control fixture -- carries exactly one ERROR finding (SEC-004) and nothing else.
+# ABOUTME: Pins that raising the threshold never lowers the gate: red at every severity.
+
+
+def evaluate(expression: str) -> object:
+    """Evaluate an expression."""
+    return eval(expression)
