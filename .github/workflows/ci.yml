@@ -53,8 +53,10 @@ jobs:
       # and discussed, not gated — that distinction is the whole point of the
       # 0.3.0 tier work.
       #
-      # --exit-code also exits 2 if any file could not be parsed, so this step
-      # fails loudly rather than certifying a run that never read the tree.
+      # --exit-code gates at the tier --severity names, so `error` here is a
+      # deliberate choice and not a default. It also exits 2 if any file could
+      # not be parsed, so this step fails loudly rather than certifying a run
+      # that never read the tree.
       - name: Gaudi self-check (error tier)
         run: gaudi check src/ --severity error --exit-code
 

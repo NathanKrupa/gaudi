@@ -1,0 +1,7 @@
+# ABOUTME: Control fixture -- a module that carries no finding at any severity.
+# ABOUTME: Held as .py.txt beside its siblings; tests copy it in as a .py file.
+
+
+def add(left: int, right: int) -> int:
+    """Add two numbers."""
+    return left + right
