@@ -2,6 +2,22 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+
+### Added
+- **Skip accounting** (#256). A file the parser cannot read — a syntax the
+  running interpreter is too old for, an unreadable path — is now reported and
+  counted instead of silently dropped. `text` output prints a skip block naming
+  each file and its reason, `--format json` gains a `skipped` list, and
+  `--format github` annotates the file on the diff. Under `--exit-code` a skip
+  exits **2**, distinct from findings (1) and clean (0), and outranks findings:
+  a run that could not look everywhere is incomplete whatever else it reported.
+  This closes a false green — an estate error gate on ~36 files whose PEP 758
+  syntax the installed 3.11 interpreter could not parse exited 0 with output
+  identical to a clean run.
+- `Engine.check_result()` and `Pack.check_result()` return findings alongside
+  the skipped files; `check()` still returns findings only.
+
 ## [0.2.2] — 2026-06-19
 
 ### Fixed

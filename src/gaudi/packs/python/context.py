@@ -14,6 +14,8 @@ from enum import Enum
 from functools import cached_property
 from pathlib import Path
 
+from gaudi.core import FileSkip
+
 
 class Framework(Enum):
     """Python web frameworks detected by the parser."""
@@ -166,6 +168,10 @@ class PythonContext:
     root: Path
     models: list[ModelInfo] = field(default_factory=list)
     files: list[FileInfo] = field(default_factory=list)
+    # Files the parser found but could not read. Rules never see these, so
+    # every rule's silence about them is uninformative — the pack reports
+    # them separately rather than letting them pass for clean code.
+    skipped: list[FileSkip] = field(default_factory=list)
     framework: Framework = Framework.UNKNOWN
     has_settings: bool = False
     has_requirements: bool = False

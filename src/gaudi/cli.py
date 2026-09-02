@@ -54,7 +54,10 @@ def main():
 @click.option(
     "--exit-code/--no-exit-code",
     default=False,
-    help="Exit with non-zero code if findings exist.",
+    help=(
+        "Exit non-zero on an incomplete or failing run: 2 if any file could not "
+        "be parsed, 1 if error-severity findings exist, 0 otherwise."
+    ),
 )
 def check(
     path: str,
@@ -87,13 +90,15 @@ def check(
     # Run checks
     school = get_school(config)
     rule_overrides = get_rule_overrides(config)
-    findings = engine.check(
+    result = engine.check_result(
         project_path,
         pack_names=pack_names,
         min_severity=min_severity,
         school=school,
         rule_overrides=rule_overrides,
     )
+    findings = result.findings
+    skipped = result.skipped
 
     # Output results
     if output_format == "json":
@@ -103,11 +108,12 @@ def check(
             "version": __version__,
             "path": str(project_path),
             "findings": [f.to_dict() for f in findings],
+            "skipped": [s.to_dict() for s in skipped],
             "summary": engine.format_summary(findings),
         }
         click.echo(json.dumps(output, indent=2))
     elif output_format == "github":
-        click.echo(format_github(findings, project_path=project_path))
+        click.echo(format_github(findings, project_path=project_path, skipped=skipped))
     else:
         if not findings:
             console.print()
@@ -150,10 +156,30 @@ def check(
             console.print(f"[dim]{engine.format_summary(findings)}[/dim]")
             console.print()
 
-    # Exit code
-    if exit_code and findings:
-        has_errors = any(f.severity == Severity.ERROR for f in findings)
-        sys.exit(1 if has_errors else 0)
+        if skipped:
+            header = Text(engine.format_skips(skipped), style="bold yellow")
+            console.print(header)
+            for skip in skipped:
+                line = Text("  ")
+                line.append(skip.file, style="cyan")
+                line.append(f" — {skip.reason}")
+                console.print(line)
+            console.print(
+                Text(
+                    "  Nothing was measured in these files. Their silence is not a clean bill.",
+                    style="dim",
+                )
+            )
+            console.print()
+
+    # Exit code. A skip outranks a finding: findings describe what was seen,
+    # and a skip says the seeing was incomplete, so the report cannot be
+    # trusted to be exhaustive whatever it contains.
+    if exit_code:
+        if skipped:
+            sys.exit(2)
+        if any(f.severity == Severity.ERROR for f in findings):
+            sys.exit(1)
 
 
 @main.command()

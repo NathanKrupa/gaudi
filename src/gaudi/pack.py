@@ -14,7 +14,18 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
-from gaudi.core import DEFAULT_SCHOOL, Finding, Rule
+from gaudi.core import DEFAULT_SCHOOL, CheckResult, FileSkip, Finding, Rule
+
+
+def context_skips(context: Any) -> list[FileSkip]:
+    """Read the skip ledger off a pack context.
+
+    Skip accounting is optional for a pack: one whose parser cannot fail to
+    read a file has nothing to declare. A pack that can skip publishes a
+    ``skipped`` list of :class:`FileSkip` on its context and gets reporting,
+    JSON serialization and the exit code for free.
+    """
+    return list(getattr(context, "skipped", ()) or ())
 
 
 def rule_applies_to_school(rule: Rule, school: str) -> bool:
@@ -78,19 +89,28 @@ class Pack:
         """
         raise NotImplementedError(f"Pack '{self.name}' must implement parse()")
 
-    def check(self, path: Path, school: str = DEFAULT_SCHOOL) -> list[Finding]:
+    def check_result(self, path: Path, school: str | None = None) -> CheckResult:
         """
         Parse the project and run all registered rules that apply under
         the given architectural school.
 
-        Returns a list of findings sorted by severity.
+        Returns the findings, sorted by severity, alongside the files the
+        parser could not read.
         """
+        active_school = school or DEFAULT_SCHOOL
         context = self.parse(path)
         findings: list[Finding] = []
         for rule in self._rules:
-            if not rule_applies_to_school(rule, school):
+            if not rule_applies_to_school(rule, active_school):
                 continue
             results = rule.check(context)
             if results:
                 findings.extend(results)
-        return sorted(findings, key=lambda f: (f.severity.priority, f.code))
+        return CheckResult(
+            findings=sorted(findings, key=lambda f: (f.severity.priority, f.code)),
+            skipped=context_skips(context),
+        )
+
+    def check(self, path: Path, school: str | None = None) -> list[Finding]:
+        """Findings only. See :meth:`check_result` for the skipped files too."""
+        return self.check_result(path, school=school).findings

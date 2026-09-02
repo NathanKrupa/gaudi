@@ -15,7 +15,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from gaudi.core import Finding, Severity
+from gaudi.core import FileSkip, Finding, Severity
 
 # GitHub Actions workflow command severity mapping.
 # https://docs.github.com/en/actions/using-workflows/workflow-commands-for-github-actions
@@ -42,7 +42,11 @@ def _escape_github_property(value: str) -> str:
     )
 
 
-def format_github(findings: list[Finding], project_path: Path | None = None) -> str:
+def format_github(
+    findings: list[Finding],
+    project_path: Path | None = None,
+    skipped: list[FileSkip] | None = None,
+) -> str:
     """
     Render findings as GitHub Actions workflow commands.
 
@@ -51,6 +55,10 @@ def format_github(findings: list[Finding], project_path: Path | None = None) -> 
 
     File paths are emitted relative to ``project_path`` when provided so that
     GitHub can match them against files in the checked-out repo.
+
+    Files the parser could not read are annotated too. A file with no
+    annotation reads to every PR reviewer as a file that passed; a skipped
+    file must say on the diff that it was never examined.
     """
     lines: list[str] = []
     for f in findings:
@@ -79,6 +87,12 @@ def format_github(findings: list[Finding], project_path: Path | None = None) -> 
         prop_str = ",".join(props)
         message = _escape_github_data(f.message)
         lines.append(f"::{level} {prop_str}::{message}")
+
+    for skip in skipped or []:
+        file_path = _escape_github_property(skip.file.replace("\\", "/"))
+        title = _escape_github_property("Skipped")
+        message = _escape_github_data(f"Gaudi could not parse this file: {skip.reason}")
+        lines.append(f"::warning file={file_path},title={title}::{message}")
 
     return "\n".join(lines)
 

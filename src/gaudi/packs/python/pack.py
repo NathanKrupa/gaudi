@@ -3,8 +3,8 @@ from __future__ import annotations
 from pathlib import Path
 
 from gaudi.config import get_school, load_config
-from gaudi.core import DEFAULT_SCHOOL, Finding
-from gaudi.pack import Pack, rule_applies_to_school
+from gaudi.core import DEFAULT_SCHOOL, CheckResult, Finding
+from gaudi.pack import Pack, context_skips, rule_applies_to_school
 from gaudi.packs.python.context import PythonContext
 from gaudi.packs.python.parser import parse_project
 from gaudi.packs.python.rules import ALL_RULES
@@ -30,7 +30,7 @@ class PythonPack(Pack):
         context.school = get_school(config)
         return context
 
-    def check(self, path: Path, school: str | None = None) -> list[Finding]:
+    def check_result(self, path: Path, school: str | None = None) -> CheckResult:
         context = self.parse(path)
         active_school = school or context.school or DEFAULT_SCHOOL
         files_by_path = {f.relative_path: f for f in context.files}
@@ -49,4 +49,7 @@ class PythonPack(Pack):
                     if file_info and file_info.is_suppressed(f.line, f.code):
                         continue
                 findings.append(f)
-        return sorted(findings, key=lambda f: (f.severity.priority, f.code))
+        return CheckResult(
+            findings=sorted(findings, key=lambda f: (f.severity.priority, f.code)),
+            skipped=context_skips(context),
+        )

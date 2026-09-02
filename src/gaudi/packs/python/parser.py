@@ -10,6 +10,7 @@ from __future__ import annotations
 import ast
 from pathlib import Path
 
+from gaudi.core import FileSkip
 from gaudi.excludes import (
     CORE_EXCLUDE_GLOBS,
     compile_exclude_patterns,
@@ -138,7 +139,9 @@ def parse_project(path: Path, extra_excludes: list[str] | None = None) -> Python
 
     # Parse each file
     for py_file in py_files:
-        file_info = _parse_file(py_file, root)
+        file_info, skip = _parse_file(py_file, root)
+        if skip is not None:
+            context.skipped.append(skip)
         context.files.append(file_info)
 
         # Detect framework from imports
@@ -206,24 +209,39 @@ def _detect_libraries(root: Path, files: list[FileInfo]) -> set[str]:
     return libraries
 
 
-def _parse_file(filepath: Path, root: Path) -> FileInfo:
-    """Parse a single Python file for metadata."""
+def _parse_file(filepath: Path, root: Path) -> tuple[FileInfo, FileSkip | None]:
+    """Parse a single Python file for metadata.
+
+    Returns the file's metadata and, when the file could not be read at all,
+    a :class:`FileSkip` describing why. A skipped file still yields a
+    ``FileInfo`` so downstream lookups by path keep working; what it does not
+    yield is any evidence, which is what the skip records.
+    """
+    relative_path = str(filepath.relative_to(root))
+
     try:
         source = filepath.read_text(encoding="utf-8", errors="replace")
-    except Exception:
-        return FileInfo(path=filepath, relative_path=str(filepath.relative_to(root)))
+    except OSError as exc:
+        return (
+            FileInfo(path=filepath, relative_path=relative_path),
+            FileSkip(file=relative_path, reason=f"unreadable: {exc.strerror or exc}"),
+        )
 
     file_info = FileInfo(
         path=filepath,
-        relative_path=str(filepath.relative_to(root)),
+        relative_path=relative_path,
         source=source,
         line_count=source.count("\n") + 1,
     )
 
     try:
         tree = ast.parse(source)
-    except SyntaxError:
-        return file_info
+    except SyntaxError as exc:
+        location = f" at line {exc.lineno}" if exc.lineno else ""
+        return (
+            file_info,
+            FileSkip(file=relative_path, reason=f"syntax error{location}: {exc.msg}"),
+        )
 
     # Extract imports
     for node in ast.walk(tree):
@@ -250,7 +268,7 @@ def _parse_file(filepath: Path, root: Path) -> FileInfo:
                         file_info.has_models = True
                         break
 
-    return file_info
+    return file_info, None
 
 
 def _extract_models(filepath: Path, root: Path, framework: str) -> list[ModelInfo]:
