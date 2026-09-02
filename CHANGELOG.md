@@ -24,6 +24,23 @@ All notable changes to this project will be documented in this file.
   line (`--pack <name>`) exits `2` and names the load error, instead of the
   "Unknown pack(s)" misdiagnosis it used to print. The `logger.warning` stays.
 
+- **Every command now reports a pack-load failure as an incomplete run** (#273).
+  The #260 fix reached `check`'s Markdown renderer but not its text one, so
+  `gaudi check` over a broken install still printed "No architectural issues
+  found. Structurally sound." in green, immediately above the block naming the
+  pack that never ran. It now says *"No architectural issues found in the parts
+  that were examined."*, the same wording `report` uses. Naming the failed pack
+  (`--pack <name>`) rendered prose on stdout whatever `--format` asked for,
+  which made `check --format json --pack <name>` unparseable and cost
+  `count --pack <name>` the integer a ratchet reads; the failure now travels
+  the ordinary per-format channel, so JSON stays JSON, `github` stays an
+  annotation, and `count` keeps the integer on stdout with the pack named on
+  stderr. `gaudi cheat-sheet` was the fourth consumer of the pack registry and
+  was never threaded: over a failed pack it wrote a gutted catalog and exited
+  `0`, after which `--check` — in CI and in the `gaudi-cheat-sheet` pre-commit
+  hook — certified the gutted file as up to date. It now writes nothing, names
+  the pack on stderr and exits `2`, and `--check` refuses on the same terms.
+
 - **`--exit-code` now gates at the severity `--severity` selected** (#267).
   It counted error-severity findings only, whatever threshold the caller
   asked for, so `gaudi check . --severity warn --exit-code` exited `0` with
@@ -41,6 +58,10 @@ All notable changes to this project will be documented in this file.
   the one that did not, and naming the failed pack itself exits `2` with its
   load error rather than `1` with "Unknown pack(s)". A genuinely misspelled
   pack name still exits `1`.
+- **`gaudi cheat-sheet` gained exit status `2`.** A generation or a `--check`
+  that used to succeed over a broken install now refuses, writes nothing, and
+  names the pack that failed. A pipeline that regenerates the artifact will
+  stop rather than commit a catalog missing every rule the failed pack owns.
 - **`gaudi report` gained exit status `2`,** on the same rule `count` already
   followed: an incomplete run exits `2` whether or not a flag asked for it. The
   Markdown is still written either way, so a workflow that only consumes the

@@ -169,10 +169,12 @@ class PackError:
     not one file the parser could not read, but a whole rule catalog that never
     ran. It travels on its own channel for the same reason.
 
-    Every command that reads a project carries it: ``check`` (text, json,
-    github, and exit 2 under ``--exit-code``), ``count`` and ``report``
-    (exit 2, unconditionally), and ``list-packs``. Naming a failed pack with
-    ``--pack`` exits 2 rather than reporting it as an unknown pack.
+    Every command that reads the pack registry carries it: ``check`` (text,
+    json, github, and exit 2 under ``--exit-code``), ``count`` and ``report``
+    (exit 2, unconditionally), ``list-packs``, and ``cheat-sheet``, which
+    refuses to render a catalog it could not build. Naming a failed pack with
+    ``--pack`` exits 2 rather than reporting it as an unknown pack, and reports
+    it in whatever format the caller asked for.
     """
 
     pack: str

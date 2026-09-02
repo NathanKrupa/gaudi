@@ -201,12 +201,23 @@ with their reason in every output format, so "could not look" never reads as
 without needing a flag: a count taken over a missing rule catalog is an
 undercount that a ratchet reads as progress, and a Markdown briefing that never
 saw a rule catalog would be read by an LLM as the whole truth about the project.
-`report` names what was not examined in an **Incomplete run** block at the top,
-and says "Structurally sound" only over a run that examined everything.
+`report` names what was not examined in an **Incomplete run** block at the top.
 
-Naming a pack that failed to load (`--pack <name>`) exits `2` and prints its
-load error. Only a pack name Gaudi has never heard of is an "Unknown pack(s)"
-error, exit `1`.
+**"Structurally sound" is claimed only over a run that examined everything** —
+by `check`'s text output and `report`'s Markdown alike. An incomplete run that
+found nothing says *"No architectural issues found in the parts that were
+examined."*, above the block naming what it could not read.
+
+Naming a pack that failed to load (`--pack <name>`) exits `2` and reports the
+load error **in the format that was asked for**: inside the JSON document under
+`pack_errors`, as a `github` annotation, or on stderr for `count`, whose stdout
+stays the bare integer a ratchet captures. Only a pack name Gaudi has never
+heard of is an "Unknown pack(s)" error, exit `1`.
+
+`gaudi cheat-sheet` refuses outright. A catalog assembled from a subset of the
+installed packs is not a shorter catalog but a wrong one, so it writes nothing,
+names the pack on stderr and exits `2`; `--check` refuses on the same terms
+rather than certifying a file it could not rebuild.
 
 ### Prompt Fragment for AI Agents
 
@@ -264,6 +275,10 @@ gaudi cheat-sheet --check -o docs/gaudi-rules.md
 
 The committed artifact at [`docs/gaudi-rules.md`](docs/gaudi-rules.md) is
 generated from rule `recommendation_template` fields. It cannot drift.
+
+Both forms exit `2` and write nothing if any installed pack failed to load —
+the catalog would be missing every rule that pack owns, and `--check` would
+then certify the gutted file as up to date.
 
 ### Philosophy inference
 
