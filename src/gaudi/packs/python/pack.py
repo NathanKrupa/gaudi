@@ -4,7 +4,12 @@ from pathlib import Path
 
 from gaudi.config import get_school, load_config
 from gaudi.core import DEFAULT_SCHOOL, CheckResult, Finding
-from gaudi.pack import Pack, context_skips, rule_applies_to_school
+from gaudi.pack import (
+    Pack,
+    context_skips,
+    rule_applies_to_school,
+    rule_has_the_context_it_needs,
+)
 from gaudi.packs.python.context import PythonContext
 from gaudi.packs.python.parser import parse_project
 from gaudi.packs.python.rules import ALL_RULES
@@ -39,6 +44,8 @@ class PythonPack(Pack):
             if rule.requires_library and rule.requires_library not in context.detected_libraries:
                 continue
             if not rule_applies_to_school(rule, active_school):
+                continue
+            if not rule_has_the_context_it_needs(rule, context):
                 continue
             results = rule.check(context)
             if not results:

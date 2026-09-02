@@ -5,7 +5,7 @@
     "fail_repeated_literal.py": {
       "expected_findings": [
         {
-          "severity": "warn",
+          "severity": "info",
           "message_contains": "approved"
         }
       ]

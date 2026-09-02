@@ -177,6 +177,9 @@ class PythonContext:
     has_requirements: bool = False
     has_pyproject: bool = False
     detected_libraries: set[str] = field(default_factory=set)
+    # True when ``check`` was pointed at one file rather than a project tree.
+    # Rules that need the project cannot be answered from here.
+    single_file: bool = False
     # The architectural school this project has declared in gaudi.toml.
     # Defaults to "classical" when unset, matching the engine default.
     school: str = "classical"

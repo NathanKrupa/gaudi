@@ -227,6 +227,13 @@ class Rule:
     recommendation_template: str = ""
     requires_library: str | None = None
     philosophy_scope: frozenset[str] = UNIVERSAL_SCOPE
+    # True when the rule's verdict depends on files other than the one it
+    # reports on — a paired test module, a health route declared elsewhere.
+    # Pointed at a single file such a rule cannot see the evidence that would
+    # clear it, so it fires on every invocation and teaches its consumers to
+    # disable it repo-wide. Packs sit these rules out of single-file runs
+    # instead.
+    requires_project_context: bool = False
 
     def check(self, context: Any) -> list[Finding]:
         """
