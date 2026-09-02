@@ -667,3 +667,87 @@ class TestNamingAFailedPackKeepsTheRequestedFormat:
 
         payload = json.loads(result.stdout)
         assert [entry["pack"] for entry in payload["pack_errors"]] == ["broken"]
+
+
+class TestCheatSheetRefusesAnIncompleteCatalog:
+    """A cheat-sheet built without every pack is not the rule catalog.
+
+    `cheat-sheet` is the fourth consumer of `engine.packs`. Over a failed pack
+    it wrote a gutted artifact and exited 0, after which the `gaudi-cheat-sheet`
+    pre-commit hook and CI's `--check` certified the gutted file as up to date.
+    """
+
+    def test_it_writes_nothing_when_a_pack_failed_to_load(
+        self, one_broken_pack: None, tmp_path: Path
+    ):
+        destination = tmp_path / "gaudi-rules.md"
+
+        result = CliRunner().invoke(main, ["cheat-sheet", "-o", str(destination)])
+
+        assert result.exit_code == 2
+        assert not destination.exists()
+
+    def test_it_names_the_pack_that_failed(self, one_broken_pack: None, tmp_path: Path):
+        destination = tmp_path / "gaudi-rules.md"
+
+        result = CliRunner().invoke(main, ["cheat-sheet", "-o", str(destination)])
+
+        assert "broken" in result.stderr
+        assert IMPORT_MESSAGE in result.stderr
+
+    def test_it_does_not_overwrite_an_existing_catalog(self, one_broken_pack: None, tmp_path: Path):
+        destination = tmp_path / "gaudi-rules.md"
+        destination.write_text("the committed catalog\n", encoding="utf-8")
+
+        result = CliRunner().invoke(main, ["cheat-sheet", "-o", str(destination)])
+
+        assert result.exit_code == 2
+        assert destination.read_text(encoding="utf-8") == "the committed catalog\n"
+
+    def test_it_writes_nothing_to_stdout_either(self, one_broken_pack: None):
+        result = CliRunner().invoke(main, ["cheat-sheet"])
+
+        assert result.exit_code == 2
+        assert result.stdout == ""
+
+    def test_check_does_not_certify_a_catalog_it_could_not_build(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ):
+        """The false green: the file is byte-correct, and still must not be certified.
+
+        The broken pack contributes no rules, so the rendered catalog is
+        identical to the committed one and `--check` reported "up to date".
+        A catalog that was never built from every pack cannot be certified.
+        """
+        destination = tmp_path / "gaudi-rules.md"
+        _install(monkeypatch, *_real_packs())
+        assert CliRunner().invoke(main, ["cheat-sheet", "-o", str(destination)]).exit_code == 0
+
+        _install(monkeypatch, _BrokenEntryPoint(), *_real_packs())
+        result = CliRunner().invoke(main, ["cheat-sheet", "--check", "-o", str(destination)])
+
+        assert result.exit_code == 2
+        assert "up to date" not in result.output
+        assert "broken" in result.stderr
+
+    def test_a_healthy_install_still_writes_the_catalog(self, all_packs_load: None, tmp_path: Path):
+        """The control."""
+        destination = tmp_path / "gaudi-rules.md"
+
+        result = CliRunner().invoke(main, ["cheat-sheet", "-o", str(destination)])
+
+        assert result.exit_code == 0
+        assert destination.exists()
+        assert destination.read_text(encoding="utf-8").strip()
+
+    def test_a_healthy_install_still_certifies_an_up_to_date_catalog(
+        self, all_packs_load: None, tmp_path: Path
+    ):
+        """The control for --check."""
+        destination = tmp_path / "gaudi-rules.md"
+        CliRunner().invoke(main, ["cheat-sheet", "-o", str(destination)])
+
+        result = CliRunner().invoke(main, ["cheat-sheet", "--check", "-o", str(destination)])
+
+        assert result.exit_code == 0
+        assert "up to date" in result.output

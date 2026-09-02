@@ -580,6 +580,19 @@ def cheat_sheet(output: str | None, check: bool):
     engine = Engine()
     engine.discover_packs()
 
+    # A catalog assembled from a subset of the installed packs is not a shorter
+    # catalog, it is a wrong one -- and writing it hands `--check` (CI, and the
+    # `gaudi-cheat-sheet` pre-commit hook) a gutted file to certify as up to
+    # date. Refuse before rendering, so neither the file nor stdout is touched,
+    # and say so off stdout, which is where the artifact goes.
+    if engine.pack_errors:
+        _warn_incomplete(
+            engine.format_pack_errors(engine.pack_errors),
+            [(e.pack, e.error) for e in engine.pack_errors],
+        )
+        click.echo("  No cheat-sheet was written, and none was verified.", err=True)
+        sys.exit(2)
+
     all_rules = []
     for pack in engine.packs.values():
         all_rules.extend(pack.rules)
