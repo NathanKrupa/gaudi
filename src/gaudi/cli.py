@@ -324,7 +324,7 @@ def list_packs():
 
     if not engine.packs:
         console.print("[yellow]No language packs installed.[/yellow]")
-        console.print("Install the Python pack: pip install gaudi")
+        console.print("Install the Python pack: pip install gaudi-linter")
         return
 
     console.print()
