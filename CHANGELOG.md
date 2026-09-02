@@ -6,6 +6,24 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 
+- **A pack that fails to load is now reported and exits `2`** (#260).
+  `Engine.discover_packs()` logged the failure at warning level and continued
+  without the pack, so a broken install made `gaudi check` report **zero
+  findings and exit `0`** — every rule that pack owns silently unasked, and a
+  CI gate keyed on `--exit-code` green over it. Nothing reads Gaudi's logger in
+  CI, so the log line was not a signal. A pack-load failure now rides the same
+  channel as an unparsable file (#257): it is recorded on `CheckResult`, named
+  with the pack and the exception in `text`, `json` (a `pack_errors` list) and
+  `github` output, and exits `2` under `--exit-code`, ahead of the severity
+  gate. `gaudi count` and `gaudi report` exit `2` for it too — the count is an
+  undercount, and a briefing that never saw a rule catalog is not a clean bill;
+  `report`'s Markdown grows an **Incomplete run** block naming what was not
+  examined, and claims "Structurally sound" only over a run that examined
+  everything. `gaudi list-packs` names the pack that failed rather than
+  reporting "No language packs installed". Naming a failed pack on the command
+  line (`--pack <name>`) exits `2` and names the load error, instead of the
+  "Unknown pack(s)" misdiagnosis it used to print. The `logger.warning` stays.
+
 - **`--exit-code` now gates at the severity `--severity` selected** (#267).
   It counted error-severity findings only, whatever threshold the caller
   asked for, so `gaudi check . --severity warn --exit-code` exited `0` with
@@ -14,6 +32,20 @@ All notable changes to this project will be documented in this file.
 
 ### Migration
 
+- **A run with a broken pack that exited `0` now exits `2`.** If a project's
+  `gaudi check --exit-code` starts failing with `2` and no findings on the
+  report, the install is broken and always was — the pack named in the new
+  block never loaded. That is the fix, not a regression: the previous `0` was
+  reporting a rule catalog that never ran as a clean project. Reinstall the
+  pack. `--pack` does not suppress it: naming a pack that loaded still reports
+  the one that did not, and naming the failed pack itself exits `2` with its
+  load error rather than `1` with "Unknown pack(s)". A genuinely misspelled
+  pack name still exits `1`.
+- **`gaudi report` gained exit status `2`,** on the same rule `count` already
+  followed: an incomplete run exits `2` whether or not a flag asked for it. The
+  Markdown is still written either way, so a workflow that only consumes the
+  document is unaffected; one that gates on the exit status now learns that the
+  briefing is partial.
 - **`--exit-code` paired with `--severity error` is unchanged.** That is the
   documented shape, and every example in this repo, its CI, and
   `docs/llm-workflow.md` already uses it.

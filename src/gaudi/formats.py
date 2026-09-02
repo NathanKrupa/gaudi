@@ -15,7 +15,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from gaudi.core import FileSkip, Finding, Severity
+from gaudi.core import FileSkip, Finding, PackError, Severity
 
 # GitHub Actions workflow command severity mapping.
 # https://docs.github.com/en/actions/using-workflows/workflow-commands-for-github-actions
@@ -46,6 +46,7 @@ def format_github(
     findings: list[Finding],
     project_path: Path | None = None,
     skipped: list[FileSkip] | None = None,
+    pack_errors: list[PackError] | None = None,
 ) -> str:
     """
     Render findings as GitHub Actions workflow commands.
@@ -59,6 +60,13 @@ def format_github(
     Files the parser could not read are annotated too. A file with no
     annotation reads to every PR reviewer as a file that passed; a skipped
     file must say on the diff that it was never examined.
+
+    A pack that failed to load is annotated at ``error`` level, not the
+    ``warning`` a file skip gets. It names no file, so GitHub can only show it
+    in the workflow summary rather than on a diff line — the least visible
+    place an annotation can land, carrying the most damaging news on the run:
+    every rule that pack owns went unasked, so no other annotation on the run
+    can be read as exhaustive.
     """
     lines: list[str] = []
     for f in findings:
@@ -94,6 +102,14 @@ def format_github(
         message = _escape_github_data(f"Gaudi could not parse this file: {skip.reason}")
         lines.append(f"::warning file={file_path},title={title}::{message}")
 
+    for pack_error in pack_errors or []:
+        title = _escape_github_property("Pack load failure")
+        message = _escape_github_data(
+            f"Gaudi could not load the pack '{pack_error.pack}': {pack_error.error}. "
+            f"Every rule it owns went unasked."
+        )
+        lines.append(f"::error title={title}::{message}")
+
     return "\n".join(lines)
 
 
@@ -126,10 +142,38 @@ def _discussion_prompt(finding: Finding) -> str:
     )
 
 
+def _incomplete_run_block(
+    skipped: list[FileSkip] | None,
+    pack_errors: list[PackError] | None,
+) -> list[str]:
+    """Render what the run could not examine, or nothing at all when it examined everything.
+
+    The briefing is the opening move in a conversation with an LLM, and an LLM
+    reads an unqualified report as the whole truth about the project. What was
+    never examined has to be on the page, above the findings, or the reader
+    draws conclusions from a silence that means nothing.
+    """
+    if not skipped and not pack_errors:
+        return []
+
+    out = ["## Incomplete run", "", "**This report is not exhaustive.**", ""]
+    for pack_error in pack_errors or []:
+        out.append(
+            f"- **Pack `{pack_error.pack}` failed to load** — {pack_error.error}. "
+            f"Every rule it owns went unasked."
+        )
+    for skip in skipped or []:
+        out.append(f"- **File `{skip.file}` was not read** — {skip.reason}.")
+    out.append("")
+    return out
+
+
 def format_markdown_report(
     findings: list[Finding],
     project_path: Path,
     snippet_context: int = 2,
+    skipped: list[FileSkip] | None = None,
+    pack_errors: list[PackError] | None = None,
 ) -> str:
     """
     Render findings as a Markdown report grouped by file.
@@ -137,6 +181,10 @@ def format_markdown_report(
     The report is intended to be read by both a developer and an LLM. Each
     finding gets a code snippet with surrounding context and a pre-written
     discussion prompt the developer can paste into an LLM conversation.
+
+    Files that could not be read and packs that could not be loaded are named
+    at the top. "Structurally sound" is claimed only over a run that examined
+    everything it was pointed at.
     """
     project_path = project_path.resolve()
     out: list[str] = []
@@ -145,8 +193,14 @@ def format_markdown_report(
     out.append(f"Project: `{project_path}`")
     out.append("")
 
+    incomplete = _incomplete_run_block(skipped, pack_errors)
+    out.extend(incomplete)
+
     if not findings:
-        out.append("No architectural issues found. Structurally sound.")
+        if incomplete:
+            out.append("No architectural issues found in the parts that were examined.")
+        else:
+            out.append("No architectural issues found. Structurally sound.")
         out.append("")
         return "\n".join(out)
 

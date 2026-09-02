@@ -161,11 +161,34 @@ class FileSkip:
 
 
 @dataclass(frozen=True)
+class PackError:
+    """A pack that failed to load, and why.
+
+    Like a :class:`FileSkip` this is the absence of evidence rather than a
+    finding: every rule the pack owns went unasked. It differs only in scope —
+    not one file the parser could not read, but a whole rule catalog that never
+    ran. It travels on its own channel for the same reason.
+
+    Every command that reads a project carries it: ``check`` (text, json,
+    github, and exit 2 under ``--exit-code``), ``count`` and ``report``
+    (exit 2, unconditionally), and ``list-packs``. Naming a failed pack with
+    ``--pack`` exits 2 rather than reporting it as an unknown pack.
+    """
+
+    pack: str
+    error: str
+
+    def to_dict(self) -> dict[str, Any]:
+        return {"pack": self.pack, "error": self.error}
+
+
+@dataclass(frozen=True)
 class CheckResult:
     """Everything one ``check`` run learned: what it found, and what it could not read."""
 
     findings: list[Finding] = field(default_factory=list)
     skipped: list[FileSkip] = field(default_factory=list)
+    pack_errors: list[PackError] = field(default_factory=list)
 
 
 UNIVERSAL_SCOPE: frozenset[str] = frozenset({"universal"})
