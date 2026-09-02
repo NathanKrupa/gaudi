@@ -31,15 +31,20 @@ instruction, CI step and Dockerfile must name `gaudi-linter`.
 working in a worktree.** `.venv/bin/gaudi` carries an absolute shebang written
 at install time; if that interpreter's tree has moved or been pruned the script
 fails, and if it still exists it imports *that* checkout's `gaudi`, not this
-one. The same applies to `language: system` pre-commit hooks — the
-`gaudi-cheat-sheet` drift guard resolves `gaudi` from `PATH` and will report
-drift against whichever tree that binary imports. Export an absolute
-`PYTHONPATH` before running any gate in a worktree, and prove it:
+one. Export an absolute `PYTHONPATH` before running any gate in a worktree
+(`pytest`, `gaudi check`, `gaudi-fixture-coverage`), and prove it:
 
 ```bash
 export PYTHONPATH=$(git rev-parse --show-toplevel)/src
 .venv/bin/python -c "import gaudi; print(gaudi.__file__)"   # must be THIS tree
 ```
+
+**The `gaudi-cheat-sheet` pre-commit hook needs none of that.** It runs
+`scripts/lint/cheat_sheet_check.py`, which derives the repository root from its
+own `__file__` and puts that checkout's `src/` at `sys.path[0]` — ahead of
+`PYTHONPATH` and of any installed `gaudi`. The guard therefore measures the tree
+being committed whatever is on `PATH`, and exits **2** with the reason on stderr
+if it cannot import that tree, rather than passing silently (gaudi#266).
 
 ## Principles
 
