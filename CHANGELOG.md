@@ -32,6 +32,21 @@ All notable changes to this project will be documented in this file.
   the number printed is then an undercount, and a ratchet comparing it against
   a complete baseline would read the missing findings as progress.
 
+### Fixed
+- **ERR-003** now keys on the swallow rather than on the log level (#256 item
+  1). `except …:` that logs at *any* level and does not re-raise fires;
+  previously only `error` and `exception` did. One estate repo carried 127
+  warning-logged swallows against 17 error-logged — the rule was blind to 88%
+  of its own population, which is how an unreadable object-store read was
+  logged at warning, read as "the site says nothing", and stamped 30-day empty
+  sentinels across an outage. A handler that logs nothing stays out of scope:
+  ERR-001 and ERR-004 own it. The message now says "Exception logged but not
+  re-raised" rather than "Error logged …", since the level is no longer the
+  subject.
+- `is_logger_call` / `LOG_METHODS` moved to
+  `packs/python/ast_helpers.py`; `logging_rules.py` and `errors.py` share one
+  definition of what a logger call is.
+
 ### Changed
 - **STRUCT-021** and **CPLX-002** demoted from `warn` to `info` (#256 items 4
   and 5). Both are style-tier: STRUCT-021's count threshold cannot tell a magic

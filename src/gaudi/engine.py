@@ -52,7 +52,13 @@ class Engine:
                 pack_class = ep.load()
                 pack = pack_class()
                 self._packs[ep.name] = pack
-            except Exception as e:
+            except Exception as e:  # noqa: ERR-003
+                # KNOWN DEFECT, tracked at #260 — not an acknowledged exemption.
+                # A pack that fails to load makes `check` report zero findings
+                # and exit 0, which is the "could not look reads as found
+                # nothing" class one level above the file skip. The fix is to
+                # carry pack-load failures on the skip channel; until then this
+                # warning is the only signal, and nothing reads it in CI.
                 logger.warning("Failed to load pack '%s': %s", ep.name, e)
 
     def register_pack(self, pack: Pack) -> None:
