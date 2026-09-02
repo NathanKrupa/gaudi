@@ -31,6 +31,59 @@ def is_logger_call(call: ast.Call) -> bool:
     return isinstance(func, ast.Attribute) and func.attr in LOG_METHODS
 
 
+# Modules whose call surface reaches the network, and the methods on them that
+# do. `urlopen` is listed separately because urllib names the operation rather
+# than the verb.
+HTTP_CLIENT_MODULES: frozenset[str] = frozenset({"requests", "httpx", "urllib3", "urllib"})
+HTTP_CLIENT_METHODS: frozenset[str] = frozenset(
+    {
+        "get",
+        "post",
+        "put",
+        "patch",
+        "delete",
+        "head",
+        "options",
+        "request",
+        "send",
+        "urlopen",
+    }
+)
+
+
+def attr_root(node: ast.expr) -> str | None:
+    """Walk an Attribute chain to its root Name and return that name."""
+    while isinstance(node, ast.Attribute):
+        node = node.value
+    if isinstance(node, ast.Name):
+        return node.id
+    return None
+
+
+def is_http_client_call(call: ast.Call) -> bool:
+    """True for ``requests.post(...)``, ``httpx.get(...)``, ``urllib.request.urlopen(...)``.
+
+    Deliberately shallow: the receiver's *root* name must be a known HTTP client
+    module. A session object bound from one (``s = requests.Session()``) is not
+    tracked, because a rule that guesses wrong about a receiver produces the
+    false positives that get the whole rule disabled.
+    """
+    func = call.func
+    if not isinstance(func, ast.Attribute):
+        return False
+    if func.attr not in HTTP_CLIENT_METHODS:
+        return False
+    return attr_root(func.value) in HTTP_CLIENT_MODULES
+
+
+def describe_call(call: ast.Call) -> str:
+    """Render ``root.method`` for a finding message."""
+    func = call.func
+    if isinstance(func, ast.Attribute):
+        return f"{attr_root(func.value) or '?'}.{func.attr}"
+    return "http call"
+
+
 def collect_receiver_names(
     tree: ast.Module,
     module: str,

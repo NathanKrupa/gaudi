@@ -32,6 +32,17 @@ All notable changes to this project will be documented in this file.
   the number printed is then an undercount, and a ratchet comparing it against
   a complete baseline would read the missing findings as progress.
 
+- **SA-ARCH-001 TransactionBoundaryIO** (#256 item 2) — an `error`-severity
+  rule firing on a network call (`requests` / `httpx` / `urllib` / `urllib3`)
+  inside a SQLAlchemy or psycopg transaction block (`with session.begin():`,
+  `with engine.begin() as conn:`, `with conn.transaction():`). DJ-ARCH-004 asks
+  the same question of Django's `transaction.atomic()`, so a SQLAlchemy repo
+  was never asked it at all: grantspider has 0 `atomic()` blocks and 43
+  explicit `.commit()` calls, and both of its transaction incidents (a four-day
+  CRASHED service; 357 rows of paid model output lost) were structurally
+  invisible. Scope is deliberately shallow — `with`-block bodies only, no
+  dataflow. DJ-ARCH-004 gains `urllib` coverage from the shared helper.
+
 ### Fixed
 - **ERR-003** now keys on the swallow rather than on the log level (#256 item
   1). `except …:` that logs at *any* level and does not re-raise fires;

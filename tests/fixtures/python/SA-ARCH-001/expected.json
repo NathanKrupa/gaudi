@@ -1,0 +1,48 @@
+{
+  "rule_id": "SA-ARCH-001",
+  "description": "TransactionBoundaryIO -- a network call inside a database transaction block",
+  "fixtures": {
+    "fail_httpx_in_session_begin.py": {
+      "expected_findings": [
+        {
+          "severity": "error",
+          "line": 16,
+          "message_contains": "inside a database transaction"
+        }
+      ]
+    },
+    "fail_requests_in_engine_begin.py": {
+      "expected_findings": [
+        {
+          "severity": "error",
+          "line": 9,
+          "message_contains": "inside a database transaction"
+        }
+      ]
+    },
+    "fail_urlopen_in_conn_transaction.py": {
+      "expected_findings": [
+        {
+          "severity": "error",
+          "line": 10,
+          "message_contains": "inside a database transaction"
+        }
+      ]
+    },
+    "pass_http_outside_transaction.py": {
+      "expected_findings": []
+    },
+    "pass_transaction_without_io.py": {
+      "expected_findings": []
+    },
+    "pass_http_in_non_transaction_with.py": {
+      "expected_findings": []
+    },
+    "pass_transaction_calls_only_the_db.py": {
+      "expected_findings": []
+    },
+    "pass_client_construction_in_transaction.py": {
+      "expected_findings": []
+    }
+  }
+}

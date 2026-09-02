@@ -16,6 +16,7 @@
 - **PY314-001 RemovedIn314Import** — {replacement}
 - **PY314-005 NotImplementedBoolContext** — Return NotImplemented from special methods to signal the operation is not supported, but never use it in if/while conditions or bool() calls. Use 'is NotImplemented' for checks.
 - **PYD-ARCH-001 PydanticMutableDefault** [pydantic] — Use Field(default_factory=list) instead of Field(default=[]) in Pydantic models. Mutable defaults are shared across instances.
+- **SA-ARCH-001 TransactionBoundaryIO** [sqlalchemy] — A network call inside a transaction holds its locks for as long as the remote host takes to answer — and a hung request holds them until the connection times out. Fetch before opening the transaction, or commit first and do the call afterwards.
 - **SEC-002 RawSQLInjection** — Use parameterized queries: pass values as a separate tuple/dict argument to execute() instead of formatting them into the SQL string.
 - **SEC-003 HardcodedCredential** — Read secrets from environment variables (os.getenv) or a secrets manager. Hardcoded credentials leak through git history.
 - **SEC-004 EvalExecUsage** — eval() and exec() execute arbitrary code. Use ast.literal_eval for safe expression parsing, or refactor to avoid dynamic execution.

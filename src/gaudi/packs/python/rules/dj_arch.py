@@ -5,6 +5,7 @@ from __future__ import annotations
 import ast
 
 from gaudi.core import Category, Finding, Rule, Severity
+from gaudi.packs.python.ast_helpers import attr_root, is_http_client_call
 from gaudi.packs.python.context import PythonContext
 
 
@@ -12,32 +13,12 @@ from gaudi.packs.python.context import PythonContext
 # Shared helpers
 # ---------------------------------------------------------------------------
 
-_HTTP_CLIENT_MODULES = frozenset({"requests", "httpx", "urllib3"})
-_HTTP_CLIENT_METHODS = frozenset(
-    {"get", "post", "put", "patch", "delete", "head", "options", "request", "send"}
-)
 _EXTERNAL_SIDE_EFFECTS = frozenset({"send_mail", "send_task", "delay", "apply_async"})
 
-
-def _attr_root(node: ast.expr) -> str | None:
-    """Walk an Attribute chain to its root Name and return the name."""
-    while isinstance(node, ast.Attribute):
-        node = node.value
-    if isinstance(node, ast.Name):
-        return node.id
-    return None
-
-
-def _is_http_call(call: ast.Call) -> bool:
-    """Return True for requests.post / httpx.get / session.request / etc."""
-    func = call.func
-    if isinstance(func, ast.Attribute):
-        if func.attr not in _HTTP_CLIENT_METHODS:
-            return False
-        root = _attr_root(func.value)
-        if root in _HTTP_CLIENT_MODULES:
-            return True
-    return False
+# Shared with SA-ARCH-001, which asks the same question about a SQLAlchemy
+# transaction block that DJ-ARCH-004 asks about transaction.atomic().
+_attr_root = attr_root
+_is_http_call = is_http_client_call
 
 
 def _is_external_side_effect(call: ast.Call) -> bool:
