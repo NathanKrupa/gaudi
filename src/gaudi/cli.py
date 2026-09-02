@@ -19,11 +19,47 @@ from rich.console import Console
 from rich.text import Text
 
 from gaudi.config import get_rule_overrides, get_school, load_config
-from gaudi.core import Severity
+from gaudi.core import CheckResult, Severity
 from gaudi.engine import Engine
 from gaudi.formats import format_github, format_markdown_report
+from gaudi.services.ratchet import RATCHET_RULE_CODES, count_by_code
 
 console = Console()
+
+
+def _run_check(path: str, pack: tuple[str, ...], severity: str) -> tuple[Engine, Path, CheckResult]:
+    """Resolve config, build the engine, and run one check.
+
+    Every subcommand that inspects a project needs the same six steps in the
+    same order, and getting one of them wrong (an unvalidated ``--pack``, a
+    dropped ``gaudi.toml`` override) is silent. They live here once.
+    """
+    project_path = Path(path).resolve()
+
+    # Load config from gaudi.toml, then let CLI flags override
+    config = load_config(project_path)
+    min_severity = Severity(severity or config.get("severity", "info"))
+
+    engine = Engine()
+    engine.discover_packs()
+
+    # CLI --pack flags override config; config packs override auto-detect
+    pack_names = list(pack) if pack else (config["packs"] or None)
+    if pack_names:
+        missing = [p for p in pack_names if p not in engine.packs]
+        if missing:
+            console.print(f"[red]Unknown pack(s): {', '.join(missing)}[/red]")
+            console.print(f"Available packs: {', '.join(engine.packs.keys()) or 'none installed'}")
+            sys.exit(1)
+
+    result = engine.check_result(
+        project_path,
+        pack_names=pack_names,
+        min_severity=min_severity,
+        school=get_school(config),
+        rule_overrides=get_rule_overrides(config),
+    )
+    return engine, project_path, result
 
 
 @click.group()
@@ -67,36 +103,7 @@ def check(
     exit_code: bool,
 ):
     """Check a project or file for architectural issues."""
-    project_path = Path(path).resolve()
-
-    # Load config from gaudi.toml, then let CLI flags override
-    config = load_config(project_path)
-    min_severity = Severity(severity or config.get("severity", "info"))
-
-    # Initialize engine and discover packs
-    engine = Engine()
-    engine.discover_packs()
-
-    # CLI --pack flags override config; config packs override auto-detect
-    pack_names = list(pack) if pack else (config["packs"] or None)
-
-    if pack_names:
-        missing = [p for p in pack_names if p not in engine.packs]
-        if missing:
-            console.print(f"[red]Unknown pack(s): {', '.join(missing)}[/red]")
-            console.print(f"Available packs: {', '.join(engine.packs.keys()) or 'none installed'}")
-            sys.exit(1)
-
-    # Run checks
-    school = get_school(config)
-    rule_overrides = get_rule_overrides(config)
-    result = engine.check_result(
-        project_path,
-        pack_names=pack_names,
-        min_severity=min_severity,
-        school=school,
-        rule_overrides=rule_overrides,
-    )
+    engine, project_path, result = _run_check(path, pack, severity)
     findings = result.findings
     skipped = result.skipped
 
@@ -220,38 +227,93 @@ def report(
     autofix — Gaudi's rules are judgment calls, and the report is the
     opening move in a conversation, not a patch.
     """
-    project_path = Path(path).resolve()
-
-    config = load_config(project_path)
-    min_severity = Severity(severity or config.get("severity", "info"))
-
-    engine = Engine()
-    engine.discover_packs()
-
-    pack_names = list(pack) if pack else (config["packs"] or None)
-    if pack_names:
-        missing = [p for p in pack_names if p not in engine.packs]
-        if missing:
-            console.print(f"[red]Unknown pack(s): {', '.join(missing)}[/red]")
-            console.print(f"Available packs: {', '.join(engine.packs.keys()) or 'none installed'}")
-            sys.exit(1)
-
-    school = get_school(config)
-    rule_overrides = get_rule_overrides(config)
-    findings = engine.check(
-        project_path,
-        pack_names=pack_names,
-        min_severity=min_severity,
-        school=school,
-        rule_overrides=rule_overrides,
+    _, project_path, result = _run_check(path, pack, severity)
+    markdown = format_markdown_report(
+        result.findings, project_path, snippet_context=snippet_context
     )
-    markdown = format_markdown_report(findings, project_path, snippet_context=snippet_context)
 
     if output:
         Path(output).write_text(markdown, encoding="utf-8")  # noqa: SEC-012
         console.print(f"[green]Wrote report to {output}[/green]")
     else:
         click.echo(markdown)
+
+
+@main.command()
+@click.argument("path", type=click.Path(exists=True), default=".")
+@click.option("--pack", "-p", multiple=True, help="Specific language pack(s) to use.")
+@click.option("--code", "-c", default=None, help="Count only this rule code.")
+@click.option(
+    "--ratchet",
+    is_flag=True,
+    default=False,
+    help=(
+        "Count only the debt rule set — the findings a ratchet should measure "
+        f"({', '.join(RATCHET_RULE_CODES)}). Style-tier rules are excluded."
+    ),
+)
+@click.option(
+    "--format",
+    "-f",
+    "output_format",
+    type=click.Choice(["text", "json"]),
+    default="text",
+    help="'text' prints a single integer; 'json' prints a {code: count} map.",
+)
+@click.option(
+    "--severity",
+    "-s",
+    type=click.Choice(["error", "warn", "info"]),
+    default="info",
+    help="Minimum severity to count.",
+)
+def count(
+    path: str,
+    pack: tuple[str, ...],
+    code: str | None,
+    ratchet: bool,
+    output_format: str,
+    severity: str,
+):
+    """Count findings by rule code — the primitive CI ratchets are built on.
+
+    Text output is a bare integer and nothing else, so it can be captured
+    directly:
+
+        baseline=$(gaudi count . --ratchet)
+
+    Exit code 0 means the count is complete. Exit code 2 means at least one
+    file could not be parsed, so the number printed is an undercount — a
+    ratchet that compared it against a complete baseline would read the
+    missing findings as progress.
+    """
+    if ratchet and code:
+        console.print("[red]--code and --ratchet cannot be combined.[/red]")
+        console.print("--ratchet already names the set of codes to count.")
+        sys.exit(1)
+
+    engine, _, result = _run_check(path, pack, severity)
+
+    if code:
+        codes: list[str] | None = [code]
+    elif ratchet:
+        codes = list(RATCHET_RULE_CODES)
+    else:
+        codes = None
+
+    counts = count_by_code(result.findings, codes=codes)
+
+    if output_format == "json":
+        click.echo(json.dumps(counts, indent=2))
+    else:
+        click.echo(sum(counts.values()))
+
+    if result.skipped:
+        click.echo(engine.format_skips(result.skipped), err=True)
+        for skip in result.skipped:
+            click.echo(f"  {skip.file} — {skip.reason}", err=True)
+        click.echo("  This count is an undercount.", err=True)
+        sys.exit(2)
 
 
 @main.command(name="list-packs")
