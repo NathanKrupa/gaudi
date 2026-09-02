@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import ast
 from gaudi.core import Rule, Finding, Severity, Category
+from gaudi.packs.python.ast_helpers import is_logger_call
 from gaudi.packs.python.context import FileInfo, PythonContext
 
 
@@ -20,25 +21,10 @@ _LOG_METHODS = frozenset(
     }
 )
 
-# Broader set used by LOG-002 / LOG-005. LOG-001 keeps its narrower set so its
-# behavior does not shift under us.
-_LOG_METHODS_ALL = frozenset(
-    {
-        "info",
-        "warning",
-        "warn",
-        "debug",
-        "error",
-        "critical",
-        "exception",
-        "log",
-    }
-)
-
-
-def _is_logger_call(call: ast.Call) -> bool:
-    func = call.func
-    return isinstance(func, ast.Attribute) and func.attr in _LOG_METHODS_ALL
+# LOG-001 keeps a narrower set (above) so its behavior does not shift under us.
+# LOG-002 / LOG-005 use the shared full set from ast_helpers, which ERR-003
+# also reads — one definition of "this is a logger call" for the whole pack.
+_is_logger_call = is_logger_call
 
 
 # ---------------------------------------------------------------

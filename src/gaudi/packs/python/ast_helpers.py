@@ -6,6 +6,31 @@ import ast
 from collections.abc import Sequence
 
 
+# Every method a stdlib logger exposes for emitting a record. A rule that
+# reasons about "did this handler log?" must not key on the level: the level
+# describes how loudly the author felt about the failure, not whether the
+# failure was handled.
+LOG_METHODS: frozenset[str] = frozenset(
+    {
+        "debug",
+        "info",
+        "warning",
+        "warn",
+        "error",
+        "exception",
+        "critical",
+        "fatal",
+        "log",
+    }
+)
+
+
+def is_logger_call(call: ast.Call) -> bool:
+    """True when ``call`` looks like ``<something>.<level>(...)`` on a logger."""
+    func = call.func
+    return isinstance(func, ast.Attribute) and func.attr in LOG_METHODS
+
+
 def collect_receiver_names(
     tree: ast.Module,
     module: str,

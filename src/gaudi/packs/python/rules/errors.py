@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import ast
 from gaudi.core import Rule, Finding, Severity, Category
+from gaudi.packs.python.ast_helpers import is_logger_call
 from gaudi.packs.python.context import PythonContext
 
 
@@ -64,16 +65,27 @@ class BareExcept(Rule):
 
 
 class ErrorSwallowing(Rule):
-    """Detect errors that are logged but not re-raised (error swallowing).
+    """Detect exceptions that are logged but not re-raised (error swallowing).
 
     Principles: #4 (Failure must be named), #13 (The system must explain itself).
     Source: ARCH90 Day 5 — silent failure is hidden from monitoring.
+
+    The rule keys on the *swallow*, not on the level the handler logged at.
+    A handler that logs at warning and returns a sentinel hides the failure
+    exactly as thoroughly as one that logs at error — and the level is the
+    author's estimate of severity, which is the thing being questioned. Keying
+    on level made this rule blind to 88% of one estate repo's swallow
+    population, including the one that stamped 30-day empty sentinels across
+    an object-store outage.
+
+    A handler that logs nothing is out of scope: ERR-001 (broad except without
+    re-raise) and ERR-004 (`except: pass`) own that ground.
     """
 
     code = "ERR-003"
     severity = Severity.WARN
     category = Category.ERROR_HANDLING
-    message_template = "Error logged but not re-raised at line {line}"
+    message_template = "Exception logged but not re-raised at line {line}"
     recommendation_template = (
         "Logging an error without re-raising hides failures."
         " Log and re-raise, or handle the error explicitly."
@@ -93,10 +105,8 @@ class ErrorSwallowing(Rule):
                 for child in ast.walk(ast.Module(body=node.body)):
                     if isinstance(child, ast.Raise):
                         has_raise = True
-                    if isinstance(child, ast.Call):
-                        func = child.func
-                        if isinstance(func, ast.Attribute) and func.attr in ("error", "exception"):
-                            has_log = True
+                    if isinstance(child, ast.Call) and is_logger_call(child):
+                        has_log = True
                 if has_log and not has_raise:
                     findings.append(
                         self.finding(
