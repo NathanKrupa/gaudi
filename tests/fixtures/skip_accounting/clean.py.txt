@@ -1,0 +1,7 @@
+# ABOUTME: Positive control for skip accounting -- ordinary source the parser reads.
+# ABOUTME: Held as .py.txt beside the unparsable fixture; tests copy it in as a .py file.
+
+
+def add(left: int, right: int) -> int:
+    """Add two numbers."""
+    return left + right

@@ -143,6 +143,31 @@ class Finding:
         return "\n".join(lines)
 
 
+@dataclass(frozen=True)
+class FileSkip:
+    """A file the parser could not read, and why.
+
+    A skip is not a finding: nothing was measured about the file at all. It
+    travels on its own channel precisely so "could not look" can never be
+    mistaken for "found nothing" — in the report, in the JSON, or in the
+    exit code.
+    """
+
+    file: str
+    reason: str
+
+    def to_dict(self) -> dict[str, Any]:
+        return {"file": self.file, "reason": self.reason}
+
+
+@dataclass(frozen=True)
+class CheckResult:
+    """Everything one ``check`` run learned: what it found, and what it could not read."""
+
+    findings: list[Finding] = field(default_factory=list)
+    skipped: list[FileSkip] = field(default_factory=list)
+
+
 UNIVERSAL_SCOPE: frozenset[str] = frozenset({"universal"})
 
 VALID_SCHOOLS: frozenset[str] = frozenset(

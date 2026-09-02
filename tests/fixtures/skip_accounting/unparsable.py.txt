@@ -1,0 +1,14 @@
+# ABOUTME: Negative fixture for skip accounting -- source no interpreter can parse.
+# ABOUTME: Held as .py.txt so ruff never parses it; tests copy it in as a .py file.
+#
+# The estate defect this pins: `gaudi check` under an interpreter too old for a
+# file's syntax (PEP 758 `except A, B:` on Python 3.11) skipped ~36
+# aigranthelper files and exited 0 -- output identical to a clean run. The
+# version-specific case cannot be pinned in the corpus because Gaudi's own CI
+# matrix spans 3.10-3.14 and any such file parses on one end of it. This file
+# is invalid on every version, so it stands for the whole class: a file the
+# parser cannot read must be reported and counted, never silently dropped.
+
+
+def load(path)
+    return open(path).read()

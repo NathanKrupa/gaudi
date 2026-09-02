@@ -9,7 +9,7 @@ import sys
 from importlib.metadata import entry_points
 from pathlib import Path
 
-from gaudi.core import Finding, Severity
+from gaudi.core import CheckResult, FileSkip, Finding, Severity
 from gaudi.pack import Pack
 
 logger = logging.getLogger(__name__)
@@ -65,14 +65,14 @@ class Engine:
     def detect_packs(self, path: Path) -> list[Pack]:
         return [pack for pack in self._packs.values() if pack.can_handle(path)]
 
-    def check(
+    def check_result(
         self,
         path: Path,
         pack_names: list[str] | None = None,
         min_severity: Severity = Severity.INFO,
         school: str | None = None,
         rule_overrides: dict[str, str] | None = None,
-    ) -> list[Finding]:
+    ) -> CheckResult:
         """
         Run architectural checks on the given path.
 
@@ -84,7 +84,10 @@ class Engine:
             rule_overrides: Per-rule severity overrides (code → severity or "off").
 
         Returns:
-            List of findings sorted by severity then code.
+            Findings sorted by severity then code, and the files no pack could
+            read. Skips are never filtered by ``min_severity`` or suppressed by
+            ``rule_overrides`` — a skip is the absence of evidence, not a
+            finding whose importance a caller can rank down.
         """
         if pack_names:
             packs = [self._packs[name] for name in pack_names if name in self._packs]
@@ -92,12 +95,14 @@ class Engine:
             packs = self.detect_packs(path)
 
         if not packs:
-            return []
+            return CheckResult()
 
         findings: list[Finding] = []
+        skipped: list[FileSkip] = []
         for pack in packs:
-            pack_findings = pack.check(path, school=school)
-            findings.extend(pack_findings)
+            result = pack.check_result(path, school=school)
+            findings.extend(result.findings)
+            skipped.extend(result.skipped)
 
         # Apply per-rule severity overrides and suppressions
         if rule_overrides:
@@ -106,7 +111,38 @@ class Engine:
         # Filter by minimum severity
         findings = [f for f in findings if f.severity.priority <= min_severity.priority]
 
-        return sorted(findings, key=lambda f: (f.severity.priority, f.code))
+        return CheckResult(
+            findings=sorted(findings, key=lambda f: (f.severity.priority, f.code)),
+            skipped=sorted(skipped, key=lambda s: s.file),
+        )
+
+    def check(
+        self,
+        path: Path,
+        pack_names: list[str] | None = None,
+        min_severity: Severity = Severity.INFO,
+        school: str | None = None,
+        rule_overrides: dict[str, str] | None = None,
+    ) -> list[Finding]:
+        """Findings only. See :meth:`check_result` for the skipped files too."""
+        return self.check_result(
+            path,
+            pack_names=pack_names,
+            min_severity=min_severity,
+            school=school,
+            rule_overrides=rule_overrides,
+        ).findings
+
+    def format_skips(self, skipped: list[FileSkip]) -> str:
+        """One line summarising what the run could not read.
+
+        Returns the empty string when nothing was skipped, so a clean run says
+        nothing about skips at all and the two states never read alike.
+        """
+        if not skipped:
+            return ""
+        count = len(skipped)
+        return f"{count} file{'s' if count != 1 else ''} skipped — Gaudi could not parse them."
 
     def format_summary(self, findings: list[Finding]) -> str:
         errors = sum(1 for f in findings if f.severity == Severity.ERROR)

@@ -160,6 +160,24 @@ gaudi check . --format json --severity error --exit-code
 gaudi check . --severity error --exit-code
 ```
 
+### Exit codes
+
+`--exit-code` distinguishes three outcomes, because a gate that cannot tell
+them apart is not a gate:
+
+| code | meaning |
+| --- | --- |
+| `0` | Every file was parsed, and nothing at or above the severity threshold was found. |
+| `1` | Error-severity findings exist. |
+| `2` | At least one file could not be parsed. The run is incomplete — whatever it reported, it did not look everywhere. |
+
+`2` outranks `1`: findings describe what was seen, and a skip says the seeing
+was incomplete. Skipped files are listed with their reason in every output
+format (`text`, `json` under a `skipped` key, and `github` as annotations on
+the file), so "could not look" never reads as "found nothing". The usual cause
+is a file whose syntax is newer than the interpreter Gaudi is running under —
+install Gaudi on the same Python your project targets.
+
 ### Prompt Fragment for AI Agents
 
 Include this in your system prompt or project instructions:
