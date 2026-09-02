@@ -62,6 +62,31 @@ def _run_check(path: str, pack: tuple[str, ...], severity: str) -> tuple[Engine,
     return engine, project_path, result
 
 
+def _print_incomplete(header: str, rows: list[tuple[str, str]], footer: str, style: str) -> None:
+    """Render one block of what the run could not do, for the human report.
+
+    Skips and pack errors are the same kind of news — the run did not see
+    everything — so they are rendered the same way and read the same way. The
+    style is the only difference: a skip loses one file, a pack error loses
+    every rule the pack owns.
+    """
+    console.print(Text(header, style=style))
+    for name, reason in rows:
+        line = Text("  ")
+        line.append(name, style="cyan")
+        line.append(f" — {reason}")
+        console.print(line)
+    console.print(Text(f"  {footer}", style="dim"))
+    console.print()
+
+
+def _warn_incomplete(header: str, rows: list[tuple[str, str]]) -> None:
+    """Report what the run could not do off stdout, for the machine-readable commands."""
+    click.echo(header, err=True)
+    for name, reason in rows:
+        click.echo(f"  {name} — {reason}", err=True)
+
+
 @click.group()
 @click.version_option(package_name="gaudi-linter")
 def main():
@@ -91,10 +116,10 @@ def main():
     "--exit-code/--no-exit-code",
     default=False,
     help=(
-        "Exit non-zero on an incomplete or failing run: 2 if any file could not "
-        "be parsed, 1 if the report is not empty, 0 otherwise. The gate is the "
-        "threshold --severity selected, so --severity warn --exit-code fails on "
-        "a warning."
+        "Exit non-zero on an incomplete or failing run: 2 if the run was "
+        "incomplete (a pack failed to load, or a file could not be parsed), "
+        "1 if the report is not empty, 0 otherwise. The gate is the threshold "
+        "--severity selected, so --severity warn --exit-code fails on a warning."
     ),
 )
 def check(
@@ -108,6 +133,7 @@ def check(
     engine, project_path, result = _run_check(path, pack, severity)
     findings = result.findings
     skipped = result.skipped
+    pack_errors = result.pack_errors
 
     # Output results
     if output_format == "json":
@@ -118,11 +144,19 @@ def check(
             "path": str(project_path),
             "findings": [f.to_dict() for f in findings],
             "skipped": [s.to_dict() for s in skipped],
+            "pack_errors": [e.to_dict() for e in pack_errors],
             "summary": engine.format_summary(findings),
         }
         click.echo(json.dumps(output, indent=2))
     elif output_format == "github":
-        click.echo(format_github(findings, project_path=project_path, skipped=skipped))
+        click.echo(
+            format_github(
+                findings,
+                project_path=project_path,
+                skipped=skipped,
+                pack_errors=pack_errors,
+            )
+        )
     else:
         if not findings:
             console.print()
@@ -166,31 +200,33 @@ def check(
             console.print()
 
         if skipped:
-            header = Text(engine.format_skips(skipped), style="bold yellow")
-            console.print(header)
-            for skip in skipped:
-                line = Text("  ")
-                line.append(skip.file, style="cyan")
-                line.append(f" — {skip.reason}")
-                console.print(line)
-            console.print(
-                Text(
-                    "  Nothing was measured in these files. Their silence is not a clean bill.",
-                    style="dim",
-                )
+            _print_incomplete(
+                engine.format_skips(skipped),
+                [(s.file, s.reason) for s in skipped],
+                "Nothing was measured in these files. Their silence is not a clean bill.",
+                "bold yellow",
             )
-            console.print()
 
-    # Exit code. A skip outranks a finding: findings describe what was seen,
-    # and a skip says the seeing was incomplete, so the report cannot be
-    # trusted to be exhaustive whatever it contains.
+        if pack_errors:
+            _print_incomplete(
+                engine.format_pack_errors(pack_errors),
+                [(e.pack, e.error) for e in pack_errors],
+                "Reinstall the pack. Until it loads, this report is not exhaustive.",
+                "bold red",
+            )
+
+    # Exit code. An incomplete run outranks a finding: findings describe what
+    # was seen, and a skip or a pack that never loaded says the seeing was
+    # incomplete, so the report cannot be trusted to be exhaustive whatever it
+    # contains. A pack error is the wider of the two -- a file skip loses one
+    # file, a pack error loses every rule that pack owns.
     #
     # Below that, the gate is whatever --severity selected. `findings` is
     # already filtered to that threshold, so the run fails exactly when the
     # report it just printed is not empty -- a caller who asks for a
     # warn-level gate gets one that can fail on a warning.
     if exit_code:
-        if skipped:
+        if pack_errors or skipped:
             sys.exit(2)
         if findings:
             sys.exit(1)
@@ -289,10 +325,10 @@ def count(
 
         baseline=$(gaudi count . --ratchet)
 
-    Exit code 0 means the count is complete. Exit code 2 means at least one
-    file could not be parsed, so the number printed is an undercount — a
-    ratchet that compared it against a complete baseline would read the
-    missing findings as progress.
+    Exit code 0 means the count is complete. Exit code 2 means the run was
+    incomplete — a pack failed to load, or a file could not be parsed — so the
+    number printed is an undercount. A ratchet that compared it against a
+    complete baseline would read the missing findings as progress.
     """
     if ratchet and code:
         console.print("[red]--code and --ratchet cannot be combined.[/red]")
@@ -316,11 +352,51 @@ def count(
         click.echo(sum(counts.values()))
 
     if result.skipped:
-        click.echo(engine.format_skips(result.skipped), err=True)
-        for skip in result.skipped:
-            click.echo(f"  {skip.file} — {skip.reason}", err=True)
+        _warn_incomplete(
+            engine.format_skips(result.skipped),
+            [(s.file, s.reason) for s in result.skipped],
+        )
+
+    if result.pack_errors:
+        _warn_incomplete(
+            engine.format_pack_errors(result.pack_errors),
+            [(e.pack, e.error) for e in result.pack_errors],
+        )
+
+    if result.skipped or result.pack_errors:
         click.echo("  This count is an undercount.", err=True)
         sys.exit(2)
+
+
+def _print_pack_inventory(engine: Engine) -> None:
+    """Render what pack discovery found, including what it could not load.
+
+    An installed pack that cannot be loaded is not an absent pack. Reporting it
+    as "none installed" sends the reader to reinstall what is already there,
+    and hides the reason every rule it owns has gone quiet.
+    """
+    if not engine.packs and not engine.pack_errors:
+        console.print("[yellow]No language packs installed.[/yellow]")
+        console.print("Install the Python pack: pip install gaudi-linter")
+        return
+
+    if engine.packs:
+        console.print()
+        console.print("[bold]Installed language packs:[/bold]")
+        console.print()
+        for name, pack in engine.packs.items():
+            console.print(f"  [cyan]{name}[/cyan] — {pack.description}")
+            console.print(f"    Extensions: {', '.join(pack.extensions)}")
+            console.print(f"    Rules: {len(pack.rules)}")
+            console.print()
+
+    if engine.pack_errors:
+        _print_incomplete(
+            engine.format_pack_errors(engine.pack_errors),
+            [(e.pack, e.error) for e in engine.pack_errors],
+            "An installed pack that cannot load is not an absent pack. Reinstall it.",
+            "bold red",
+        )
 
 
 @main.command(name="list-packs")
@@ -328,20 +404,7 @@ def list_packs():
     """List available language packs."""
     engine = Engine()
     engine.discover_packs()
-
-    if not engine.packs:
-        console.print("[yellow]No language packs installed.[/yellow]")
-        console.print("Install the Python pack: pip install gaudi-linter")
-        return
-
-    console.print()
-    console.print("[bold]Installed language packs:[/bold]")
-    console.print()
-    for name, pack in engine.packs.items():
-        console.print(f"  [cyan]{name}[/cyan] — {pack.description}")
-        console.print(f"    Extensions: {', '.join(pack.extensions)}")
-        console.print(f"    Rules: {len(pack.rules)}")
-        console.print()
+    _print_pack_inventory(engine)
 
 
 @main.command()

@@ -9,7 +9,7 @@ import sys
 from importlib.metadata import entry_points
 from pathlib import Path
 
-from gaudi.core import CheckResult, FileSkip, Finding, Severity
+from gaudi.core import CheckResult, FileSkip, Finding, PackError, Severity
 from gaudi.pack import Pack
 
 logger = logging.getLogger(__name__)
@@ -40,26 +40,44 @@ def apply_overrides(
 class Engine:
     def __init__(self) -> None:
         self._packs: dict[str, Pack] = {}
+        self._pack_errors: list[PackError] = []
 
     def discover_packs(self) -> None:
+        """Load every installed pack, recording the ones that could not load.
+
+        A pack that fails to load takes its whole rule catalog with it, so a
+        run that ignored the failure would report nothing about everything that
+        pack measures — indistinguishable from a clean project. The failure is
+        recorded on :attr:`pack_errors`, which rides on every ``CheckResult``
+        and turns the run red under ``--exit-code``. The log line stays, but it
+        is no longer the only signal: nothing reads a logger in CI.
+
+        Each discovery replaces the previous error record, since the record
+        describes the discovery that just ran.
+        """
         if sys.version_info >= (3, 12):
             eps = entry_points(group="gaudi.packs")
         else:
             eps = entry_points().get("gaudi.packs", [])
 
+        errors: list[PackError] = []
         for ep in eps:
             try:
                 pack_class = ep.load()
                 pack = pack_class()
-                self._packs[ep.name] = pack
-            except Exception as e:  # noqa: ERR-003
-                # KNOWN DEFECT, tracked at #260 — not an acknowledged exemption.
-                # A pack that fails to load makes `check` report zero findings
-                # and exit 0, which is the "could not look reads as found
-                # nothing" class one level above the file skip. The fix is to
-                # carry pack-load failures on the skip channel; until then this
-                # warning is the only signal, and nothing reads it in CI.
-                logger.warning("Failed to load pack '%s': %s", ep.name, e)
+            except Exception as e:
+                # Broad by necessity: an entry point can fail in any way its
+                # author's import chain can fail, and one broken pack must not
+                # cost the others their run. Nothing is swallowed — the failure
+                # is recorded below, reported in every output format, and
+                # exits 2.
+                errors.append(PackError(pack=ep.name, error=f"{type(e).__name__}: {e}"))
+                continue
+            self._packs[ep.name] = pack
+
+        self._pack_errors = errors
+        for failure in errors:
+            logger.warning("Failed to load pack '%s': %s", failure.pack, failure.error)
 
     def register_pack(self, pack: Pack) -> None:
         self._packs[pack.name] = pack
@@ -67,6 +85,11 @@ class Engine:
     @property
     def packs(self) -> dict[str, Pack]:
         return dict(self._packs)
+
+    @property
+    def pack_errors(self) -> list[PackError]:
+        """The packs the last discovery could not load, and why."""
+        return list(self._pack_errors)
 
     def detect_packs(self, path: Path) -> list[Pack]:
         return [pack for pack in self._packs.values() if pack.can_handle(path)]
@@ -90,10 +113,11 @@ class Engine:
             rule_overrides: Per-rule severity overrides (code → severity or "off").
 
         Returns:
-            Findings sorted by severity then code, and the files no pack could
-            read. Skips are never filtered by ``min_severity`` or suppressed by
-            ``rule_overrides`` — a skip is the absence of evidence, not a
-            finding whose importance a caller can rank down.
+            Findings sorted by severity then code, the files no pack could
+            read, and the packs that could not be loaded at all. Neither skips
+            nor pack errors are filtered by ``min_severity`` or suppressed by
+            ``rule_overrides`` — both are the absence of evidence, not findings
+            whose importance a caller can rank down.
         """
         if pack_names:
             packs = [self._packs[name] for name in pack_names if name in self._packs]
@@ -101,7 +125,7 @@ class Engine:
             packs = self.detect_packs(path)
 
         if not packs:
-            return CheckResult()
+            return CheckResult(pack_errors=list(self._pack_errors))
 
         findings: list[Finding] = []
         skipped: list[FileSkip] = []
@@ -120,6 +144,7 @@ class Engine:
         return CheckResult(
             findings=sorted(findings, key=lambda f: (f.severity.priority, f.code)),
             skipped=sorted(skipped, key=lambda s: s.file),
+            pack_errors=list(self._pack_errors),
         )
 
     def check(
@@ -149,6 +174,20 @@ class Engine:
             return ""
         count = len(skipped)
         return f"{count} file{'s' if count != 1 else ''} skipped — Gaudi could not parse them."
+
+    def format_pack_errors(self, pack_errors: list[PackError]) -> str:
+        """One line summarising which rule catalogs never ran.
+
+        Returns the empty string when every pack loaded, so a healthy run says
+        nothing about pack errors at all and the two states never read alike.
+        """
+        if not pack_errors:
+            return ""
+        count = len(pack_errors)
+        return (
+            f"{count} pack{'s' if count != 1 else ''} failed to load — "
+            f"the rules {'they own' if count != 1 else 'it owns'} never ran."
+        )
 
     def format_summary(self, findings: list[Finding]) -> str:
         errors = sum(1 for f in findings if f.severity == Severity.ERROR)

@@ -15,7 +15,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from gaudi.core import FileSkip, Finding, Severity
+from gaudi.core import FileSkip, Finding, PackError, Severity
 
 # GitHub Actions workflow command severity mapping.
 # https://docs.github.com/en/actions/using-workflows/workflow-commands-for-github-actions
@@ -46,6 +46,7 @@ def format_github(
     findings: list[Finding],
     project_path: Path | None = None,
     skipped: list[FileSkip] | None = None,
+    pack_errors: list[PackError] | None = None,
 ) -> str:
     """
     Render findings as GitHub Actions workflow commands.
@@ -59,6 +60,13 @@ def format_github(
     Files the parser could not read are annotated too. A file with no
     annotation reads to every PR reviewer as a file that passed; a skipped
     file must say on the diff that it was never examined.
+
+    A pack that failed to load is annotated at ``error`` level, not the
+    ``warning`` a file skip gets. It names no file, so GitHub can only show it
+    in the workflow summary rather than on a diff line — the least visible
+    place an annotation can land, carrying the most damaging news on the run:
+    every rule that pack owns went unasked, so no other annotation on the run
+    can be read as exhaustive.
     """
     lines: list[str] = []
     for f in findings:
@@ -93,6 +101,14 @@ def format_github(
         title = _escape_github_property("Skipped")
         message = _escape_github_data(f"Gaudi could not parse this file: {skip.reason}")
         lines.append(f"::warning file={file_path},title={title}::{message}")
+
+    for pack_error in pack_errors or []:
+        title = _escape_github_property("Pack load failure")
+        message = _escape_github_data(
+            f"Gaudi could not load the pack '{pack_error.pack}': {pack_error.error}. "
+            f"Every rule it owns went unasked."
+        )
+        lines.append(f"::error title={title}::{message}")
 
     return "\n".join(lines)
 
