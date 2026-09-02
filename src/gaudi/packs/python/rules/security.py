@@ -774,7 +774,7 @@ class InsecureSSLVerification(Rule):
 
 
 # ---------------------------------------------------------------
-# Import resolution helper (shared by SEC-009, SEC-010)
+# Import resolution helpers, shared across the SEC rules
 # ---------------------------------------------------------------
 
 

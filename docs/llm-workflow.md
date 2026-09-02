@@ -92,8 +92,25 @@ A typical loop looks like:
 3. For each finding you care about, copy the discussion prompt into your
    assistant of choice and ask it to propose a fix — *without* applying it
    yet, so you see the diff first.
-4. Decide what to do. Apply the fix, or mark it `# noqa: gaudi(<CODE>)` if you
-   judge that the rule doesn't apply here.
+4. Decide what to do. Apply the fix, or suppress it with `# noqa: <CODE>` if
+   you judge that the rule doesn't apply here.
+
+### Suppression syntax
+
+Suppressions are per-line comments on the line the finding reports:
+
+| form | effect |
+| --- | --- |
+| `# noqa: SEC-012` | suppresses that one rule on this line |
+| `# noqa: SEC-012, STAB-001` | suppresses each listed rule on this line |
+| `# noqa` | suppresses every rule on this line |
+
+The parser treats everything after `# noqa:` as a comma-separated list of rule
+codes, so a wrapper form such as `gaudi(SEC-012)` never matches a real code and
+silently suppresses nothing.
+
+Write the reason next to it. A suppression whose justification is not visible
+is indistinguishable from one nobody re-examined.
 
 ## Why no auto-PRs
 

@@ -11,7 +11,12 @@ Thanks for your interest in contributing! Gaudí is a young project and contribu
 5. Install in development mode: `pip install -e ".[dev]"`
 6. Install pre-commit hooks: `pre-commit install`
 7. Run the tests: `pytest`
-8. Create a branch for your work: `git checkout -b my-feature`
+8. Run Gaudi on itself: `gaudi check src/ --severity error --exit-code` (CI does this too)
+9. Create a branch for your work: `git checkout -b my-feature`
+
+> **The distribution is named `gaudi-linter`, the command is `gaudi`.**
+> `pip install gaudi` installs an unrelated project. Name `gaudi-linter`
+> everywhere a dependency is declared — CI steps, Dockerfiles, `pyproject.toml`.
 
 ## Security Policy
 

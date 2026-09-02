@@ -47,6 +47,17 @@ jobs:
       - name: Lint
         run: ruff check .
 
+      # Gaudi on Gaudi. The error tier is the gate: an ERROR finding is a
+      # structural defect with no defensible by-design reading, so the tree
+      # must carry none. Warn and info findings are reported by `gaudi report`
+      # and discussed, not gated — that distinction is the whole point of the
+      # 0.3.0 tier work.
+      #
+      # --exit-code also exits 2 if any file could not be parsed, so this step
+      # fails loudly rather than certifying a run that never read the tree.
+      - name: Gaudi self-check (error tier)
+        run: gaudi check src/ --severity error --exit-code
+
   security:
     runs-on: ubuntu-latest
     steps:

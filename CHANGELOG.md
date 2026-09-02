@@ -2,7 +2,47 @@
 
 All notable changes to this project will be documented in this file.
 
-## [Unreleased]
+## [0.3.0] — 2026-09-02
+
+The overhaul release (#256). A 2026-08-31 estate audit measured what Gaudi was
+actually doing across two production repos: the **error tier earns its keep**
+(zero `sys.path` hacks and zero dependency cycles at HEAD across 2,700 files;
+three real security fixes from SEC-012), while the **warn tier was ~50% churn
+and ~19% harm** — ratchet payments that relocated a production guard out of the
+function enforcing it, deleted a shared SSRF sink, and deleted three
+explanatory comments to get a function under a line count.
+
+Three things follow from that, and this release is all three: make the
+instrument honest about what it did not measure; separate the rules that name
+debt from the rules that name idiom; and aim the rule set at defects the estate
+actually ships rather than at shapes that are merely countable.
+
+### Migration
+
+- **`--exit-code` gained exit status 2** — "at least one file could not be
+  parsed". A gate that treats any non-zero as failure needs no change. A gate
+  that tests `-eq 1` must be widened, and a gate that was silently green over
+  unparsable files will now go red: that is the fix, not a regression.
+- **STRUCT-021 and CPLX-002 moved from `warn` to `info`.** A `--severity warn`
+  report shrinks accordingly. Baselines counted against the *total* finding
+  count will drop; use `gaudi count --ratchet` instead, which counts the named
+  debt set and is stable across tier changes.
+- **`gaudi.toml` is now found by walking up to the project root.** A repo that
+  carries per-app copies to work around the old behaviour can delete all but
+  the root one — but check first that the copies were identical, because the
+  nearest one now wins.
+- **`noqa` accretions the precision pass obsoletes.** Each of these can be
+  removed from consuming repos once they upgrade; none is removed here (the
+  drop is per-repo work):
+
+  | rule | suppressions this release makes unnecessary |
+  | --- | --- |
+  | STAB-001 | queries bounded by `.limit(n)` or `[:n]` (~10 sites in grantspider) |
+  | SVC-004 | `from django.db.models import Count, Q` and siblings (aigranthelper) |
+  | SEC-002 | `SET statement_timeout = …` and other SET-statement hits |
+  | SEC-003 | constants holding a file path whose name contains a credential word |
+  | SMELL-025 | local variables named `new`, `new_items`, and the like |
+  | STAB-011, SVC-006 | repo-wide disables added because per-file mode stripped the project context — both are now excluded from single-file runs automatically |
 
 ### Added
 - **Skip accounting** (#256). A file the parser cannot read — a syntax the
@@ -88,6 +128,28 @@ All notable changes to this project will be documented in this file.
 - `is_logger_call` / `LOG_METHODS` moved to
   `packs/python/ast_helpers.py`; `logging_rules.py` and `errors.py` share one
   definition of what a logger call is.
+
+### CI
+- **Gaudi runs Gaudi on Gaudi.** The `lint` job runs
+  `gaudi check src/ --severity error --exit-code`. Verified in both directions
+  before merge: clean on the tree as it stands, exit 1 with an injected
+  `sys.path` hack, exit 2 with an injected unparsable file. The error tier is
+  the gate; warn and info are reported and discussed, never gated — which is
+  the distinction this whole release exists to draw.
+
+### Documentation
+- The distribution is `gaudi-linter`; the command is `gaudi`. `pip install
+  gaudi` fetches an unrelated project. Named correctly in CONTRIBUTING.md,
+  CLAUDE.md and the `list-packs` hint (#256 hygiene).
+- `docs/llm-workflow.md` documented `# noqa: gaudi(<CODE>)`, which the parser
+  never matched — it silently suppressed nothing. Replaced with the real
+  syntax and a suppression-forms table (#225).
+- The SEC import-resolution helpers no longer claim to be shared by two rules
+  when four use them (#226).
+- CLAUDE.md records why a worktree must invoke `python -m gaudi.cli` with an
+  absolute `PYTHONPATH` rather than the console script: the shebang is absolute
+  and `language: system` pre-commit hooks resolve `gaudi` from `PATH`, so both
+  can measure a different checkout than the one being edited.
 
 ### Changed
 - **STRUCT-021** and **CPLX-002** demoted from `warn` to `info` (#256 items 4

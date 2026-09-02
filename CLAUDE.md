@@ -17,11 +17,29 @@ Core rules: `~/.claude/CLAUDE.md`
 
 Use the project-local venv at `.venv/`:
 ```bash
-.venv/Scripts/python.exe -m pytest
-.venv/Scripts/gaudi.exe check .
+.venv/bin/python -m pytest              # .venv/Scripts/python.exe on Windows
+.venv/bin/python -m gaudi.cli check .
 ```
 
-First-time setup: `python -m venv .venv && .venv/Scripts/pip.exe install -e ".[dev]"`
+First-time setup: `python -m venv .venv && .venv/bin/pip install -e ".[dev]"`
+
+**The package is published as `gaudi-linter`; the command it installs is
+`gaudi`.** `pip install gaudi` fetches an unrelated project — every install
+instruction, CI step and Dockerfile must name `gaudi-linter`.
+
+**Invoke gaudi as `python -m gaudi.cli`, not through the console script, when
+working in a worktree.** `.venv/bin/gaudi` carries an absolute shebang written
+at install time; if that interpreter's tree has moved or been pruned the script
+fails, and if it still exists it imports *that* checkout's `gaudi`, not this
+one. The same applies to `language: system` pre-commit hooks — the
+`gaudi-cheat-sheet` drift guard resolves `gaudi` from `PATH` and will report
+drift against whichever tree that binary imports. Export an absolute
+`PYTHONPATH` before running any gate in a worktree, and prove it:
+
+```bash
+export PYTHONPATH=$(git rev-parse --show-toplevel)/src
+.venv/bin/python -c "import gaudi; print(gaudi.__file__)"   # must be THIS tree
+```
 
 ## Principles
 
