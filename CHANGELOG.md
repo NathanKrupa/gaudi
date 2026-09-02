@@ -23,6 +23,17 @@ All notable changes to this project will be documented in this file.
 - **Bare `--exit-code` with no `--severity` now gates at `info`,** because
   `info` is the default reporting threshold. A gate that wants the old
   behaviour must say what it always meant: `--severity error --exit-code`.
+- **A `severity` setting in `gaudi.toml` does not govern the gate, and this
+  release makes that visible.** `_run_check` computes
+  `Severity(severity or config.get("severity", "info"))`, and Click always
+  supplies `--severity` with a truthy default of `"info"`, so the `or` never
+  reaches the config value (#269). Before this release the bug was invisible
+  under `--exit-code`, because the gate ignored the threshold anyway; now a
+  project whose `gaudi.toml` says `[gaudi] severity = "error"` and whose CI
+  runs a bare `--exit-code` gets an **info-tier gate it never asked for**.
+  Measured: that config plus a single warn-only file exits `1`, where on
+  0.3.0 it exited `0`. **Until #269 lands, pass `--severity` explicitly on
+  the command line** — it is the only thing the gate reads.
 
 ## [0.3.0] — 2026-09-02
 

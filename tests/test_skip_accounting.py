@@ -132,8 +132,9 @@ class TestExitCode:
 
         Pinned at the error tier because the fixture directory is not a
         well-formed project -- it has no pyproject.toml or lock file, so the
-        project-scope rules report one warning and four infos about the
-        directory itself. Since #267 the gate is the threshold the caller
+        project-scope rules report one warning and five infos about the
+        directory itself (STRUCT-011; OPS-002, OPS-003, OPS-004, OPS-005,
+        STRUCT-013). Since #267 the gate is the threshold the caller
         selected, and those findings would fail an info-tier gate honestly.
         ``tests/test_exit_code_severity.py`` carries the project that is
         clean at every tier.

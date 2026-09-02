@@ -22,9 +22,10 @@ SEVERITIES = ("error", "warn", "info")
 def _scaffold(root: Path) -> None:
     """Write the files that satisfy every project-scope rule.
 
-    Gaudi's project-scope rules (STRUCT-011, STRUCT-013, OPS-002..005) fire on
-    the *directory*, not on any module in it, so a bare temp directory already
-    carries one warn and four infos. A fixture that is meant to carry exactly
+    Gaudi's project-scope rules fire on the *directory*, not on any module in
+    it, so a bare temp directory already carries six findings before any
+    fixture is copied in: STRUCT-011 (warn) plus OPS-002, OPS-003, OPS-004,
+    OPS-005 and STRUCT-013 (info). A fixture that is meant to carry exactly
     one finding has to be a well-formed project first. The profile tests below
     pin that this list is still sufficient — if a new project-scope rule lands,
     they name it rather than letting it drift into the exit-code assertions.
