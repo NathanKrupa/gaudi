@@ -10,6 +10,7 @@ from importlib.metadata import entry_points
 from pathlib import Path
 
 from gaudi.core import CheckResult, FileSkip, Finding, PackError, Severity
+from gaudi.formats import format_empty_verdict
 from gaudi.pack import Pack
 
 logger = logging.getLogger(__name__)
@@ -107,7 +108,10 @@ class Engine:
 
         Args:
             path: File or directory to check.
-            pack_names: Specific packs to use. If None, auto-detect.
+            pack_names: Specific packs to use. If None, auto-detect. A
+                named pack that cannot handle the path does not run, so
+                naming one never turns an unexamined run into an
+                examined one.
             min_severity: Minimum severity level to include in results.
             school: Philosophy school to filter rules by.
             rule_overrides: Per-rule severity overrides (code → severity or "off").
@@ -120,12 +124,23 @@ class Engine:
             whose importance a caller can rank down.
         """
         if pack_names:
-            packs = [self._packs[name] for name in pack_names if name in self._packs]
+            named = [self._packs[name] for name in pack_names if name in self._packs]
+            # Naming a pack selects a catalog; it does not make the path one
+            # that pack covers. ``can_handle`` decides what was examined
+            # whichever way the packs were chosen, so the two selection routes
+            # cannot disagree about the same path -- and a run over a path the
+            # named pack does not cover is the same "examined nothing" the
+            # auto-detected route already reports.
+            packs = [pack for pack in named if pack.can_handle(path)]
         else:
             packs = self.detect_packs(path)
 
         if not packs:
-            return CheckResult(pack_errors=list(self._pack_errors))
+            # No pack claimed this path, so no rule was ever asked. That is
+            # the widest "could not look" there is: not one unreadable file,
+            # not one catalog that failed to load, but a run that examined
+            # nothing at all. It must not print or exit like a clean project.
+            return CheckResult(pack_errors=list(self._pack_errors), examined=False)
 
         findings: list[Finding] = []
         skipped: list[FileSkip] = []
@@ -189,7 +204,21 @@ class Engine:
             f"the rules {'they own' if count != 1 else 'it owns'} never ran."
         )
 
-    def format_summary(self, findings: list[Finding]) -> str:
+    def format_summary(
+        self,
+        findings: list[Finding],
+        skipped: list[FileSkip] | None = None,
+        pack_errors: list[PackError] | None = None,
+        examined: bool = True,
+    ) -> str:
+        """One line summarising the report, and what the run is entitled to claim.
+
+        The counts are a fact about what was found. The empty-report sentence is
+        a *verdict*, and a verdict over a run that did not see everything is a
+        false green — so it is delegated to ``format_empty_verdict``, which every
+        renderer of this run shares. The incomplete-run arguments default to a
+        complete run, so a caller holding only findings still gets a summary.
+        """
         errors = sum(1 for f in findings if f.severity == Severity.ERROR)
         warnings = sum(1 for f in findings if f.severity == Severity.WARN)
         infos = sum(1 for f in findings if f.severity == Severity.INFO)
@@ -206,7 +235,7 @@ class Engine:
             parts.append(f"{infos} info{'s' if infos != 1 else ''}")
 
         if not parts:
-            return "No architectural issues found. Structurally sound."
+            return format_empty_verdict(skipped, pack_errors, examined)
 
         count_str = ", ".join(parts)
         file_str = f" across {len(files)} file{'s' if len(files) != 1 else ''}" if files else ""

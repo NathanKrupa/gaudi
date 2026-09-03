@@ -26,6 +26,51 @@ _GITHUB_LEVEL = {
 }
 
 
+COMPLETE_RUN_VERDICT = "No architectural issues found. Structurally sound."
+INCOMPLETE_RUN_VERDICT = "No architectural issues found in the parts that were examined."
+NOTHING_EXAMINED_VERDICT = "No language pack applies here, so nothing was examined."
+
+
+def format_empty_verdict(
+    skipped: list[FileSkip] | None = None,
+    pack_errors: list[PackError] | None = None,
+    examined: bool = True,
+) -> str:
+    """The one sentence a run with nothing to report is allowed to say about itself.
+
+    Three renderers make this claim — ``check``'s text output, the ``summary``
+    field of its JSON document, and the Markdown report — and a sentence
+    written in three places is a sentence that gets fixed in two. It lives here
+    once, and every renderer asks for it.
+
+    "Structurally sound" is a claim about the whole project, so only a run that
+    examined the whole project may make it. A skip or a pack error outranks
+    "nothing applied": a pack that failed to load is the pack that *would* have
+    applied, and telling that reader no language pack applies would send them
+    to install what is already there.
+    """
+    if skipped or pack_errors:
+        return INCOMPLETE_RUN_VERDICT
+    if not examined:
+        return NOTHING_EXAMINED_VERDICT
+    return COMPLETE_RUN_VERDICT
+
+
+def nothing_applied(
+    pack_errors: list[PackError] | None = None,
+    examined: bool = True,
+) -> bool:
+    """True when the run examined nothing *and* no failed pack explains why.
+
+    A pack that failed to load is the pack that would have applied, so saying
+    "no language pack applies" beside it is the same misdiagnosis as reporting
+    a broken install as "none installed": it sends the reader to install what
+    is already there. Every renderer asks this one predicate rather than
+    testing ``examined`` on its own.
+    """
+    return not examined and not pack_errors
+
+
 def _escape_github_data(value: str) -> str:
     """Escape a workflow-command message body."""
     return value.replace("%", "%25").replace("\r", "%0D").replace("\n", "%0A")
@@ -47,6 +92,7 @@ def format_github(
     project_path: Path | None = None,
     skipped: list[FileSkip] | None = None,
     pack_errors: list[PackError] | None = None,
+    examined: bool = True,
 ) -> str:
     """
     Render findings as GitHub Actions workflow commands.
@@ -110,6 +156,15 @@ def format_github(
         )
         lines.append(f"::error title={title}::{message}")
 
+    if nothing_applied(pack_errors, examined):
+        title = _escape_github_property("Nothing examined")
+        where = f" {project_path}" if project_path is not None else " this path"
+        message = _escape_github_data(
+            f"No installed Gaudi pack applies to{where}. Nothing was examined, "
+            f"so this run reports nothing about it."
+        )
+        lines.append(f"::error title={title}::{message}")
+
     return "\n".join(lines)
 
 
@@ -145,6 +200,7 @@ def _discussion_prompt(finding: Finding) -> str:
 def _incomplete_run_block(
     skipped: list[FileSkip] | None,
     pack_errors: list[PackError] | None,
+    examined: bool = True,
 ) -> list[str]:
     """Render what the run could not examine, or nothing at all when it examined everything.
 
@@ -153,10 +209,15 @@ def _incomplete_run_block(
     never examined has to be on the page, above the findings, or the reader
     draws conclusions from a silence that means nothing.
     """
-    if not skipped and not pack_errors:
+    if not skipped and not pack_errors and examined:
         return []
 
     out = ["## Incomplete run", "", "**This report is not exhaustive.**", ""]
+    if nothing_applied(pack_errors, examined):
+        out.append(
+            "- **No language pack applies to this path** — nothing was examined, "
+            "so this report describes nothing."
+        )
     for pack_error in pack_errors or []:
         out.append(
             f"- **Pack `{pack_error.pack}` failed to load** — {pack_error.error}. "
@@ -174,6 +235,7 @@ def format_markdown_report(
     snippet_context: int = 2,
     skipped: list[FileSkip] | None = None,
     pack_errors: list[PackError] | None = None,
+    examined: bool = True,
 ) -> str:
     """
     Render findings as a Markdown report grouped by file.
@@ -193,14 +255,11 @@ def format_markdown_report(
     out.append(f"Project: `{project_path}`")
     out.append("")
 
-    incomplete = _incomplete_run_block(skipped, pack_errors)
+    incomplete = _incomplete_run_block(skipped, pack_errors, examined)
     out.extend(incomplete)
 
     if not findings:
-        if incomplete:
-            out.append("No architectural issues found in the parts that were examined.")
-        else:
-            out.append("No architectural issues found. Structurally sound.")
+        out.append(format_empty_verdict(skipped, pack_errors, examined))
         out.append("")
         return "\n".join(out)
 

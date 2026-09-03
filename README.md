@@ -169,7 +169,7 @@ them apart is not a gate:
 | --- | --- |
 | `0` | Every file was parsed, and nothing at or above the severity threshold was found. |
 | `1` | The report is not empty — at least one finding at or above the threshold. |
-| `2` | The run was incomplete — a pack failed to load, or a file could not be parsed. Whatever it reported, it did not look everywhere. |
+| `2` | The run was incomplete — a pack failed to load, a file could not be parsed, or no installed pack applies to the path. Whatever it reported, it did not look everywhere. |
 
 **The gate is the threshold `--severity` selected.** `--severity error
 --exit-code` fails on an error; `--severity warn --exit-code` fails on a
@@ -184,8 +184,8 @@ reading, while warn and info findings are reviewer input to discuss rather
 than a build to break.
 
 `2` outranks `1`: findings describe what was seen, and an incomplete run says
-the seeing was partial. Two things make a run incomplete, and both are listed
-with their reason in every output format, so "could not look" never reads as
+the seeing was partial. Three things make a run incomplete, and each is named
+with its reason in every output format, so "could not look" never reads as
 "found nothing":
 
 - **A file the parser could not read** — `text` block, `json` under `skipped`,
@@ -196,17 +196,46 @@ with their reason in every output format, so "could not look" never reads as
   `github` as a workflow-level `error` annotation. Every rule that pack owns
   went unasked, so a broken install cannot report as a clean project. The usual
   cause is a partial or mismatched install; reinstall `gaudi-linter`.
+- **A path no installed pack applies to** — `text` block naming what Gaudi
+  *does* handle, `json` under `examined: false`, `github` as a workflow-level
+  `error` annotation. This is the widest of the three: nothing was examined at
+  all, so an empty report describes nothing. Point Gaudi at a path one of the
+  installed packs covers, or install a pack that covers this one.
+
+A failed pack outranks the third: a pack that could not load **is** the pack
+that would have applied, so Gaudi reports the load failure rather than telling
+you no language pack applies — which would send you to install what is already
+installed.
+
+`--pack` does not change the third either. Naming a pack selects a rule
+catalog; it does not make the path one that pack covers, so `gaudi check ./docs
+--pack python` reports the same "nothing was examined" that auto-detection
+does. The same holds for `packs = [...]` in `gaudi.toml`.
 
 `gaudi count` and `gaudi report` use the same exit `2` for the same reason, and
 without needing a flag: a count taken over a missing rule catalog is an
 undercount that a ratchet reads as progress, and a Markdown briefing that never
 saw a rule catalog would be read by an LLM as the whole truth about the project.
-`report` names what was not examined in an **Incomplete run** block at the top,
-and says "Structurally sound" only over a run that examined everything.
+`report` names what was not examined in an **Incomplete run** block at the top.
 
-Naming a pack that failed to load (`--pack <name>`) exits `2` and prints its
-load error. Only a pack name Gaudi has never heard of is an "Unknown pack(s)"
-error, exit `1`.
+**"Structurally sound" is claimed only over a run that examined everything.**
+One function owns that sentence and all three renderers of a run ask it for the
+same words: `check`'s text output, the `summary` field of `check --format json`,
+and `report`'s Markdown. An incomplete run that found nothing says *"No
+architectural issues found in the parts that were examined."*, above the block
+naming what it could not read; a run nothing applied to says *"No language pack
+applies here, so nothing was examined."*
+
+Naming a pack that failed to load (`--pack <name>`) exits `2` and reports the
+load error **in the format that was asked for**: inside the JSON document under
+`pack_errors`, as a `github` annotation, or on stderr for `count`, whose stdout
+stays the bare integer a ratchet captures. Only a pack name Gaudi has never
+heard of is an "Unknown pack(s)" error, exit `1`.
+
+`gaudi cheat-sheet` refuses outright. A catalog assembled from a subset of the
+installed packs is not a shorter catalog but a wrong one, so it writes nothing,
+names the pack on stderr and exits `2`; `--check` refuses on the same terms
+rather than certifying a file it could not rebuild.
 
 ### Prompt Fragment for AI Agents
 
@@ -264,6 +293,10 @@ gaudi cheat-sheet --check -o docs/gaudi-rules.md
 
 The committed artifact at [`docs/gaudi-rules.md`](docs/gaudi-rules.md) is
 generated from rule `recommendation_template` fields. It cannot drift.
+
+Both forms exit `2` and write nothing if any installed pack failed to load —
+the catalog would be missing every rule that pack owns, and `--check` would
+then certify the gutted file as up to date.
 
 ### Philosophy inference
 

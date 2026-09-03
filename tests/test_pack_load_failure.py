@@ -516,3 +516,367 @@ class TestCountNamesWhatItCouldNotCount:
         result = CliRunner().invoke(main, ["count", str(clean_project)])
 
         assert result.stderr == ""
+
+
+class TestCheckTextRendererDoesNotCertifyAnIncompleteRun:
+    """The text renderer is the second renderer of the same `CheckResult`.
+
+    `format_markdown_report` stopped calling an incomplete run "structurally
+    sound"; `check`'s own text output said it anyway, in green, immediately
+    above the block naming the pack that never ran.
+    """
+
+    def test_the_text_renderer_does_not_call_a_failed_pack_structurally_sound(
+        self, one_broken_pack: None, clean_project: Path
+    ):
+        result = CliRunner().invoke(main, ["check", str(clean_project)])
+
+        assert "Structurally sound" not in result.output
+
+    def test_the_text_renderer_says_what_it_actually_examined(
+        self, one_broken_pack: None, clean_project: Path
+    ):
+        result = CliRunner().invoke(main, ["check", str(clean_project)])
+
+        assert "No architectural issues found in the parts that were examined." in result.output
+
+    def test_a_skipped_file_also_withholds_structurally_sound(
+        self, all_packs_load: None, skipping_project: Path
+    ):
+        """The same rule for the other kind of incomplete run."""
+        result = CliRunner().invoke(main, ["check", str(skipping_project)])
+
+        assert "Structurally sound" not in result.output
+        assert "No architectural issues found in the parts that were examined." in result.output
+
+    def test_the_incomplete_run_block_is_still_printed(
+        self, one_broken_pack: None, clean_project: Path
+    ):
+        """The wording change must not cost the report the block that names the pack."""
+        result = CliRunner().invoke(main, ["check", str(clean_project)])
+
+        assert "1 pack failed to load" in result.output
+        assert IMPORT_MESSAGE in result.output
+
+    def test_a_complete_clean_run_is_still_called_structurally_sound(
+        self, all_packs_load: None, clean_project: Path
+    ):
+        """The control: the claim survives where it is true."""
+        result = CliRunner().invoke(main, ["check", str(clean_project)])
+
+        assert "No architectural issues found. Structurally sound." in result.output
+
+
+class TestNamingAFailedPackKeepsTheRequestedFormat:
+    """`--pack <failed>` rendered prose on stdout whatever `--format` asked for.
+
+    So `check --format json --pack <failed>` could not be parsed and
+    `count --pack <failed>` lost the integer a ratchet reads.
+    """
+
+    def test_json_output_still_parses_when_the_named_pack_failed(
+        self, one_broken_pack: None, clean_project: Path
+    ):
+        result = CliRunner().invoke(
+            main, ["check", str(clean_project), "--format", "json", "--pack", "broken"]
+        )
+
+        payload = json.loads(result.stdout)
+        assert [entry["pack"] for entry in payload["pack_errors"]] == ["broken"]
+        assert IMPORT_MESSAGE in payload["pack_errors"][0]["error"]
+        assert result.exit_code == 2
+
+    def test_json_output_still_parses_on_a_wholly_broken_install(
+        self, monkeypatch: pytest.MonkeyPatch, clean_project: Path
+    ):
+        _install(monkeypatch, _BrokenEntryPoint())
+
+        result = CliRunner().invoke(
+            main, ["check", str(clean_project), "--format", "json", "--pack", "broken"]
+        )
+
+        payload = json.loads(result.stdout)
+        assert [entry["pack"] for entry in payload["pack_errors"]] == ["broken"]
+        assert result.exit_code == 2
+
+    def test_github_output_still_annotates_when_the_named_pack_failed(
+        self, one_broken_pack: None, clean_project: Path
+    ):
+        result = CliRunner().invoke(
+            main, ["check", str(clean_project), "--format", "github", "--pack", "broken"]
+        )
+
+        assert "::error title=Pack load failure::" in result.stdout
+        assert "broken" in result.stdout
+        assert result.exit_code == 2
+
+    def test_the_text_renderer_still_names_the_pack_the_caller_asked_for(
+        self, one_broken_pack: None, clean_project: Path
+    ):
+        result = CliRunner().invoke(main, ["check", str(clean_project), "--pack", "broken"])
+
+        assert "1 pack failed to load" in result.output
+        assert IMPORT_MESSAGE in result.output
+        assert "Unknown pack" not in result.output
+        assert result.exit_code == 2
+
+    def test_count_keeps_the_integer_on_stdout_when_the_named_pack_failed(
+        self, one_broken_pack: None, clean_project: Path
+    ):
+        result = CliRunner().invoke(main, ["count", str(clean_project), "--pack", "broken"])
+
+        assert result.stdout.strip().isdigit()
+        assert result.exit_code == 2
+
+    def test_count_names_the_failed_pack_off_stdout_when_it_is_named(
+        self, one_broken_pack: None, clean_project: Path
+    ):
+        result = CliRunner().invoke(main, ["count", str(clean_project), "--pack", "broken"])
+
+        assert "broken" not in result.stdout
+        assert "broken" in result.stderr
+        assert IMPORT_MESSAGE in result.stderr
+        assert "undercount" in result.stderr
+
+    def test_count_json_still_parses_when_the_named_pack_failed(
+        self, one_broken_pack: None, clean_project: Path
+    ):
+        result = CliRunner().invoke(
+            main, ["count", str(clean_project), "--format", "json", "--pack", "broken"]
+        )
+
+        assert isinstance(json.loads(result.stdout), dict)
+        assert result.exit_code == 2
+
+    def test_report_still_names_the_pack_the_caller_asked_for(
+        self, one_broken_pack: None, clean_project: Path
+    ):
+        result = CliRunner().invoke(main, ["report", str(clean_project), "--pack", "broken"])
+
+        assert "Incomplete run" in result.stdout
+        assert "broken" in result.stdout
+        assert result.exit_code == 2
+
+    def test_naming_a_working_pack_alongside_a_failed_one_still_runs_it(
+        self, one_broken_pack: None, clean_project: Path
+    ):
+        """The control: the packs that loaded still do their work."""
+        result = CliRunner().invoke(
+            main, ["check", str(clean_project), "--format", "json", "--pack", "python"]
+        )
+
+        payload = json.loads(result.stdout)
+        assert [entry["pack"] for entry in payload["pack_errors"]] == ["broken"]
+
+
+class TestCheatSheetRefusesAnIncompleteCatalog:
+    """A cheat-sheet built without every pack is not the rule catalog.
+
+    `cheat-sheet` is the fourth consumer of `engine.packs`. Over a failed pack
+    it wrote a gutted artifact and exited 0, after which the `gaudi-cheat-sheet`
+    pre-commit hook and CI's `--check` certified the gutted file as up to date.
+    """
+
+    def test_it_writes_nothing_when_a_pack_failed_to_load(
+        self, one_broken_pack: None, tmp_path: Path
+    ):
+        destination = tmp_path / "gaudi-rules.md"
+
+        result = CliRunner().invoke(main, ["cheat-sheet", "-o", str(destination)])
+
+        assert result.exit_code == 2
+        assert not destination.exists()
+
+    def test_it_names_the_pack_that_failed(self, one_broken_pack: None, tmp_path: Path):
+        destination = tmp_path / "gaudi-rules.md"
+
+        result = CliRunner().invoke(main, ["cheat-sheet", "-o", str(destination)])
+
+        assert "broken" in result.stderr
+        assert IMPORT_MESSAGE in result.stderr
+
+    def test_it_does_not_overwrite_an_existing_catalog(self, one_broken_pack: None, tmp_path: Path):
+        destination = tmp_path / "gaudi-rules.md"
+        destination.write_text("the committed catalog\n", encoding="utf-8")
+
+        result = CliRunner().invoke(main, ["cheat-sheet", "-o", str(destination)])
+
+        assert result.exit_code == 2
+        assert destination.read_text(encoding="utf-8") == "the committed catalog\n"
+
+    def test_it_writes_nothing_to_stdout_either(self, one_broken_pack: None):
+        result = CliRunner().invoke(main, ["cheat-sheet"])
+
+        assert result.exit_code == 2
+        assert result.stdout == ""
+
+    def test_check_does_not_certify_a_catalog_it_could_not_build(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ):
+        """The false green: the file is byte-correct, and still must not be certified.
+
+        The broken pack contributes no rules, so the rendered catalog is
+        identical to the committed one and `--check` reported "up to date".
+        A catalog that was never built from every pack cannot be certified.
+        """
+        destination = tmp_path / "gaudi-rules.md"
+        _install(monkeypatch, *_real_packs())
+        assert CliRunner().invoke(main, ["cheat-sheet", "-o", str(destination)]).exit_code == 0
+
+        _install(monkeypatch, _BrokenEntryPoint(), *_real_packs())
+        result = CliRunner().invoke(main, ["cheat-sheet", "--check", "-o", str(destination)])
+
+        assert result.exit_code == 2
+        assert "up to date" not in result.output
+        assert "broken" in result.stderr
+
+    def test_a_healthy_install_still_writes_the_catalog(self, all_packs_load: None, tmp_path: Path):
+        """The control."""
+        destination = tmp_path / "gaudi-rules.md"
+
+        result = CliRunner().invoke(main, ["cheat-sheet", "-o", str(destination)])
+
+        assert result.exit_code == 0
+        assert destination.exists()
+        assert destination.read_text(encoding="utf-8").strip()
+
+    def test_a_healthy_install_still_certifies_an_up_to_date_catalog(
+        self, all_packs_load: None, tmp_path: Path
+    ):
+        """The control for --check."""
+        destination = tmp_path / "gaudi-rules.md"
+        CliRunner().invoke(main, ["cheat-sheet", "-o", str(destination)])
+
+        result = CliRunner().invoke(main, ["cheat-sheet", "--check", "-o", str(destination)])
+
+        assert result.exit_code == 0
+        assert "up to date" in result.output
+
+
+class TestTheJsonSummaryDoesNotCertifyAnIncompleteRun:
+    """`check --format json` carries a third renderer of the same verdict.
+
+    Its `summary` field comes from `Engine.format_summary`, which saw only the
+    findings — so a machine consumer read "No architectural issues found.
+    Structurally sound." out of the same document whose `pack_errors` list
+    named the catalog that never ran.
+    """
+
+    def test_the_json_summary_does_not_certify_a_failed_pack(
+        self, one_broken_pack: None, clean_project: Path
+    ):
+        result = CliRunner().invoke(main, ["check", str(clean_project), "--format", "json"])
+
+        assert "Structurally sound" not in json.loads(result.stdout)["summary"]
+
+    def test_the_json_summary_does_not_certify_a_skipped_file(
+        self, all_packs_load: None, skipping_project: Path
+    ):
+        result = CliRunner().invoke(main, ["check", str(skipping_project), "--format", "json"])
+
+        assert "Structurally sound" not in json.loads(result.stdout)["summary"]
+
+    def test_the_json_summary_uses_the_same_words_as_the_text_renderer(
+        self, one_broken_pack: None, clean_project: Path
+    ):
+        """One sentence, one owner: the three renderers must not drift apart again."""
+        as_json = CliRunner().invoke(main, ["check", str(clean_project), "--format", "json"])
+        as_text = CliRunner().invoke(main, ["check", str(clean_project)])
+
+        summary = json.loads(as_json.stdout)["summary"]
+        assert summary == "No architectural issues found in the parts that were examined."
+        assert summary in as_text.output
+
+    def test_the_markdown_report_uses_the_same_words(
+        self, one_broken_pack: None, clean_project: Path
+    ):
+        result = CliRunner().invoke(main, ["report", str(clean_project)])
+
+        assert "No architectural issues found in the parts that were examined." in result.stdout
+
+    def test_a_healthy_json_summary_still_says_structurally_sound(
+        self, all_packs_load: None, clean_project: Path
+    ):
+        """The control: the claim survives where it is true."""
+        result = CliRunner().invoke(main, ["check", str(clean_project), "--format", "json"])
+
+        assert json.loads(result.stdout)["summary"] == (
+            "No architectural issues found. Structurally sound."
+        )
+
+    def test_a_run_with_findings_still_summarises_the_counts(
+        self, one_broken_pack: None, clean_project: Path
+    ):
+        """The control: the verdict only replaces the empty-report sentence."""
+        (clean_project / "insecure.py").write_text(
+            "def run(src):\n    return eval(src)\n", encoding="utf-8"
+        )
+
+        result = CliRunner().invoke(main, ["check", str(clean_project), "--format", "json"])
+
+        assert json.loads(result.stdout)["summary"].startswith("Found ")
+
+
+class TestABrokenInstallIsNotDiagnosedAsNothingApplying:
+    """A failed pack IS the pack that applies. Two "could not look" records meet here.
+
+    With every entry point broken, `check_result` returns before any pack runs,
+    so the run is both `examined=False` and carrying a `PackError`. The pack
+    error is the diagnosis; "no language pack applies to this path" would send
+    the reader to install what is already installed -- the same lie #272 closed
+    for "none installed".
+    """
+
+    def test_the_json_summary_names_the_incomplete_run_not_a_missing_pack(
+        self, monkeypatch: pytest.MonkeyPatch, clean_project: Path
+    ):
+        _install(monkeypatch, _BrokenEntryPoint())
+
+        result = CliRunner().invoke(main, ["check", str(clean_project), "--format", "json"])
+
+        payload = json.loads(result.stdout)
+        assert payload["examined"] is False
+        assert payload["summary"] == (
+            "No architectural issues found in the parts that were examined."
+        )
+
+    def test_the_text_renderer_does_not_say_no_language_pack_applies(
+        self, monkeypatch: pytest.MonkeyPatch, clean_project: Path
+    ):
+        _install(monkeypatch, _BrokenEntryPoint())
+
+        result = CliRunner().invoke(main, ["check", str(clean_project)])
+
+        assert "matched an installed pack" not in result.output
+        assert IMPORT_MESSAGE in result.output
+
+    def test_the_github_output_annotates_the_pack_failure_only(
+        self, monkeypatch: pytest.MonkeyPatch, clean_project: Path
+    ):
+        _install(monkeypatch, _BrokenEntryPoint())
+
+        result = CliRunner().invoke(main, ["check", str(clean_project), "--format", "github"])
+
+        assert "::error title=Pack load failure::" in result.stdout
+        assert "Nothing examined" not in result.stdout
+
+    def test_the_report_names_the_pack_not_a_missing_one(
+        self, monkeypatch: pytest.MonkeyPatch, clean_project: Path
+    ):
+        _install(monkeypatch, _BrokenEntryPoint())
+
+        result = CliRunner().invoke(main, ["report", str(clean_project)])
+
+        assert "No language pack applies" not in result.stdout
+        assert "failed to load" in result.stdout
+
+    def test_count_says_the_pack_failed_not_that_none_applies(
+        self, monkeypatch: pytest.MonkeyPatch, clean_project: Path
+    ):
+        _install(monkeypatch, _BrokenEntryPoint())
+
+        result = CliRunner().invoke(main, ["count", str(clean_project)])
+
+        assert "no installed pack applies" not in result.stderr.lower()
+        assert IMPORT_MESSAGE in result.stderr
+        assert result.exit_code == 2
