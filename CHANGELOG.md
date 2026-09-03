@@ -21,10 +21,13 @@ actually ships rather than at shapes that are merely countable.
 
 ### Migration
 
-- **`--exit-code` gained exit status 2** — "at least one file could not be
-  parsed". A gate that treats any non-zero as failure needs no change. A gate
-  that tests `-eq 1` must be widened, and a gate that was silently green over
-  unparsable files will now go red: that is the fix, not a regression.
+- **`--exit-code` gained exit status `2` — the run was incomplete.** A file
+  could not be parsed, a pack failed to load, or no installed pack applies to
+  the path; the three are named in the same words by `check --help`, `count`
+  and the README. A gate that treats any non-zero as failure needs no change.
+  A gate that tests `-eq 1` must be widened, and a gate that was silently
+  green over an incomplete run will now go red: that is the fix, not a
+  regression.
 - **STRUCT-021 and CPLX-002 moved from `warn` to `info`.** A `--severity warn`
   report shrinks accordingly. Baselines counted against the *total* finding
   count will drop; use `gaudi count --ratchet` instead, which counts the named
@@ -76,9 +79,12 @@ actually ships rather than at shapes that are merely countable.
   Markdown is still written either way, so a workflow that only consumes the
   document is unaffected; one that gates on the exit status now learns that the
   briefing is partial.
-- **`--exit-code` paired with `--severity error` is unchanged.** That is the
-  documented shape, and every example in this repo, its CI, and
-  `docs/llm-workflow.md` already uses it.
+- **`--exit-code` paired with `--severity error` gates on the same findings
+  it always did** — the severity fix changes nothing there, and it remains the
+  documented shape every example in this repo, its CI, and
+  `docs/llm-workflow.md` uses. It is not exempt from exit status `2`: over an
+  incomplete run it now exits `2` where 0.2.2 exited `0`, so a gate on this
+  shape that tests `-eq 1` must be widened like any other.
 - **`--exit-code` paired with `--severity warn` or `--severity info` will now
   go red where it was silently green.** That is the fix, not a regression: the
   run was failing the threshold all along and reporting success.
