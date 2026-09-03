@@ -230,7 +230,8 @@ def check(
             # renderer of this CheckResult -- this one, the `summary` field of
             # the JSON document, and the Markdown report -- asks it for the
             # same words. Green is part of the claim, so an incomplete run
-            # does not get it either.
+            # does not get it either -- pinned in tests/test_verdict_colour.py,
+            # which renders this branch through a console that emits colour.
             console.print()
             complete = examined and not skipped and not pack_errors
             style = "green" if complete else "yellow"
