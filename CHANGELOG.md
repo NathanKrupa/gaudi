@@ -41,6 +41,27 @@ All notable changes to this project will be documented in this file.
   hook — certified the gutted file as up to date. It now writes nothing, names
   the pack on stderr and exits `2`, and `--check` refuses on the same terms.
 
+- **The `summary` field of `check --format json` no longer certifies an
+  incomplete run** (#273). It came from `Engine.format_summary`, which saw only
+  the findings, so a machine consumer read "No architectural issues found.
+  Structurally sound." out of the same document whose `pack_errors` list named
+  the catalog that never ran. One function — `formats.format_empty_verdict` —
+  now owns that sentence, and all three renderers of a run (text, the JSON
+  `summary`, and the Markdown report) ask it for the same words.
+
+- **A path no installed pack applies to is an incomplete run, not a clean one**
+  (#273). `gaudi check ./docs` over a directory holding no Python and no
+  Dockerfile printed "No architectural issues found. Structurally sound." and
+  exited `0` — "examined everything and found nothing" and "examined nothing"
+  were indistinguishable, which is the defect #257 and #260 closed for a
+  single file and for a rule catalog. `CheckResult` now carries `examined`;
+  `check` names what Gaudi *does* handle and exits `2` under `--exit-code`,
+  `count` and `report` exit `2` without a flag, `--format json` carries
+  `examined: false`, and `--format github` emits a workflow-level `error`
+  annotation. A pack that **failed to load** outranks this diagnosis: that pack
+  is the one that would have applied, so Gaudi reports the load failure rather
+  than sending the reader to install what is already installed.
+
 - **`--exit-code` now gates at the severity `--severity` selected** (#267).
   It counted error-severity findings only, whatever threshold the caller
   asked for, so `gaudi check . --severity warn --exit-code` exited `0` with
@@ -58,6 +79,16 @@ All notable changes to this project will be documented in this file.
   the one that did not, and naming the failed pack itself exits `2` with its
   load error rather than `1` with "Unknown pack(s)". A genuinely misspelled
   pack name still exits `1`.
+- **`gaudi report` and `gaudi count` now exit `2` over a path no pack applies
+  to,** and `gaudi check --exit-code` does too. A pipeline that ran `gaudi
+  check` over a directory with no Python in it used to go green; it now fails,
+  correctly — nothing was examined, so the green measured nothing. Point the
+  command at a path an installed pack covers. The Markdown briefing is still
+  written either way; only the exit status changed.
+- **`check --format json` gained an `examined` boolean.** Consumers that
+  enumerate the document's keys will see one more; consumers that read
+  `summary` will see the incomplete-run wording where they used to see
+  "Structurally sound" over a run that did not look everywhere.
 - **`gaudi cheat-sheet` gained exit status `2`.** A generation or a `--check`
   that used to succeed over a broken install now refuses, writes nothing, and
   names the pack that failed. A pipeline that regenerates the artifact will

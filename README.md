@@ -184,8 +184,8 @@ reading, while warn and info findings are reviewer input to discuss rather
 than a build to break.
 
 `2` outranks `1`: findings describe what was seen, and an incomplete run says
-the seeing was partial. Two things make a run incomplete, and both are listed
-with their reason in every output format, so "could not look" never reads as
+the seeing was partial. Three things make a run incomplete, and each is named
+with its reason in every output format, so "could not look" never reads as
 "found nothing":
 
 - **A file the parser could not read** — `text` block, `json` under `skipped`,
@@ -196,6 +196,16 @@ with their reason in every output format, so "could not look" never reads as
   `github` as a workflow-level `error` annotation. Every rule that pack owns
   went unasked, so a broken install cannot report as a clean project. The usual
   cause is a partial or mismatched install; reinstall `gaudi-linter`.
+- **A path no installed pack applies to** — `text` block naming what Gaudi
+  *does* handle, `json` under `examined: false`, `github` as a workflow-level
+  `error` annotation. This is the widest of the three: nothing was examined at
+  all, so an empty report describes nothing. Point Gaudi at a path one of the
+  installed packs covers, or install a pack that covers this one.
+
+A failed pack outranks the third: a pack that could not load **is** the pack
+that would have applied, so Gaudi reports the load failure rather than telling
+you no language pack applies — which would send you to install what is already
+installed.
 
 `gaudi count` and `gaudi report` use the same exit `2` for the same reason, and
 without needing a flag: a count taken over a missing rule catalog is an
@@ -203,10 +213,13 @@ undercount that a ratchet reads as progress, and a Markdown briefing that never
 saw a rule catalog would be read by an LLM as the whole truth about the project.
 `report` names what was not examined in an **Incomplete run** block at the top.
 
-**"Structurally sound" is claimed only over a run that examined everything** —
-by `check`'s text output and `report`'s Markdown alike. An incomplete run that
-found nothing says *"No architectural issues found in the parts that were
-examined."*, above the block naming what it could not read.
+**"Structurally sound" is claimed only over a run that examined everything.**
+One function owns that sentence and all three renderers of a run ask it for the
+same words: `check`'s text output, the `summary` field of `check --format json`,
+and `report`'s Markdown. An incomplete run that found nothing says *"No
+architectural issues found in the parts that were examined."*, above the block
+naming what it could not read; a run nothing applied to says *"No language pack
+applies here, so nothing was examined."*
 
 Naming a pack that failed to load (`--pack <name>`) exits `2` and reports the
 load error **in the format that was asked for**: inside the JSON document under
