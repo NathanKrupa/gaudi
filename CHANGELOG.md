@@ -4,75 +4,47 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
-### Fixed
+## [0.3.0] — 2026-09-03
 
-- **A pack that fails to load is now reported and exits `2`** (#260).
-  `Engine.discover_packs()` logged the failure at warning level and continued
-  without the pack, so a broken install made `gaudi check` report **zero
-  findings and exit `0`** — every rule that pack owns silently unasked, and a
-  CI gate keyed on `--exit-code` green over it. Nothing reads Gaudi's logger in
-  CI, so the log line was not a signal. A pack-load failure now rides the same
-  channel as an unparsable file (#257): it is recorded on `CheckResult`, named
-  with the pack and the exception in `text`, `json` (a `pack_errors` list) and
-  `github` output, and exits `2` under `--exit-code`, ahead of the severity
-  gate. `gaudi count` and `gaudi report` exit `2` for it too — the count is an
-  undercount, and a briefing that never saw a rule catalog is not a clean bill;
-  `report`'s Markdown grows an **Incomplete run** block naming what was not
-  examined, and claims "Structurally sound" only over a run that examined
-  everything. `gaudi list-packs` names the pack that failed rather than
-  reporting "No language packs installed". Naming a failed pack on the command
-  line (`--pack <name>`) exits `2` and names the load error, instead of the
-  "Unknown pack(s)" misdiagnosis it used to print. The `logger.warning` stays.
+The overhaul release (#256). A 2026-08-31 estate audit measured what Gaudi was
+actually doing across two production repos: the **error tier earns its keep**
+(zero `sys.path` hacks and zero dependency cycles at HEAD across 2,700 files;
+three real security fixes from SEC-012), while the **warn tier was ~50% churn
+and ~19% harm** — ratchet payments that relocated a production guard out of the
+function enforcing it, deleted a shared SSRF sink, and deleted three
+explanatory comments to get a function under a line count.
 
-- **Every command now reports a pack-load failure as an incomplete run** (#273).
-  The #260 fix reached `check`'s Markdown renderer but not its text one, so
-  `gaudi check` over a broken install still printed "No architectural issues
-  found. Structurally sound." in green, immediately above the block naming the
-  pack that never ran. It now says *"No architectural issues found in the parts
-  that were examined."*, the same wording `report` uses. Naming the failed pack
-  (`--pack <name>`) rendered prose on stdout whatever `--format` asked for,
-  which made `check --format json --pack <name>` unparseable and cost
-  `count --pack <name>` the integer a ratchet reads; the failure now travels
-  the ordinary per-format channel, so JSON stays JSON, `github` stays an
-  annotation, and `count` keeps the integer on stdout with the pack named on
-  stderr. `gaudi cheat-sheet` was the fourth consumer of the pack registry and
-  was never threaded: over a failed pack it wrote a gutted catalog and exited
-  `0`, after which `--check` — in CI and in the `gaudi-cheat-sheet` pre-commit
-  hook — certified the gutted file as up to date. It now writes nothing, names
-  the pack on stderr and exits `2`, and `--check` refuses on the same terms.
-
-- **The `summary` field of `check --format json` no longer certifies an
-  incomplete run** (#273). It came from `Engine.format_summary`, which saw only
-  the findings, so a machine consumer read "No architectural issues found.
-  Structurally sound." out of the same document whose `pack_errors` list named
-  the catalog that never ran. One function — `formats.format_empty_verdict` —
-  now owns that sentence, and all three renderers of a run (text, the JSON
-  `summary`, and the Markdown report) ask it for the same words.
-
-- **A path no installed pack applies to is an incomplete run, not a clean one**
-  (#273). `gaudi check ./docs` over a directory holding no Python and no
-  Dockerfile printed "No architectural issues found. Structurally sound." and
-  exited `0` — "examined everything and found nothing" and "examined nothing"
-  were indistinguishable, which is the defect #257 and #260 closed for a
-  single file and for a rule catalog. `CheckResult` now carries `examined`;
-  `check` names what Gaudi *does* handle and exits `2` under `--exit-code`,
-  `count` and `report` exit `2` without a flag, `--format json` carries
-  `examined: false`, and `--format github` emits a workflow-level `error`
-  annotation. A pack that **failed to load** outranks this diagnosis: that pack
-  is the one that would have applied, so Gaudi reports the load failure rather
-  than sending the reader to install what is already installed. Naming a pack
-  does not change the answer: `--pack python` (and `packs = ["python"]` in
-  `gaudi.toml`) selects a rule catalog, it does not make the path one that pack
-  covers, so both routes report the same incomplete run over the same path.
-
-- **`--exit-code` now gates at the severity `--severity` selected** (#267).
-  It counted error-severity findings only, whatever threshold the caller
-  asked for, so `gaudi check . --severity warn --exit-code` exited `0` with
-  96 warnings on the report — a gate that could not fail. The flag names a
-  threshold; it now honours it.
+Three things follow from that, and this release is all three: make the
+instrument honest about what it did not measure; separate the rules that name
+debt from the rules that name idiom; and aim the rule set at defects the estate
+actually ships rather than at shapes that are merely countable.
 
 ### Migration
 
+- **`--exit-code` gained exit status 2** — "at least one file could not be
+  parsed". A gate that treats any non-zero as failure needs no change. A gate
+  that tests `-eq 1` must be widened, and a gate that was silently green over
+  unparsable files will now go red: that is the fix, not a regression.
+- **STRUCT-021 and CPLX-002 moved from `warn` to `info`.** A `--severity warn`
+  report shrinks accordingly. Baselines counted against the *total* finding
+  count will drop; use `gaudi count --ratchet` instead, which counts the named
+  debt set and is stable across tier changes.
+- **`gaudi.toml` is now found by walking up to the project root.** A repo that
+  carries per-app copies to work around the old behaviour can delete all but
+  the root one — but check first that the copies were identical, because the
+  nearest one now wins.
+- **`noqa` accretions the precision pass obsoletes.** Each of these can be
+  removed from consuming repos once they upgrade; none is removed here (the
+  drop is per-repo work):
+
+  | rule | suppressions this release makes unnecessary |
+  | --- | --- |
+  | STAB-001 | queries bounded by `.limit(n)` or `[:n]` (~10 sites in grantspider) |
+  | SVC-004 | `from django.db.models import Count, Q` and siblings (aigranthelper) |
+  | SEC-002 | `SET statement_timeout = …` and other SET-statement hits |
+  | SEC-003 | constants holding a file path whose name contains a credential word |
+  | SMELL-025 | local variables named `new`, `new_items`, and the like |
+  | STAB-011, SVC-006 | repo-wide disables added because per-file mode stripped the project context — both are now excluded from single-file runs automatically |
 - **A run with a broken pack that exited `0` now exits `2`.** If a project's
   `gaudi check --exit-code` starts failing with `2` and no findings on the
   report, the install is broken and always was — the pack named in the new
@@ -121,51 +93,9 @@ All notable changes to this project will be documented in this file.
   under `--exit-code`, because the gate ignored the threshold anyway; now a
   project whose `gaudi.toml` says `[gaudi] severity = "error"` and whose CI
   runs a bare `--exit-code` gets an **info-tier gate it never asked for**.
-  Measured: that config plus a single warn-only file exits `1`, where on
-  0.3.0 it exited `0`. **Until #269 lands, pass `--severity` explicitly on
+  Measured: that config plus a single warn-only file exits `1`, where before
+  #267 it exited `0`. **Until #269 lands, pass `--severity` explicitly on
   the command line** — it is the only thing the gate reads.
-
-## [0.3.0] — 2026-09-02
-
-The overhaul release (#256). A 2026-08-31 estate audit measured what Gaudi was
-actually doing across two production repos: the **error tier earns its keep**
-(zero `sys.path` hacks and zero dependency cycles at HEAD across 2,700 files;
-three real security fixes from SEC-012), while the **warn tier was ~50% churn
-and ~19% harm** — ratchet payments that relocated a production guard out of the
-function enforcing it, deleted a shared SSRF sink, and deleted three
-explanatory comments to get a function under a line count.
-
-Three things follow from that, and this release is all three: make the
-instrument honest about what it did not measure; separate the rules that name
-debt from the rules that name idiom; and aim the rule set at defects the estate
-actually ships rather than at shapes that are merely countable.
-
-### Migration
-
-- **`--exit-code` gained exit status 2** — "at least one file could not be
-  parsed". A gate that treats any non-zero as failure needs no change. A gate
-  that tests `-eq 1` must be widened, and a gate that was silently green over
-  unparsable files will now go red: that is the fix, not a regression.
-- **STRUCT-021 and CPLX-002 moved from `warn` to `info`.** A `--severity warn`
-  report shrinks accordingly. Baselines counted against the *total* finding
-  count will drop; use `gaudi count --ratchet` instead, which counts the named
-  debt set and is stable across tier changes.
-- **`gaudi.toml` is now found by walking up to the project root.** A repo that
-  carries per-app copies to work around the old behaviour can delete all but
-  the root one — but check first that the copies were identical, because the
-  nearest one now wins.
-- **`noqa` accretions the precision pass obsoletes.** Each of these can be
-  removed from consuming repos once they upgrade; none is removed here (the
-  drop is per-repo work):
-
-  | rule | suppressions this release makes unnecessary |
-  | --- | --- |
-  | STAB-001 | queries bounded by `.limit(n)` or `[:n]` (~10 sites in grantspider) |
-  | SVC-004 | `from django.db.models import Count, Q` and siblings (aigranthelper) |
-  | SEC-002 | `SET statement_timeout = …` and other SET-statement hits |
-  | SEC-003 | constants holding a file path whose name contains a credential word |
-  | SMELL-025 | local variables named `new`, `new_items`, and the like |
-  | STAB-011, SVC-006 | repo-wide disables added because per-file mode stripped the project context — both are now excluded from single-file runs automatically |
 
 ### Added
 - **Skip accounting** (#256). A file the parser cannot read — a syntax the
@@ -251,6 +181,70 @@ actually ships rather than at shapes that are merely countable.
 - `is_logger_call` / `LOG_METHODS` moved to
   `packs/python/ast_helpers.py`; `logging_rules.py` and `errors.py` share one
   definition of what a logger call is.
+- **A pack that fails to load is now reported and exits `2`** (#260).
+  `Engine.discover_packs()` logged the failure at warning level and continued
+  without the pack, so a broken install made `gaudi check` report **zero
+  findings and exit `0`** — every rule that pack owns silently unasked, and a
+  CI gate keyed on `--exit-code` green over it. Nothing reads Gaudi's logger in
+  CI, so the log line was not a signal. A pack-load failure now rides the same
+  channel as an unparsable file (#257): it is recorded on `CheckResult`, named
+  with the pack and the exception in `text`, `json` (a `pack_errors` list) and
+  `github` output, and exits `2` under `--exit-code`, ahead of the severity
+  gate. `gaudi count` and `gaudi report` exit `2` for it too — the count is an
+  undercount, and a briefing that never saw a rule catalog is not a clean bill;
+  `report`'s Markdown grows an **Incomplete run** block naming what was not
+  examined, and claims "Structurally sound" only over a run that examined
+  everything. `gaudi list-packs` names the pack that failed rather than
+  reporting "No language packs installed". Naming a failed pack on the command
+  line (`--pack <name>`) exits `2` and names the load error, instead of the
+  "Unknown pack(s)" misdiagnosis it used to print. The `logger.warning` stays.
+
+- **Every command now reports a pack-load failure as an incomplete run** (#273).
+  The #260 fix reached `check`'s Markdown renderer but not its text one, so
+  `gaudi check` over a broken install still printed "No architectural issues
+  found. Structurally sound." in green, immediately above the block naming the
+  pack that never ran. It now says *"No architectural issues found in the parts
+  that were examined."*, the same wording `report` uses. Naming the failed pack
+  (`--pack <name>`) rendered prose on stdout whatever `--format` asked for,
+  which made `check --format json --pack <name>` unparseable and cost
+  `count --pack <name>` the integer a ratchet reads; the failure now travels
+  the ordinary per-format channel, so JSON stays JSON, `github` stays an
+  annotation, and `count` keeps the integer on stdout with the pack named on
+  stderr. `gaudi cheat-sheet` was the fourth consumer of the pack registry and
+  was never threaded: over a failed pack it wrote a gutted catalog and exited
+  `0`, after which `--check` — in CI and in the `gaudi-cheat-sheet` pre-commit
+  hook — certified the gutted file as up to date. It now writes nothing, names
+  the pack on stderr and exits `2`, and `--check` refuses on the same terms.
+
+- **The `summary` field of `check --format json` no longer certifies an
+  incomplete run** (#273). It came from `Engine.format_summary`, which saw only
+  the findings, so a machine consumer read "No architectural issues found.
+  Structurally sound." out of the same document whose `pack_errors` list named
+  the catalog that never ran. One function — `formats.format_empty_verdict` —
+  now owns that sentence, and all three renderers of a run (text, the JSON
+  `summary`, and the Markdown report) ask it for the same words.
+
+- **A path no installed pack applies to is an incomplete run, not a clean one**
+  (#273). `gaudi check ./docs` over a directory holding no Python and no
+  Dockerfile printed "No architectural issues found. Structurally sound." and
+  exited `0` — "examined everything and found nothing" and "examined nothing"
+  were indistinguishable, which is the defect #257 and #260 closed for a
+  single file and for a rule catalog. `CheckResult` now carries `examined`;
+  `check` names what Gaudi *does* handle and exits `2` under `--exit-code`,
+  `count` and `report` exit `2` without a flag, `--format json` carries
+  `examined: false`, and `--format github` emits a workflow-level `error`
+  annotation. A pack that **failed to load** outranks this diagnosis: that pack
+  is the one that would have applied, so Gaudi reports the load failure rather
+  than sending the reader to install what is already installed. Naming a pack
+  does not change the answer: `--pack python` (and `packs = ["python"]` in
+  `gaudi.toml`) selects a rule catalog, it does not make the path one that pack
+  covers, so both routes report the same incomplete run over the same path.
+
+- **`--exit-code` now gates at the severity `--severity` selected** (#267).
+  It counted error-severity findings only, whatever threshold the caller
+  asked for, so `gaudi check . --severity warn --exit-code` exited `0` with
+  96 warnings on the report — a gate that could not fail. The flag names a
+  threshold; it now honours it.
 
 ### CI
 - **Gaudi runs Gaudi on Gaudi.** The `lint` job runs
