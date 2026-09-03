@@ -10,6 +10,7 @@ from importlib.metadata import entry_points
 from pathlib import Path
 
 from gaudi.core import CheckResult, FileSkip, Finding, PackError, Severity
+from gaudi.formats import format_empty_verdict
 from gaudi.pack import Pack
 
 logger = logging.getLogger(__name__)
@@ -189,7 +190,20 @@ class Engine:
             f"the rules {'they own' if count != 1 else 'it owns'} never ran."
         )
 
-    def format_summary(self, findings: list[Finding]) -> str:
+    def format_summary(
+        self,
+        findings: list[Finding],
+        skipped: list[FileSkip] | None = None,
+        pack_errors: list[PackError] | None = None,
+    ) -> str:
+        """One line summarising the report, and what the run is entitled to claim.
+
+        The counts are a fact about what was found. The empty-report sentence is
+        a *verdict*, and a verdict over a run that did not see everything is a
+        false green - so it is delegated to ``format_empty_verdict``, which every
+        renderer of this run shares. The incomplete-run arguments default to a
+        complete run, so a caller holding only findings still gets a summary.
+        """
         errors = sum(1 for f in findings if f.severity == Severity.ERROR)
         warnings = sum(1 for f in findings if f.severity == Severity.WARN)
         infos = sum(1 for f in findings if f.severity == Severity.INFO)
@@ -206,7 +220,7 @@ class Engine:
             parts.append(f"{infos} info{'s' if infos != 1 else ''}")
 
         if not parts:
-            return "No architectural issues found. Structurally sound."
+            return format_empty_verdict(skipped, pack_errors)
 
         count_str = ", ".join(parts)
         file_str = f" across {len(files)} file{'s' if len(files) != 1 else ''}" if files else ""

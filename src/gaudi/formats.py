@@ -26,6 +26,29 @@ _GITHUB_LEVEL = {
 }
 
 
+COMPLETE_RUN_VERDICT = "No architectural issues found. Structurally sound."
+INCOMPLETE_RUN_VERDICT = "No architectural issues found in the parts that were examined."
+
+
+def format_empty_verdict(
+    skipped: list[FileSkip] | None = None,
+    pack_errors: list[PackError] | None = None,
+) -> str:
+    """The one sentence a run with nothing to report is allowed to say about itself.
+
+    Three renderers make this claim - ``check``'s text output, the ``summary``
+    field of its JSON document, and the Markdown report - and a sentence
+    written in three places is a sentence that gets fixed in two. It lives here
+    once, and every renderer asks for it.
+
+    "Structurally sound" is a claim about the whole project, so only a run that
+    examined the whole project may make it.
+    """
+    if skipped or pack_errors:
+        return INCOMPLETE_RUN_VERDICT
+    return COMPLETE_RUN_VERDICT
+
+
 def _escape_github_data(value: str) -> str:
     """Escape a workflow-command message body."""
     return value.replace("%", "%25").replace("\r", "%0D").replace("\n", "%0A")
@@ -197,10 +220,7 @@ def format_markdown_report(
     out.extend(incomplete)
 
     if not findings:
-        if incomplete:
-            out.append("No architectural issues found in the parts that were examined.")
-        else:
-            out.append("No architectural issues found. Structurally sound.")
+        out.append(format_empty_verdict(skipped, pack_errors))
         out.append("")
         return "\n".join(out)
 

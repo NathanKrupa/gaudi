@@ -22,7 +22,7 @@ from rich.text import Text
 from gaudi.config import get_rule_overrides, get_school, load_config
 from gaudi.core import CheckResult, PackError, Severity
 from gaudi.engine import Engine
-from gaudi.formats import format_github, format_markdown_report
+from gaudi.formats import format_empty_verdict, format_github, format_markdown_report
 from gaudi.services.ratchet import RATCHET_RULE_CODES, count_by_code
 
 console = Console()
@@ -199,7 +199,7 @@ def check(
             "findings": [f.to_dict() for f in findings],
             "skipped": [s.to_dict() for s in skipped],
             "pack_errors": [e.to_dict() for e in pack_errors],
-            "summary": engine.format_summary(findings),
+            "summary": engine.format_summary(findings, skipped=skipped, pack_errors=pack_errors),
         }
         click.echo(json.dumps(output, indent=2))
     elif output_format == "github":
@@ -214,17 +214,15 @@ def check(
     else:
         if not findings:
             # "Structurally sound" is a claim about the whole project, and an
-            # incomplete run has not seen the whole project. The same rule
-            # `format_markdown_report` follows, in the same words, because the
-            # two renderers render the same CheckResult.
+            # incomplete run has not seen the whole project. The sentence is
+            # not written here: `format_empty_verdict` owns it, and every
+            # renderer of this CheckResult -- this one, the `summary` field of
+            # the JSON document, and the Markdown report -- asks it for the
+            # same words. Green is part of the claim, so an incomplete run
+            # does not get it either.
             console.print()
-            if pack_errors or skipped:
-                console.print(
-                    "[yellow]No architectural issues found in the parts "
-                    "that were examined.[/yellow]"
-                )
-            else:
-                console.print("[green]No architectural issues found. Structurally sound.[/green]")
+            style = "yellow" if (skipped or pack_errors) else "green"
+            console.print(f"[{style}]{format_empty_verdict(skipped, pack_errors)}[/{style}]")
             console.print()
         else:
             console.print()
@@ -260,7 +258,8 @@ def check(
 
                 console.print()
 
-            console.print(f"[dim]{engine.format_summary(findings)}[/dim]")
+            summary = engine.format_summary(findings, skipped=skipped, pack_errors=pack_errors)
+            console.print(f"[dim]{summary}[/dim]")
             console.print()
 
         if skipped:

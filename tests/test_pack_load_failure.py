@@ -751,3 +751,67 @@ class TestCheatSheetRefusesAnIncompleteCatalog:
 
         assert result.exit_code == 0
         assert "up to date" in result.output
+
+
+class TestTheJsonSummaryDoesNotCertifyAnIncompleteRun:
+    """`check --format json` carries a third renderer of the same verdict.
+
+    Its `summary` field comes from `Engine.format_summary`, which saw only the
+    findings — so a machine consumer read "No architectural issues found.
+    Structurally sound." out of the same document whose `pack_errors` list
+    named the catalog that never ran.
+    """
+
+    def test_the_json_summary_does_not_certify_a_failed_pack(
+        self, one_broken_pack: None, clean_project: Path
+    ):
+        result = CliRunner().invoke(main, ["check", str(clean_project), "--format", "json"])
+
+        assert "Structurally sound" not in json.loads(result.stdout)["summary"]
+
+    def test_the_json_summary_does_not_certify_a_skipped_file(
+        self, all_packs_load: None, skipping_project: Path
+    ):
+        result = CliRunner().invoke(main, ["check", str(skipping_project), "--format", "json"])
+
+        assert "Structurally sound" not in json.loads(result.stdout)["summary"]
+
+    def test_the_json_summary_uses_the_same_words_as_the_text_renderer(
+        self, one_broken_pack: None, clean_project: Path
+    ):
+        """One sentence, one owner: the three renderers must not drift apart again."""
+        as_json = CliRunner().invoke(main, ["check", str(clean_project), "--format", "json"])
+        as_text = CliRunner().invoke(main, ["check", str(clean_project)])
+
+        summary = json.loads(as_json.stdout)["summary"]
+        assert summary == "No architectural issues found in the parts that were examined."
+        assert summary in as_text.output
+
+    def test_the_markdown_report_uses_the_same_words(
+        self, one_broken_pack: None, clean_project: Path
+    ):
+        result = CliRunner().invoke(main, ["report", str(clean_project)])
+
+        assert "No architectural issues found in the parts that were examined." in result.stdout
+
+    def test_a_healthy_json_summary_still_says_structurally_sound(
+        self, all_packs_load: None, clean_project: Path
+    ):
+        """The control: the claim survives where it is true."""
+        result = CliRunner().invoke(main, ["check", str(clean_project), "--format", "json"])
+
+        assert json.loads(result.stdout)["summary"] == (
+            "No architectural issues found. Structurally sound."
+        )
+
+    def test_a_run_with_findings_still_summarises_the_counts(
+        self, one_broken_pack: None, clean_project: Path
+    ):
+        """The control: the verdict only replaces the empty-report sentence."""
+        (clean_project / "insecure.py").write_text(
+            "def run(src):\n    return eval(src)\n", encoding="utf-8"
+        )
+
+        result = CliRunner().invoke(main, ["check", str(clean_project), "--format", "json"])
+
+        assert json.loads(result.stdout)["summary"].startswith("Found ")
