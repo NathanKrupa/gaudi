@@ -169,7 +169,7 @@ them apart is not a gate:
 | --- | --- |
 | `0` | Every file was parsed, and nothing at or above the severity threshold was found. |
 | `1` | The report is not empty — at least one finding at or above the threshold. |
-| `2` | The run was incomplete — a pack failed to load, or a file could not be parsed. Whatever it reported, it did not look everywhere. |
+| `2` | The run was incomplete — a pack failed to load, a file could not be parsed, or no installed pack applies to the path. Whatever it reported, it did not look everywhere. |
 
 **The gate is the threshold `--severity` selected.** `--severity error
 --exit-code` fails on an error; `--severity warn --exit-code` fails on a

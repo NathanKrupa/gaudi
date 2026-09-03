@@ -336,3 +336,48 @@ class TestNamingAPackThatDoesApplyIsUnaffected:
         payload = json.loads(result.stdout)
         assert payload["examined"] is True
         assert NOTHING_EXAMINED not in payload["summary"]
+
+
+class TestEveryCauseOfExitTwoIsNamedWhereverTheyAreEnumerated:
+    """Three things make a run incomplete; a list that names two is a false map.
+
+    `--help` and the README are where a caller learns what exit 2 means, and
+    the third cause was added without them. Each assertion is on the *list*,
+    not on the behaviour, because the behaviour is already pinned above.
+    """
+
+    CAUSES = (
+        "pack failed to load",
+        "could not be parsed",
+        "no installed pack applies",
+    )
+
+    @staticmethod
+    def _one_line(text: str) -> str:
+        """Click rewraps help text, so compare with the line breaks removed."""
+        return " ".join(text.split())
+
+    def test_check_help_names_all_three(self):
+        result = CliRunner().invoke(main, ["check", "--help"])
+
+        rendered = self._one_line(result.output)
+        for cause in self.CAUSES:
+            assert cause in rendered
+
+    def test_count_help_names_all_three(self):
+        result = CliRunner().invoke(main, ["count", "--help"])
+
+        rendered = self._one_line(result.output)
+        for cause in self.CAUSES:
+            assert cause in rendered
+
+    def test_the_readme_exit_code_table_names_all_three(self):
+        readme = Path(__file__).resolve().parent.parent / "README.md"
+        row = next(
+            line
+            for line in readme.read_text(encoding="utf-8").splitlines()
+            if line.startswith("| `2` |")
+        )
+
+        for cause in self.CAUSES:
+            assert cause in row

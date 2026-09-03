@@ -176,9 +176,10 @@ def main():
     default=False,
     help=(
         "Exit non-zero on an incomplete or failing run: 2 if the run was "
-        "incomplete (a pack failed to load, or a file could not be parsed), "
-        "1 if the report is not empty, 0 otherwise. The gate is the threshold "
-        "--severity selected, so --severity warn --exit-code fails on a warning."
+        "incomplete (a pack failed to load, a file could not be parsed, or "
+        "no installed pack applies to the path), 1 if the report is not "
+        "empty, 0 otherwise. The gate is the threshold --severity selected, "
+        "so --severity warn --exit-code fails on a warning."
     ),
 )
 def check(
@@ -305,10 +306,11 @@ def check(
             )
 
     # Exit code. An incomplete run outranks a finding: findings describe what
-    # was seen, and a skip or a pack that never loaded says the seeing was
-    # incomplete, so the report cannot be trusted to be exhaustive whatever it
-    # contains. A pack error is the wider of the two -- a file skip loses one
-    # file, a pack error loses every rule that pack owns.
+    # was seen, and any of the three kinds of "could not look" says the seeing
+    # was incomplete, so the report cannot be trusted to be exhaustive whatever
+    # it contains. They widen in that order: a file skip loses one file, a pack
+    # error loses every rule that pack owns, and a path no installed pack
+    # applies to loses the whole run -- nothing was examined at all.
     #
     # Below that, the gate is whatever --severity selected. `findings` is
     # already filtered to that threshold, so the run fails exactly when the
@@ -435,9 +437,10 @@ def count(
         baseline=$(gaudi count . --ratchet)
 
     Exit code 0 means the count is complete. Exit code 2 means the run was
-    incomplete — a pack failed to load, or a file could not be parsed — so the
-    number printed is an undercount. A ratchet that compared it against a
-    complete baseline would read the missing findings as progress.
+    incomplete — a pack failed to load, a file could not be parsed, or no
+    installed pack applies to the path — so the number printed is an
+    undercount. A ratchet that compared it against a complete baseline would
+    read the missing findings as progress.
     """
     if ratchet and code:
         console.print("[red]--code and --ratchet cannot be combined.[/red]")
