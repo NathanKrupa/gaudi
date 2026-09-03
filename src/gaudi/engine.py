@@ -108,7 +108,10 @@ class Engine:
 
         Args:
             path: File or directory to check.
-            pack_names: Specific packs to use. If None, auto-detect.
+            pack_names: Specific packs to use. If None, auto-detect. A
+                named pack that cannot handle the path does not run, so
+                naming one never turns an unexamined run into an
+                examined one.
             min_severity: Minimum severity level to include in results.
             school: Philosophy school to filter rules by.
             rule_overrides: Per-rule severity overrides (code → severity or "off").
@@ -121,7 +124,14 @@ class Engine:
             whose importance a caller can rank down.
         """
         if pack_names:
-            packs = [self._packs[name] for name in pack_names if name in self._packs]
+            named = [self._packs[name] for name in pack_names if name in self._packs]
+            # Naming a pack selects a catalog; it does not make the path one
+            # that pack covers. ``can_handle`` decides what was examined
+            # whichever way the packs were chosen, so the two selection routes
+            # cannot disagree about the same path -- and a run over a path the
+            # named pack does not cover is the same "examined nothing" the
+            # auto-detected route already reports.
+            packs = [pack for pack in named if pack.can_handle(path)]
         else:
             packs = self.detect_packs(path)
 

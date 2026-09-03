@@ -60,7 +60,10 @@ All notable changes to this project will be documented in this file.
   `examined: false`, and `--format github` emits a workflow-level `error`
   annotation. A pack that **failed to load** outranks this diagnosis: that pack
   is the one that would have applied, so Gaudi reports the load failure rather
-  than sending the reader to install what is already installed.
+  than sending the reader to install what is already installed. Naming a pack
+  does not change the answer: `--pack python` (and `packs = ["python"]` in
+  `gaudi.toml`) selects a rule catalog, it does not make the path one that pack
+  covers, so both routes report the same incomplete run over the same path.
 
 - **`--exit-code` now gates at the severity `--severity` selected** (#267).
   It counted error-severity findings only, whatever threshold the caller
@@ -84,7 +87,10 @@ All notable changes to this project will be documented in this file.
   check` over a directory with no Python in it used to go green; it now fails,
   correctly — nothing was examined, so the green measured nothing. Point the
   command at a path an installed pack covers. The Markdown briefing is still
-  written either way; only the exit status changed.
+  written either way; only the exit status changed. This holds for a named
+  pack too: `gaudi check ./docs --pack python` used to run the Python pack's
+  project-scope rules over a directory with no Python in it and exit on what
+  they found; it now reports that nothing was examined and exits `2`.
 - **`check --format json` gained an `examined` boolean.** Consumers that
   enumerate the document's keys will see one more; consumers that read
   `summary` will see the incomplete-run wording where they used to see

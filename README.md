@@ -207,6 +207,11 @@ that would have applied, so Gaudi reports the load failure rather than telling
 you no language pack applies — which would send you to install what is already
 installed.
 
+`--pack` does not change the third either. Naming a pack selects a rule
+catalog; it does not make the path one that pack covers, so `gaudi check ./docs
+--pack python` reports the same "nothing was examined" that auto-detection
+does. The same holds for `packs = [...]` in `gaudi.toml`.
+
 `gaudi count` and `gaudi report` use the same exit `2` for the same reason, and
 without needing a flag: a count taken over a missing rule catalog is an
 undercount that a ratchet reads as progress, and a Markdown briefing that never

@@ -193,3 +193,146 @@ class TestAnExaminedPathIsUnaffected:
 
         assert result.exit_code == 0
         assert "Incomplete run" not in result.stdout
+
+
+@pytest.fixture
+def dockerfile_project(tmp_path: Path) -> Path:
+    """A directory the ops pack claims and the Python pack does not."""
+    root = tmp_path / "image"
+    root.mkdir()
+    (root / "Dockerfile").write_text("FROM python:3.12-slim\nUSER app\n", encoding="utf-8")
+    return root
+
+
+class TestNamingAPackDoesNotMakeItApply:
+    """`--pack python` selects a catalog; it does not make the path Python.
+
+    Selecting packs by name is a filter on the catalog, so the two selection
+    routes -- auto-detection and an explicit `--pack` -- must not disagree
+    about whether the same path was examined.
+    """
+
+    def test_the_engine_marks_a_named_pack_that_cannot_handle_the_path_unexamined(
+        self, unhandled_project: Path
+    ):
+        engine = Engine()
+        engine.discover_packs()
+
+        result = engine.check_result(unhandled_project, pack_names=["python"])
+
+        assert result.examined is False
+        assert result.findings == []
+
+    def test_the_text_renderer_says_nothing_was_examined(self, unhandled_project: Path):
+        result = CliRunner().invoke(main, ["check", str(unhandled_project), "--pack", "python"])
+
+        assert "Structurally sound" not in result.output
+        assert NOTHING_EXAMINED in result.output
+        assert "matched an installed pack" in result.output
+
+    @pytest.mark.parametrize("severity", ["error", "warn", "info"])
+    def test_it_exits_two_at_every_severity(self, unhandled_project: Path, severity: str):
+        result = CliRunner().invoke(
+            main,
+            [
+                "check",
+                str(unhandled_project),
+                "--pack",
+                "python",
+                "--severity",
+                severity,
+                "--exit-code",
+            ],
+        )
+
+        assert result.exit_code == 2
+
+    def test_the_json_document_records_it(self, unhandled_project: Path):
+        result = CliRunner().invoke(
+            main, ["check", str(unhandled_project), "--pack", "python", "--format", "json"]
+        )
+
+        payload = json.loads(result.stdout)
+        assert payload["examined"] is False
+        assert payload["summary"] == NOTHING_EXAMINED
+
+    def test_the_github_output_annotates_it(self, unhandled_project: Path):
+        result = CliRunner().invoke(
+            main, ["check", str(unhandled_project), "--pack", "python", "--format", "github"]
+        )
+
+        assert "::error title=Nothing examined::" in result.stdout
+
+    def test_count_exits_two_and_keeps_the_integer_on_stdout(self, unhandled_project: Path):
+        result = CliRunner().invoke(main, ["count", str(unhandled_project), "--pack", "python"])
+
+        assert result.exit_code == 2
+        assert result.stdout.strip().isdigit()
+        assert "nothing was examined" in result.stderr.lower()
+
+    def test_report_names_it_in_the_incomplete_run_block(self, unhandled_project: Path):
+        result = CliRunner().invoke(main, ["report", str(unhandled_project), "--pack", "python"])
+
+        assert result.exit_code == 2
+        assert "## Incomplete run" in result.stdout
+        assert "- **No language pack applies to this path**" in result.stdout
+        assert "Structurally sound" not in result.stdout
+
+    def test_the_config_pack_list_takes_the_same_route(self, dockerfile_project: Path):
+        """`gaudi.toml`'s `packs` reaches `check_result` by the same argument.
+
+        Run over a path auto-detection *would* have examined -- the ops pack
+        claims the Dockerfile -- so the assertion can only be satisfied by the
+        configured pack list actually being read. Over a path nothing applies
+        to, both routes agree and the test would pass without reading the file.
+        """
+        (dockerfile_project / "gaudi.toml").write_text(
+            '[gaudi]\npacks = ["python"]\n', encoding="utf-8"
+        )
+
+        result = CliRunner().invoke(main, ["check", str(dockerfile_project), "--exit-code"])
+
+        assert result.exit_code == 2
+        assert NOTHING_EXAMINED in result.output
+
+
+class TestNamingAPackThatDoesApplyIsUnaffected:
+    """The controls. Without them the filter above could be vacuous."""
+
+    def test_a_named_pack_that_handles_the_path_still_examines_it(self, handled_project: Path):
+        result = CliRunner().invoke(
+            main, ["check", str(handled_project), "--pack", "python", "--format", "json"]
+        )
+
+        payload = json.loads(result.stdout)
+        assert payload["examined"] is True
+        assert payload["summary"] == "No architectural issues found. Structurally sound."
+
+    def test_it_still_exits_zero(self, handled_project: Path):
+        result = CliRunner().invoke(
+            main, ["check", str(handled_project), "--pack", "python", "--exit-code"]
+        )
+
+        assert result.exit_code == 0
+
+    def test_one_named_pack_that_applies_beside_one_that_does_not_is_examined(
+        self, dockerfile_project: Path
+    ):
+        """`--pack python --pack ops` over a Dockerfile: ops applies, so the run looked."""
+        result = CliRunner().invoke(
+            main,
+            [
+                "check",
+                str(dockerfile_project),
+                "--pack",
+                "python",
+                "--pack",
+                "ops",
+                "--format",
+                "json",
+            ],
+        )
+
+        payload = json.loads(result.stdout)
+        assert payload["examined"] is True
+        assert NOTHING_EXAMINED not in payload["summary"]
