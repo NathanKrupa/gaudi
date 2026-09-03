@@ -170,11 +170,15 @@ class PackError:
     ran. It travels on its own channel for the same reason.
 
     Every command that reads the pack registry carries it: ``check`` (text,
-    json, github, and exit 2 under ``--exit-code``), ``count`` and ``report``
-    (exit 2, unconditionally), ``list-packs``, and ``cheat-sheet``, which
-    refuses to render a catalog it could not build. Naming a failed pack with
-    ``--pack`` exits 2 rather than reporting it as an unknown pack, and reports
-    it in whatever format the caller asked for.
+    json, github, the ``summary`` field, and exit 2 under ``--exit-code``),
+    ``count`` and ``report`` (exit 2, unconditionally), ``list-packs``, and
+    ``cheat-sheet``, which refuses to render a catalog it could not build.
+    Naming a failed pack with ``--pack`` exits 2 rather than reporting it as an
+    unknown pack, and reports it in whatever format the caller asked for.
+
+    It outranks :attr:`CheckResult.examined`: a pack that failed to load is the
+    pack that *would* have applied, so a run carrying one is reported as a
+    broken install rather than as a path no language pack covers.
     """
 
     pack: str
@@ -186,11 +190,20 @@ class PackError:
 
 @dataclass(frozen=True)
 class CheckResult:
-    """Everything one ``check`` run learned: what it found, and what it could not read."""
+    """Everything one ``check`` run learned: what it found, and what it could not read.
+
+    ``examined`` is the third kind of "could not look", and the widest: not one
+    file the parser could not read, nor one rule catalog that never loaded, but
+    a path no installed pack claims at all. It carries no rows because there is
+    nothing to enumerate — the whole run is the absence. It defaults to ``True``
+    so a pack's own result, which by construction examined what it was given,
+    says so without asking.
+    """
 
     findings: list[Finding] = field(default_factory=list)
     skipped: list[FileSkip] = field(default_factory=list)
     pack_errors: list[PackError] = field(default_factory=list)
+    examined: bool = True
 
 
 UNIVERSAL_SCOPE: frozenset[str] = frozenset({"universal"})

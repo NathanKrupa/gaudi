@@ -126,7 +126,11 @@ class Engine:
             packs = self.detect_packs(path)
 
         if not packs:
-            return CheckResult(pack_errors=list(self._pack_errors))
+            # No pack claimed this path, so no rule was ever asked. That is
+            # the widest "could not look" there is: not one unreadable file,
+            # not one catalog that failed to load, but a run that examined
+            # nothing at all. It must not print or exit like a clean project.
+            return CheckResult(pack_errors=list(self._pack_errors), examined=False)
 
         findings: list[Finding] = []
         skipped: list[FileSkip] = []
@@ -195,12 +199,13 @@ class Engine:
         findings: list[Finding],
         skipped: list[FileSkip] | None = None,
         pack_errors: list[PackError] | None = None,
+        examined: bool = True,
     ) -> str:
         """One line summarising the report, and what the run is entitled to claim.
 
         The counts are a fact about what was found. The empty-report sentence is
         a *verdict*, and a verdict over a run that did not see everything is a
-        false green - so it is delegated to ``format_empty_verdict``, which every
+        false green — so it is delegated to ``format_empty_verdict``, which every
         renderer of this run shares. The incomplete-run arguments default to a
         complete run, so a caller holding only findings still gets a summary.
         """
@@ -220,7 +225,7 @@ class Engine:
             parts.append(f"{infos} info{'s' if infos != 1 else ''}")
 
         if not parts:
-            return format_empty_verdict(skipped, pack_errors)
+            return format_empty_verdict(skipped, pack_errors, examined)
 
         count_str = ", ".join(parts)
         file_str = f" across {len(files)} file{'s' if len(files) != 1 else ''}" if files else ""

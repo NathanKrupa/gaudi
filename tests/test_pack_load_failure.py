@@ -815,3 +815,68 @@ class TestTheJsonSummaryDoesNotCertifyAnIncompleteRun:
         result = CliRunner().invoke(main, ["check", str(clean_project), "--format", "json"])
 
         assert json.loads(result.stdout)["summary"].startswith("Found ")
+
+
+class TestABrokenInstallIsNotDiagnosedAsNothingApplying:
+    """A failed pack IS the pack that applies. Two "could not look" records meet here.
+
+    With every entry point broken, `check_result` returns before any pack runs,
+    so the run is both `examined=False` and carrying a `PackError`. The pack
+    error is the diagnosis; "no language pack applies to this path" would send
+    the reader to install what is already installed -- the same lie #272 closed
+    for "none installed".
+    """
+
+    def test_the_json_summary_names_the_incomplete_run_not_a_missing_pack(
+        self, monkeypatch: pytest.MonkeyPatch, clean_project: Path
+    ):
+        _install(monkeypatch, _BrokenEntryPoint())
+
+        result = CliRunner().invoke(main, ["check", str(clean_project), "--format", "json"])
+
+        payload = json.loads(result.stdout)
+        assert payload["examined"] is False
+        assert payload["summary"] == (
+            "No architectural issues found in the parts that were examined."
+        )
+
+    def test_the_text_renderer_does_not_say_no_language_pack_applies(
+        self, monkeypatch: pytest.MonkeyPatch, clean_project: Path
+    ):
+        _install(monkeypatch, _BrokenEntryPoint())
+
+        result = CliRunner().invoke(main, ["check", str(clean_project)])
+
+        assert "matched an installed pack" not in result.output
+        assert IMPORT_MESSAGE in result.output
+
+    def test_the_github_output_annotates_the_pack_failure_only(
+        self, monkeypatch: pytest.MonkeyPatch, clean_project: Path
+    ):
+        _install(monkeypatch, _BrokenEntryPoint())
+
+        result = CliRunner().invoke(main, ["check", str(clean_project), "--format", "github"])
+
+        assert "::error title=Pack load failure::" in result.stdout
+        assert "Nothing examined" not in result.stdout
+
+    def test_the_report_names_the_pack_not_a_missing_one(
+        self, monkeypatch: pytest.MonkeyPatch, clean_project: Path
+    ):
+        _install(monkeypatch, _BrokenEntryPoint())
+
+        result = CliRunner().invoke(main, ["report", str(clean_project)])
+
+        assert "No language pack applies" not in result.stdout
+        assert "failed to load" in result.stdout
+
+    def test_count_says_the_pack_failed_not_that_none_applies(
+        self, monkeypatch: pytest.MonkeyPatch, clean_project: Path
+    ):
+        _install(monkeypatch, _BrokenEntryPoint())
+
+        result = CliRunner().invoke(main, ["count", str(clean_project)])
+
+        assert "no installed pack applies" not in result.stderr.lower()
+        assert IMPORT_MESSAGE in result.stderr
+        assert result.exit_code == 2

@@ -22,7 +22,12 @@ from rich.text import Text
 from gaudi.config import get_rule_overrides, get_school, load_config
 from gaudi.core import CheckResult, PackError, Severity
 from gaudi.engine import Engine
-from gaudi.formats import format_empty_verdict, format_github, format_markdown_report
+from gaudi.formats import (
+    format_empty_verdict,
+    format_github,
+    format_markdown_report,
+    nothing_applied,
+)
 from gaudi.services.ratchet import RATCHET_RULE_CODES, count_by_code
 
 console = Console()
@@ -188,6 +193,7 @@ def check(
     findings = result.findings
     skipped = result.skipped
     pack_errors = result.pack_errors
+    examined = result.examined
 
     # Output results
     if output_format == "json":
@@ -199,7 +205,10 @@ def check(
             "findings": [f.to_dict() for f in findings],
             "skipped": [s.to_dict() for s in skipped],
             "pack_errors": [e.to_dict() for e in pack_errors],
-            "summary": engine.format_summary(findings, skipped=skipped, pack_errors=pack_errors),
+            "examined": examined,
+            "summary": engine.format_summary(
+                findings, skipped=skipped, pack_errors=pack_errors, examined=examined
+            ),
         }
         click.echo(json.dumps(output, indent=2))
     elif output_format == "github":
@@ -209,6 +218,7 @@ def check(
                 project_path=project_path,
                 skipped=skipped,
                 pack_errors=pack_errors,
+                examined=examined,
             )
         )
     else:
@@ -221,8 +231,11 @@ def check(
             # same words. Green is part of the claim, so an incomplete run
             # does not get it either.
             console.print()
-            style = "yellow" if (skipped or pack_errors) else "green"
-            console.print(f"[{style}]{format_empty_verdict(skipped, pack_errors)}[/{style}]")
+            complete = examined and not skipped and not pack_errors
+            style = "green" if complete else "yellow"
+            console.print(
+                f"[{style}]{format_empty_verdict(skipped, pack_errors, examined)}[/{style}]"
+            )
             console.print()
         else:
             console.print()
@@ -258,9 +271,22 @@ def check(
 
                 console.print()
 
-            summary = engine.format_summary(findings, skipped=skipped, pack_errors=pack_errors)
+            summary = engine.format_summary(
+                findings, skipped=skipped, pack_errors=pack_errors, examined=examined
+            )
             console.print(f"[dim]{summary}[/dim]")
             console.print()
+
+        if nothing_applied(pack_errors, examined):
+            _print_incomplete(
+                "Nothing here matched an installed pack.",
+                [
+                    (name, ", ".join(installed.extensions) or ", ".join(installed.filenames))
+                    for name, installed in engine.packs.items()
+                ],
+                "An empty report over a path nothing examined is not a clean bill.",
+                "bold yellow",
+            )
 
         if skipped:
             _print_incomplete(
@@ -297,7 +323,7 @@ def check(
         sys.exit(2)
 
     if exit_code:
-        if pack_errors or skipped:
+        if pack_errors or skipped or not examined:
             sys.exit(2)
         if findings:
             sys.exit(1)
@@ -348,6 +374,7 @@ def report(
         snippet_context=snippet_context,
         skipped=result.skipped,
         pack_errors=result.pack_errors,
+        examined=result.examined,
     )
 
     if output:
@@ -360,7 +387,7 @@ def report(
     # way; the exit code is what says it is partial. Same code and same reason
     # as `count`: a reader who gates on this command must not be told a run
     # that never saw the whole project was clean.
-    if result.skipped or result.pack_errors:
+    if result.skipped or result.pack_errors or not result.examined:
         sys.exit(2)
 
 
@@ -445,7 +472,10 @@ def count(
             [(e.pack, e.error) for e in result.pack_errors],
         )
 
-    if result.skipped or result.pack_errors:
+    if nothing_applied(result.pack_errors, result.examined):
+        _warn_incomplete("Nothing was examined — no installed pack applies to this path.", [])
+
+    if result.skipped or result.pack_errors or not result.examined:
         click.echo("  This count is an undercount.", err=True)
         sys.exit(2)
 

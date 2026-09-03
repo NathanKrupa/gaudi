@@ -198,24 +198,32 @@ class TestPhilosophyAttribution:
 
 
 class TestCliWiring:
-    def test_check_format_github_runs_on_clean_dir(self, tmp_path: Path) -> None:
+    def test_check_format_github_on_a_path_no_pack_applies_to(self, tmp_path: Path) -> None:
+        """An empty directory is not a clean project — nothing examined it.
+
+        This test used to assert the empty directory produced no output at all,
+        which is the false green gaudi#273 closes: "examined everything and
+        found nothing" and "examined nothing" printed identically.
+        """
         runner = CliRunner()
         result = runner.invoke(main, ["check", str(tmp_path), "--format", "github"])
-        assert result.exit_code == 0
-        # Clean dir → no findings → no output lines (but command must succeed).
-        assert result.output.strip() == ""
+        assert result.exit_code == 0  # no --exit-code flag was asked for
+        assert "::error title=Nothing examined::" in result.output
 
     def test_report_writes_file(self, tmp_path: Path) -> None:
+        """The briefing is still written; the exit code is what says it is partial."""
         runner = CliRunner()
         out_file = tmp_path / "report.md"
         result = runner.invoke(main, ["report", str(tmp_path), "--output", str(out_file)])
-        assert result.exit_code == 0, result.output
+        assert result.exit_code == 2, result.output
         assert out_file.exists()
         content = out_file.read_text(encoding="utf-8")
         assert "# Gaudi findings report" in content
+        assert "No language pack applies" in content
 
     def test_report_stdout(self, tmp_path: Path) -> None:
         runner = CliRunner()
         result = runner.invoke(main, ["report", str(tmp_path)])
-        assert result.exit_code == 0, result.output
+        assert result.exit_code == 2, result.output
         assert "# Gaudi findings report" in result.output
+        assert "Structurally sound" not in result.output
