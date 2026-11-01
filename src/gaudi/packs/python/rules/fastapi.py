@@ -5,6 +5,7 @@ from __future__ import annotations
 import ast
 
 from gaudi.core import Rule, Finding, Severity, Category
+from gaudi.packs.python.ast_helpers import is_route_decorator
 from gaudi.packs.python.context import PythonContext
 
 _ROUTE_METHODS = frozenset({"get", "post", "put", "patch", "delete"})
@@ -39,20 +40,12 @@ class FastAPINoResponseModel(Rule):
                 if not isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
                     continue
                 for decorator in node.decorator_list:
-                    if self._is_route_decorator(decorator):
+                    if is_route_decorator(decorator, _ROUTE_METHODS):
                         if not self._has_response_model(decorator):
                             findings.append(
                                 self.finding(file=f.relative_path, line=decorator.lineno)
                             )
         return findings
-
-    @staticmethod
-    def _is_route_decorator(node: ast.expr) -> bool:
-        """Check if decorator is @something.get/post/put/patch/delete(...)."""
-        if not isinstance(node, ast.Call):
-            return False
-        func = node.func
-        return isinstance(func, ast.Attribute) and func.attr in _ROUTE_METHODS
 
     @staticmethod
     def _has_response_model(call: ast.Call) -> bool:

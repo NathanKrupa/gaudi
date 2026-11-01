@@ -5,6 +5,7 @@ from __future__ import annotations
 import ast
 
 from gaudi.core import Category, Finding, Rule, Severity
+from gaudi.packs.python.ast_helpers import build_parent_map
 from gaudi.packs.python.context import PythonContext
 
 _LIBRARY = "anthropic"
@@ -46,15 +47,6 @@ def _node_inside_try(node: ast.AST, parent_map: dict[ast.AST, ast.AST]) -> bool:
         if isinstance(current, ast.Try):
             return True
     return False
-
-
-def _build_parent_map(tree: ast.Module) -> dict[ast.AST, ast.AST]:
-    """Build a child→parent map for the entire AST."""
-    parents: dict[ast.AST, ast.AST] = {}
-    for node in ast.walk(tree):
-        for child in ast.iter_child_nodes(node):
-            parents[child] = node
-    return parents
 
 
 class HardcodedModel(Rule):
@@ -119,7 +111,7 @@ class BareAPICall(Rule):
             tree = f.ast_tree
             if tree is None:
                 continue
-            parent_map = _build_parent_map(tree)
+            parent_map = build_parent_map(tree)
             for node in ast.walk(tree):
                 if not isinstance(node, ast.Call):
                     continue

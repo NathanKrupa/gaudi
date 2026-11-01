@@ -7,6 +7,7 @@ import re
 from urllib.parse import urlparse
 
 from gaudi.core import Category, Finding, Rule, Severity
+from gaudi.packs.python.ast_helpers import is_test_path
 from gaudi.packs.python.context import FileInfo, PythonContext
 
 
@@ -421,14 +422,6 @@ class SynchronousCouplingChain(Rule):
 # ---------------------------------------------------------------
 
 
-def _is_test_path(relative_path: str) -> bool:
-    posix = relative_path.replace("\\", "/").lower()
-    if posix.startswith("tests/") or "/tests/" in posix:
-        return True
-    name = posix.rsplit("/", 1)[-1]
-    return name.startswith("test_") or name.endswith("_test.py")
-
-
 def _has_outbound_http_call(fi: FileInfo) -> bool:
     tree = fi.ast_tree
     if tree is None:
@@ -483,7 +476,7 @@ class MissingContractTests(Rule):
 
         findings: list[Finding] = []
         for fi in context.files:
-            if _is_test_path(fi.relative_path):
+            if is_test_path(fi.relative_path):
                 continue
             name = fi.relative_path.replace("\\", "/").rsplit("/", 1)[-1]
             if name == "__init__.py" or not name.endswith(".py"):

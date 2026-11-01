@@ -317,7 +317,7 @@ anti-patterns detectable within a single Python project.
 | Code    | Name                 | Severity | Implemented | Notes                                                           |
 |---------|----------------------|----------|-------------|-----------------------------------------------------------------|
 | DOM-001 | AnemicDomainModel    | WARN     | Yes         | Domain class with 5+ fields and zero behavior methods           |
-| DOM-002 | WrongLayerPlacement  | WARN     | Yes         | View function with a 4+ branch if/elif chain (business logic)   |
+| DOM-002 | WrongLayerPlacement  | WARN     | Yes         | View-file function with a 4+ branch if/elif chain, or a non-view helper that queries the ORM and branches |
 | DOM-003 | ActiveRecordMisuse   | INFO     | Yes         | Model method calls requests / send_mail / celery / boto3 / smtp |
 
 ---

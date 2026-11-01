@@ -6,17 +6,10 @@ import ast
 import re
 
 from gaudi.core import Category, Finding, Rule, Severity
+from gaudi.packs.python.ast_helpers import is_route_decorator
 from gaudi.packs.python.context import PythonContext
 
 _ROUTE_METHODS = frozenset({"get", "post", "put", "patch", "delete", "api_route", "route"})
-
-
-def _is_route_decorator(node: ast.expr) -> bool:
-    """Return True for FastAPI/Flask style @something.get/post/... decorators."""
-    if not isinstance(node, ast.Call):
-        return False
-    func = node.func
-    return isinstance(func, ast.Attribute) and func.attr in _ROUTE_METHODS
 
 
 def _route_decorated_functions(
@@ -26,7 +19,7 @@ def _route_decorated_functions(
     for node in ast.walk(tree):
         if not isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
             continue
-        if any(_is_route_decorator(d) for d in node.decorator_list):
+        if any(is_route_decorator(d, _ROUTE_METHODS) for d in node.decorator_list):
             out.append(node)
     return out
 
@@ -270,7 +263,7 @@ class NoErrorResponseSchema(Rule):
                 if not isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
                     continue
                 for dec in node.decorator_list:
-                    if not _is_route_decorator(dec):
+                    if not is_route_decorator(dec, _ROUTE_METHODS):
                         continue
                     kwargs = {kw.arg for kw in dec.keywords}
                     if "response_model" in kwargs and "responses" not in kwargs:
