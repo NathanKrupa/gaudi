@@ -47,6 +47,16 @@
           "severity": "warn",
           "line": 41,
           "message_contains": "_branch_is_open"
+        },
+        {
+          "severity": "warn",
+          "line": 47,
+          "message_contains": "_oldest_unreturned"
+        },
+        {
+          "severity": "warn",
+          "line": 54,
+          "message_contains": "_loan_state"
         }
       ]
     },
@@ -57,6 +67,9 @@
       "expected_findings": []
     },
     "pass_routed_endpoint_without_request": {
+      "expected_findings": []
+    },
+    "pass_class_based_view_method": {
       "expected_findings": []
     }
   }

@@ -57,6 +57,9 @@
     },
     "pass_boundary_14_nodes.py": {
       "expected_findings": []
+    },
+    "pass_differing_defaults.py": {
+      "expected_findings": []
     }
   }
 }

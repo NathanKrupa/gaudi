@@ -11,3 +11,17 @@ def loan_detail(request, loan_id):
     if loan is None:
         raise Http404
     return render(request, "loan.html", {"loan": loan})
+
+
+def _scoped_loans(member, *, request):
+    loans = Loan.objects.filter(member=member)
+    if request.GET.get("open"):
+        loans = loans.filter(returned_at__isnull=True)
+    return loans
+
+
+def loan_count(request, /):
+    total = 0
+    for _loan in Loan.objects.filter(member=request.user.member):
+        total += 1
+    return total
