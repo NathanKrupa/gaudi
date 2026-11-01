@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
-## [0.4.0] — unreleased
+## [0.4.0] — 2026-10-31
 
 Calibration of the warn-tier rules an estate ratchet is about to count per rule
 (`gaudi count -c <code>`), and two new rules. Counts were measured on two
