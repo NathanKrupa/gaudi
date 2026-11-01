@@ -25,6 +25,39 @@
     },
     "pass_boundary_three_branches": {
       "expected_findings": []
+    },
+    "fail_query_helper_in_views": {
+      "expected_findings": [
+        {
+          "severity": "warn",
+          "line": 13,
+          "message_contains": "_member_can_borrow"
+        },
+        {
+          "severity": "warn",
+          "line": 21,
+          "message_contains": "_renewal_allowed"
+        },
+        {
+          "severity": "warn",
+          "line": 33,
+          "message_contains": "overdue_fines"
+        },
+        {
+          "severity": "warn",
+          "line": 41,
+          "message_contains": "_branch_is_open"
+        }
+      ]
+    },
+    "pass_query_helper_without_decision": {
+      "expected_findings": []
+    },
+    "pass_view_querying_orm": {
+      "expected_findings": []
+    },
+    "pass_routed_endpoint_without_request": {
+      "expected_findings": []
     }
   }
 }

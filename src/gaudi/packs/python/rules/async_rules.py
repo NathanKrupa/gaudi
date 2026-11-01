@@ -5,6 +5,7 @@ from __future__ import annotations
 import ast
 
 from gaudi.core import Category, Finding, Rule, Severity
+from gaudi.packs.python.ast_helpers import is_test_path
 from gaudi.packs.python.context import PythonContext
 
 
@@ -231,7 +232,7 @@ class MixedSyncAsyncModule(Rule):
     def check(self, context: PythonContext) -> list[Finding]:
         findings: list[Finding] = []
         for fi in context.files:
-            if _looks_like_test_file(fi.relative_path):
+            if is_test_path(fi.relative_path):
                 continue
             tree = fi.ast_tree
             if tree is None:
@@ -267,14 +268,6 @@ def _requests_method_name(func: ast.expr) -> str | None:
     if isinstance(val, ast.Name) and val.id == "requests":
         return func.attr
     return None
-
-
-def _looks_like_test_file(relative_path: str) -> bool:
-    norm = relative_path.replace("\\", "/").lower()
-    if "/tests/" in norm or norm.startswith("tests/"):
-        return True
-    name = norm.rsplit("/", 1)[-1]
-    return name.startswith("test_") or name.endswith("_test.py")
 
 
 # ---------------------------------------------------------------
@@ -316,7 +309,7 @@ class NoGracefulShutdown(Rule):
     def check(self, context: PythonContext) -> list[Finding]:
         findings: list[Finding] = []
         for fi in context.files:
-            if _looks_like_test_file(fi.relative_path):
+            if is_test_path(fi.relative_path):
                 continue
             tree = fi.ast_tree
             if tree is None:

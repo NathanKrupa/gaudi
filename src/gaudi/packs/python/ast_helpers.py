@@ -25,6 +25,32 @@ LOG_METHODS: frozenset[str] = frozenset(
 )
 
 
+def is_test_path(relative_path: str) -> bool:
+    """True for a file under a ``tests/`` directory or named like a pytest module."""
+    posix = relative_path.replace("\\", "/").lower()
+    if posix.startswith("tests/") or "/tests/" in posix:
+        return True
+    name = posix.rsplit("/", 1)[-1]
+    return name.startswith("test_") or name.endswith("_test.py")
+
+
+def build_parent_map(tree: ast.AST) -> dict[ast.AST, ast.AST]:
+    """Map every node in ``tree`` to its parent node."""
+    parents: dict[ast.AST, ast.AST] = {}
+    for node in ast.walk(tree):
+        for child in ast.iter_child_nodes(node):
+            parents[child] = node
+    return parents
+
+
+def is_route_decorator(node: ast.expr, methods: frozenset[str]) -> bool:
+    """True for a ``@<router>.<method>(...)`` decorator whose method is in ``methods``."""
+    if not isinstance(node, ast.Call):
+        return False
+    func = node.func
+    return isinstance(func, ast.Attribute) and func.attr in methods
+
+
 def is_logger_call(call: ast.Call) -> bool:
     """True when ``call`` looks like ``<something>.<level>(...)`` on a logger."""
     func = call.func

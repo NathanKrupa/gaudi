@@ -4,6 +4,57 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.4.0] — unreleased
+
+Calibration of the warn-tier rules an estate ratchet is about to count per rule
+(`gaudi count -c <code>`). Counts were measured on two production codebases
+(here "repo A", a Django app, and "repo B", a data pipeline) before and after:
+
+| rule | repo A | repo B |
+| --- | --- | --- |
+| DOM-002 WrongLayerPlacement | 0 → 13 | 0 → 0 (no view modules) |
+| SMELL-002 DuplicatedCode | 19 → 45 | 15 → 84 |
+
+### Migration
+
+- **SMELL-002 and DOM-002 counts rise, and SMELL-002's findings move.** A
+  ratchet baseline taken on 0.3.0 for either rule must be re-taken on 0.4.0;
+  comparing across the versions reads the newly visible debt as growth. A
+  SMELL-002 finding is reported at the duplicate's own `def` line rather than
+  at line 1 of the file, so a `# noqa: SMELL-002` belongs on that line.
+- **SMELL-002 skips test files.** The within-file test duplicates 0.3.0
+  reported disappear.
+
+### Changed
+
+- **SMELL-002 DuplicatedCode compares across files.** 0.3.0 compared functions
+  only within one file and only at module level, with every name normalized
+  away and no size floor, so it missed every helper copied into a sibling
+  module and reported one-line wrappers that call different functions. 0.4.0
+  fingerprints module functions and class methods project-wide; drops
+  docstrings and annotations; renames local bindings (parameters, assignment
+  and loop targets, exception names, local imports and nested definitions) by
+  order of first binding; keeps free names, so functions that call different
+  collaborators do not match; ignores bodies under 15 AST nodes, functions
+  nested in other functions, and test files; and reports each copy after the
+  first, in path order, at its own definition with the first copy's location.
+  On repo B it finds every one of the 34 cross-file groups an exact AST-hash
+  comparison finds, and on repo A every one of its 10.
+- **DOM-002 WrongLayerPlacement reports view-module helpers.** Its only signal
+  in 0.3.0 was a 4+ branch if/elif chain, which a codebase that caps function
+  length never produces: the business logic moves into short module-level
+  helpers in the view file instead. 0.4.0 also reports a helper in a view file
+  that is not a view (no `request` parameter; private, or undecorated),
+  queries the ORM (`.objects`, or a queryset method such as `filter`,
+  `annotate` or `select_related`), and holds an `if`, `match` or loop
+  statement.
+
+### Added
+
+- `ast_helpers.is_test_path`, `build_parent_map` and `is_route_decorator`,
+  shared by the rules that each carried a copy (two of the copies were found
+  by the recalibrated SMELL-002).
+
 ## [0.3.0] — 2026-09-03
 
 The overhaul release (#256). A 2026-08-31 estate audit measured what Gaudi was

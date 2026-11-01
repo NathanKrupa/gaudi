@@ -5,7 +5,7 @@ from __future__ import annotations
 import ast
 
 from gaudi.core import Category, Finding, Rule, Severity
-from gaudi.packs.python.ast_helpers import collect_receiver_names
+from gaudi.packs.python.ast_helpers import build_parent_map, collect_receiver_names
 from gaudi.packs.python.context import PythonContext
 
 _BOTO3_CONSTRUCTORS = frozenset({"client", "resource", "Session"})
@@ -40,15 +40,6 @@ def _is_inside_try(node: ast.AST, parent_map: dict[ast.AST, ast.AST]) -> bool:
                 return True
         current = parent
     return False
-
-
-def _build_parent_map(tree: ast.Module) -> dict[ast.AST, ast.AST]:
-    """Build a child-to-parent map for the AST."""
-    parent_map: dict[ast.AST, ast.AST] = {}
-    for node in ast.walk(tree):
-        for child in ast.iter_child_nodes(node):
-            parent_map[child] = node
-    return parent_map
 
 
 class HardcodedRegion(Rule):
@@ -111,7 +102,7 @@ class BareClientCall(Rule):
             client_names = _find_boto3_client_names(tree)
             if not client_names:
                 continue
-            parent_map = _build_parent_map(tree)
+            parent_map = build_parent_map(tree)
             seen_lines: set[int] = set()
             for node in ast.walk(tree):
                 if not isinstance(node, ast.Call):

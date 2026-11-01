@@ -1,17 +1,61 @@
 {
   "rule_id": "SMELL-002",
-  "description": "DuplicatedCode -- two functions with identical normalized structure",
+  "description": "DuplicatedCode -- functions with identical structure, within a file or across files",
   "fixtures": {
     "fail_duplicate_funcs.py": {
       "expected_findings": [
         {
           "severity": "warn",
-          "line": 1,
-          "message_contains": "total_"
+          "line": 13,
+          "message_contains": "'total_invoices' duplicates 'total_orders'"
+        }
+      ]
+    },
+    "fail_cross_file_copies": {
+      "expected_findings": [
+        {
+          "severity": "warn",
+          "line": 6,
+          "message_contains": "'_coerce_quantity' duplicates '_coerce_quantity' (billing/quantities.py:4)"
+        },
+        {
+          "severity": "warn",
+          "line": 4,
+          "message_contains": "'_coerce_parcel_count' duplicates '_coerce_quantity' (billing/quantities.py:4)"
+        }
+      ]
+    },
+    "fail_duplicated_method": {
+      "expected_findings": [
+        {
+          "severity": "warn",
+          "line": 5,
+          "message_contains": "'Shelf.label_for' duplicates 'Box.label_for' (archive/box.py:5)"
         }
       ]
     },
     "pass_distinct_funcs.py": {
+      "expected_findings": []
+    },
+    "pass_same_shape_different_callees.py": {
+      "expected_findings": []
+    },
+    "pass_copies_in_tests": {
+      "expected_findings": []
+    },
+    "pass_nested_copies": {
+      "expected_findings": []
+    },
+    "fail_boundary_15_nodes.py": {
+      "expected_findings": [
+        {
+          "severity": "warn",
+          "line": 10,
+          "message_contains": "'bin_code' duplicates 'shelf_code'"
+        }
+      ]
+    },
+    "pass_boundary_14_nodes.py": {
       "expected_findings": []
     }
   }

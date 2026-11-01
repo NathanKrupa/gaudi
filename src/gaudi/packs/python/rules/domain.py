@@ -291,12 +291,76 @@ def _walk_branched_ifs(func: ast.FunctionDef | ast.AsyncFunctionDef) -> int:
     return largest
 
 
+# Queryset methods specific enough to mark an ORM query. Generic names that
+# plain dicts and lists also carry (``get``, ``values``, ``count``, ``update``)
+# are left out; ``.objects`` (the Django manager) is matched separately.
+_QUERYSET_METHODS = frozenset(
+    {
+        "filter",
+        "exclude",
+        "annotate",
+        "aggregate",
+        "select_related",
+        "prefetch_related",
+        "values_list",
+        "order_by",
+        "get_or_create",
+        "update_or_create",
+        "bulk_create",
+        "bulk_update",
+    }
+)
+
+# Statements that make a decision or process a collection. A conditional
+# expression alone (``x if ok else None``) is formatting, not policy, so it
+# does not count.
+_DECISION_NODES = (ast.If, ast.Match, ast.For, ast.AsyncFor, ast.While)
+
+
+def _takes_request(func: ast.FunctionDef | ast.AsyncFunctionDef) -> bool:
+    args = func.args
+    params = [*args.posonlyargs, *args.args, *args.kwonlyargs]
+    return any(a.arg == "request" for a in params)
+
+
+def _is_view_helper(func: ast.FunctionDef | ast.AsyncFunctionDef) -> bool:
+    """A module-level function in a view file that no URL route can call.
+
+    It takes no ``request`` and is either private or undecorated, so it is
+    not a routed view (routed views are public and usually decorated).
+    """
+    if _takes_request(func):
+        return False
+    return func.name.startswith("_") or not func.decorator_list
+
+
+def _queries_orm(func: ast.AST) -> bool:
+    for node in ast.walk(func):
+        if isinstance(node, ast.Attribute) and node.attr == "objects":
+            return True
+        if (
+            isinstance(node, ast.Call)
+            and isinstance(node.func, ast.Attribute)
+            and node.func.attr in _QUERYSET_METHODS
+        ):
+            return True
+    return False
+
+
+def _decides(func: ast.AST) -> bool:
+    return any(isinstance(node, _DECISION_NODES) for node in ast.walk(func))
+
+
 class WrongLayerPlacement(Rule):
     """DOM-002: Business logic living inside view/endpoint functions.
 
-    Detects long if/elif chains in functions that live in view files. View
-    code should translate between HTTP and the service layer; branching
-    business decisions belong in services.
+    Two shapes in view files are reported. A function holding a long if/elif
+    chain is deciding policy. A module-level helper that is not itself a view
+    (it takes no ``request``), queries the ORM and holds an ``if``, ``match``
+    or loop statement is a service living in the view module: when every
+    function is kept short, the business logic moves into such helpers
+    rather than into long chains. View code should translate between HTTP
+    and the service layer; queries that decide something belong in services.
 
     Principles: #1 (The structure tells the story — outer layer parses input
     and formats output, middle layer makes decisions), #7 (Layers must earn
@@ -309,8 +373,7 @@ class WrongLayerPlacement(Rule):
     severity = Severity.WARN
     category = Category.DOMAIN_MODEL
     message_template = (
-        "View function '{function}' contains a {branch_count}-branch "
-        "if/elif chain — business logic in the outer layer"
+        "View-layer function '{function}' {evidence} — business logic in the outer layer"
     )
     recommendation_template = (
         "Move the branching decision into a service or model method and "
@@ -326,21 +389,31 @@ class WrongLayerPlacement(Rule):
             tree = f.ast_tree
             if tree is None:
                 continue
+            module_level = {id(n) for n in tree.body}
             for node in ast.walk(tree):
                 if not isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
                     continue
-                branches = _walk_branched_ifs(node)
-                if branches < _BRANCH_THRESHOLD:
+                evidence = self._evidence(node, id(node) in module_level)
+                if evidence is None:
                     continue
                 findings.append(
                     self.finding(
                         file=f.relative_path,
                         line=node.lineno,
                         function=node.name,
-                        branch_count=branches,
+                        evidence=evidence,
                     )
                 )
         return findings
+
+    @staticmethod
+    def _evidence(func: ast.FunctionDef | ast.AsyncFunctionDef, module_level: bool) -> str | None:
+        branches = _walk_branched_ifs(func)
+        if branches >= _BRANCH_THRESHOLD:
+            return f"contains a {branches}-branch if/elif chain"
+        if module_level and _is_view_helper(func) and _queries_orm(func) and _decides(func):
+            return "is a non-view helper that queries the ORM and branches on the result"
+        return None
 
 
 # ---------------------------------------------------------------
