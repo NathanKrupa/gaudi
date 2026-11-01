@@ -42,3 +42,18 @@ def _branch_is_open(branch_id):
     if not branch_id:
         return False
     return bool(Loan.objects.values_list("branch__open", flat=True).first())
+
+
+def _oldest_unreturned(member):
+    loans = list(member.loans.filter(returned_at__isnull=True).order_by("due_at"))
+    while loans and loans[0].waived:
+        loans.pop(0)
+    return loans[0] if loans else None
+
+
+def _loan_state(loan_id):
+    match Loan.objects.filter(pk=loan_id).values_list("state", flat=True).first():
+        case "lost":
+            return "billed"
+        case _:
+            return "open"

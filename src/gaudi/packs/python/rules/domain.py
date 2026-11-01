@@ -324,10 +324,12 @@ def _takes_request(func: ast.FunctionDef | ast.AsyncFunctionDef) -> bool:
 
 
 def _is_view_helper(func: ast.FunctionDef | ast.AsyncFunctionDef) -> bool:
-    """A module-level function in a view file that no URL route can call.
+    """A module-level function in a view file that does not look like a view.
 
-    It takes no ``request`` and is either private or undecorated, so it is
-    not a routed view (routed views are public and usually decorated).
+    The test is by name only: no parameter is named ``request``, and the
+    function is private or undecorated (routed views are public and usually
+    decorated). An undecorated view whose request parameter has another name
+    is therefore reported too.
     """
     if _takes_request(func):
         return False
@@ -412,7 +414,7 @@ class WrongLayerPlacement(Rule):
         if branches >= _BRANCH_THRESHOLD:
             return f"contains a {branches}-branch if/elif chain"
         if module_level and _is_view_helper(func) and _queries_orm(func) and _decides(func):
-            return "is a non-view helper that queries the ORM and branches on the result"
+            return "is a non-view helper that queries the ORM and decides or loops"
         return None
 
 
