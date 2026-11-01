@@ -503,13 +503,15 @@ class ChainedEmptyDefaultGet(Rule):
                 continue
             receiver = node.func.value  # type: ignore[attr-defined]
             defaulted = _empty_default_key(receiver)
-            if defaulted is None or _has_visible_default(node):  # type: ignore[arg-type]
+            if defaulted is None:
                 continue
             chained[id(node)] = node  # type: ignore[assignment]
             inner.add(id(defaulted))
         findings: list[Finding] = []
         for node_id, node in chained.items():
-            if node_id in inner:
+            # Only the outermost lookup of a chain is judged, so a visible
+            # default at the end exempts every link beneath it.
+            if node_id in inner or _has_visible_default(node):
                 continue
             findings.append(
                 self.finding(

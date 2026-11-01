@@ -579,8 +579,13 @@ def _comment_lines(source: str) -> Iterator[tuple[int, str]]:
         return
 
 
-def _docstring_lines(tree: ast.Module) -> Iterator[tuple[int, str]]:
-    """Yield ``(line, text)`` for each line of every module, class and function docstring."""
+def _docstring_lines(tree: ast.Module, source: str) -> Iterator[tuple[int, str]]:
+    """Yield ``(line, text)`` for each source line of every module, class and function docstring.
+
+    Lines come from the docstring's source text, not its decoded value: a
+    backslash line continuation joins two source lines into one value line,
+    which would shift every later line number.
+    """
     for node in ast.walk(tree):
         if not isinstance(node, (ast.Module, ast.ClassDef, ast.FunctionDef, ast.AsyncFunctionDef)):
             continue
@@ -591,8 +596,9 @@ def _docstring_lines(tree: ast.Module) -> Iterator[tuple[int, str]]:
             and isinstance(first.value.value, str)
         ):
             continue
-        for offset, text in enumerate(first.value.value.splitlines()):
-            yield first.lineno + offset, text
+        text = ast.get_source_segment(source, first.value) or first.value.value
+        for offset, line in enumerate(text.splitlines()):
+            yield first.lineno + offset, line
 
 
 class HistoryNarratingComment(Rule):
@@ -639,7 +645,7 @@ class HistoryNarratingComment(Rule):
     def _check_file(self, f: FileInfo) -> list[Finding]:
         lines: list[tuple[int, str]] = list(_comment_lines(f.source))
         if f.ast_tree is not None:
-            lines.extend(_docstring_lines(f.ast_tree))
+            lines.extend(_docstring_lines(f.ast_tree, f.source))
         findings: list[Finding] = []
         for line, text in sorted(lines):
             match = _HISTORY_PHRASES.search(text.strip())

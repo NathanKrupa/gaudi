@@ -19,3 +19,8 @@ def shelve(book, shelf):
 def renew(loan):
     """Renew the loan if it is not overdue; the old due date is replaced."""
     return loan.extend()
+
+
+# As noted previously, the index is per branch. A shelf code is originally, and
+# always, the branch code plus a number.
+SHELF_CODE_FORMAT = "{branch}-{number}"

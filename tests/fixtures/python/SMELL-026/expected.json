@@ -89,6 +89,15 @@
           "message_contains": "'was originally'"
         }
       ]
+    },
+    "fail_history_continued_docstring.py": {
+      "expected_findings": [
+        {
+          "severity": "warn",
+          "line": 8,
+          "message_contains": "'It used to'"
+        }
+      ]
     }
   }
 }

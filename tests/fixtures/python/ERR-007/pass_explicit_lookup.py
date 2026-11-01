@@ -27,3 +27,19 @@ def stage_label(report):
 def open_count(store):
     # setdefault stores the empty dict, so later writes land in it.
     return store.setdefault("counts", {}).get("open", 0)
+
+
+def section_label(report):
+    return report.get("stages", {}).get("extracted", {}).get("label", "-")
+
+
+def city_with_default(record):
+    return record.get("branch", dict(city="unknown")).get("city")
+
+
+def both_present(record):
+    return (record.get("branch") and {}).get("city")
+
+
+def first_present(record, fallback):
+    return (record.get("branch") or fallback or {}).get("city")
