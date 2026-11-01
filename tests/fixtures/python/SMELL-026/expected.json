@@ -1,0 +1,103 @@
+{
+  "rule_id": "SMELL-026",
+  "description": "HistoryNarratingComment -- comments that describe what the code used to do",
+  "fixtures": {
+    "fail_history_comments.py": {
+      "expected_findings": [
+        {
+          "severity": "warn",
+          "line": 5,
+          "message_contains": "'It used to'"
+        },
+        {
+          "severity": "warn",
+          "line": 8,
+          "message_contains": "'Since #412'"
+        },
+        {
+          "severity": "warn",
+          "line": 10,
+          "message_contains": "'Previously,'"
+        },
+        {
+          "severity": "warn",
+          "line": 15,
+          "message_contains": "'The old implementation'"
+        },
+        {
+          "severity": "warn",
+          "line": 16,
+          "message_contains": "'we no longer'"
+        },
+        {
+          "severity": "warn",
+          "line": 19,
+          "message_contains": "'Before PR #87'"
+        }
+      ]
+    },
+    "fail_history_docstring.py": {
+      "expected_findings": [
+        {
+          "severity": "warn",
+          "line": 7,
+          "message_contains": "'was refactored'"
+        },
+        {
+          "severity": "warn",
+          "line": 8,
+          "message_contains": "'used to be'"
+        }
+      ]
+    },
+    "pass_present_tense_comments.py": {
+      "expected_findings": []
+    },
+    "pass_history_in_tests": {
+      "expected_findings": []
+    },
+    "fail_history_phrases.py": {
+      "expected_findings": [
+        {
+          "severity": "warn",
+          "line": 3,
+          "message_contains": "'This was previously'"
+        },
+        {
+          "severity": "warn",
+          "line": 5,
+          "message_contains": "'renamed from'"
+        },
+        {
+          "severity": "warn",
+          "line": 7,
+          "message_contains": "'no longer needed'"
+        },
+        {
+          "severity": "warn",
+          "line": 9,
+          "message_contains": "'Formerly'"
+        },
+        {
+          "severity": "warn",
+          "line": 11,
+          "message_contains": "'Originally,'"
+        },
+        {
+          "severity": "warn",
+          "line": 13,
+          "message_contains": "'was originally'"
+        }
+      ]
+    },
+    "fail_history_continued_docstring.py": {
+      "expected_findings": [
+        {
+          "severity": "warn",
+          "line": 8,
+          "message_contains": "'It used to'"
+        }
+      ]
+    }
+  }
+}

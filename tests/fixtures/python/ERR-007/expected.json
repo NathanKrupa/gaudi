@@ -1,0 +1,41 @@
+{
+  "rule_id": "ERR-007",
+  "description": "ChainedEmptyDefaultGet -- .get(key, {}).get(...) turns a missing key into a silent None",
+  "fixtures": {
+    "fail_chained_default_get.py": {
+      "expected_findings": [
+        {
+          "severity": "warn",
+          "line": 5,
+          "message_contains": "'branch'"
+        },
+        {
+          "severity": "warn",
+          "line": 9,
+          "message_contains": "'hours'"
+        },
+        {
+          "severity": "warn",
+          "line": 13,
+          "message_contains": "'branch'"
+        },
+        {
+          "severity": "warn",
+          "line": 17,
+          "message_contains": "'meta'"
+        },
+        {
+          "severity": "warn",
+          "line": 21,
+          "message_contains": "'branch'"
+        }
+      ]
+    },
+    "pass_explicit_lookup.py": {
+      "expected_findings": []
+    },
+    "pass_chain_in_tests": {
+      "expected_findings": []
+    }
+  }
+}

@@ -1,12 +1,16 @@
 # ABOUTME: Fowler "dispensables" code smells: things that could be removed without loss.
-# ABOUTME: Lazy elements, speculative generality, excess comments, data class smell, temporal identifiers.
+# ABOUTME: Lazy elements, speculative generality, excess and history-narrating comments, data class, temporal names.
 from __future__ import annotations
 
 import ast
+import io
 import re
+import tokenize
+from collections.abc import Iterator
 
 from gaudi.core import Rule, Finding, Severity, Category
-from gaudi.packs.python.context import PythonContext
+from gaudi.packs.python.ast_helpers import is_test_path
+from gaudi.packs.python.context import FileInfo, PythonContext
 
 
 # Dunder method sets shared with couplers.py.
@@ -522,6 +526,138 @@ class TemporalIdentifier(Rule):
 
 
 # ---------------------------------------------------------------
+# SMELL-026  HistoryNarratingComment
+# ---------------------------------------------------------------
+
+# Pronoun subjects that make "X used to <verb>" a statement about the past. A
+# noun before "used to" is usually a participle ("the helper used to look up
+# rows"), and "is used to" is passive purpose, so neither is listed.
+_USED_TO_SUBJECTS = "it|this|that|these|those|we|they|which|who"
+# A data verb ahead of "before #<n>" ("rows written before ...") dates the data
+# a line handles, which is provenance the reader needs, not a story about the
+# code; after any other word the phrase narrates the change.
+_DATA_VERBS = ("written", "entered", "made", "created", "sent", "stored", "saved", "recorded")
+_UNQUALIFIED_BEFORE = "".join(rf"(?<!{verb}\s)" for verb in _DATA_VERBS) + "before"
+_CODE_NOUNS = (
+    "code|behaviou?r|implementation|approach|logic|version|way|path|helper|function|method|api"
+)
+
+# Phrases that narrate change history. Each is narrow on purpose: words like
+# "previously", "no longer" and "old" are ordinary runtime vocabulary
+# ("the previously fetched page", "rows that no longer match", "the old
+# value"), so only their history-telling forms are listed. A bare issue
+# citation ("see #412") is provenance and never matches.
+_HISTORY_PHRASES = re.compile(
+    "|".join(
+        (
+            rf"\b(?:{_USED_TO_SUBJECTS})\s+used\s+to\b",
+            r"\bused\s+to\s+be\b",
+            r"(?:^|(?<=[.;:]\s))previously,",
+            r"\b(?:this|it|we|they|which)\s+(?:was\s+|were\s+|had\s+)?previously\b",
+            r"\b(?:was|were|has\s+been|have\s+been)\s+refactored\b",
+            r"\b(?:renamed|refactored)\s+from\b",
+            rf"\b(?:since|{_UNQUALIFIED_BEFORE}|prior\s+to)\s+(?:PR\s*|issue\s*|[A-Za-z]{{1,4}})?#\d+",
+            r"\bwe\s+no\s+longer\b",
+            r"\bno\s+longer\s+(?:needed|used|required|necessary|supported|called)\b",
+            rf"\bthe\s+old\s+(?:{_CODE_NOUNS})\b",
+            r"\bformerly\b",
+            r"(?:^|(?<=[.;:]\s))originally,",
+            r"\b(?:was|were)\s+originally\b",
+        )
+    ),
+    re.IGNORECASE,
+)
+
+
+def _comment_lines(source: str) -> Iterator[tuple[int, str]]:
+    """Yield ``(line, text)`` for every ``#`` comment in ``source``."""
+    try:
+        for tok in tokenize.generate_tokens(io.StringIO(source).readline):
+            if tok.type == tokenize.COMMENT:
+                yield tok.start[0], tok.string.lstrip("#")
+    except (tokenize.TokenError, SyntaxError):
+        return
+
+
+def _docstring_lines(tree: ast.Module, source: str) -> Iterator[tuple[int, str]]:
+    """Yield ``(line, text)`` for each source line of every module, class and function docstring.
+
+    Lines come from the docstring's source text, not its decoded value: a
+    backslash line continuation joins two source lines into one value line,
+    which would shift every later line number.
+    """
+    for node in ast.walk(tree):
+        if not isinstance(node, (ast.Module, ast.ClassDef, ast.FunctionDef, ast.AsyncFunctionDef)):
+            continue
+        first = node.body[0] if node.body else None
+        if not (
+            isinstance(first, ast.Expr)
+            and isinstance(first.value, ast.Constant)
+            and isinstance(first.value.value, str)
+        ):
+            continue
+        text = ast.get_source_segment(source, first.value) or first.value.value
+        for offset, line in enumerate(text.splitlines()):
+            yield first.lineno + offset, line
+
+
+class HistoryNarratingComment(Rule):
+    """SMELL-026: Comments and docstrings that narrate the code's change history.
+
+    A pronoun followed by "used to", "since #<issue> it now...", a sentence
+    opening with "previously," or "the old" naming an implementation all
+    describe a version of the code the reader cannot see. They age into falsehood as the code
+    moves on, and they push the one sentence the reader needs, what the code
+    does now and why, out of view. History belongs in the commit log and the
+    issue tracker; the comment should state the present behaviour.
+
+    Precision over recall: only phrases whose history reading is unambiguous
+    are matched, so "the key used to look up a row", "a previously fetched
+    page" and "rows that no longer match" do not fire, and a bare issue
+    citation ("see #412") is provenance, not narration. Test files are
+    skipped: a regression test's comment explaining the bug it pins is the
+    point of the test. One finding per line.
+
+    Principles: #11 (The reader is the user), #13 (The system must explain itself).
+    Source: MARTIN, *Clean Code* Ch. 4 — Journal Comments; OUSTERHOUT Ch. 13 —
+    comments describe what is not obvious from the code, now.
+    """
+
+    code = "SMELL-026"
+    severity = Severity.WARN
+    category = Category.CODE_SMELL
+    message_template = (
+        "Comment narrates change history ('{phrase}') — describe what the code does now"
+    )
+    recommendation_template = (
+        "Rewrite the comment in the present tense: what the code does and why. "
+        "Move the history to the commit message or the issue it cites."
+    )
+
+    def check(self, context: PythonContext) -> list[Finding]:
+        findings: list[Finding] = []
+        for f in context.files:
+            if is_test_path(f.relative_path):
+                continue
+            findings.extend(self._check_file(f))
+        return findings
+
+    def _check_file(self, f: FileInfo) -> list[Finding]:
+        lines: list[tuple[int, str]] = list(_comment_lines(f.source))
+        if f.ast_tree is not None:
+            lines.extend(_docstring_lines(f.ast_tree, f.source))
+        findings: list[Finding] = []
+        for line, text in sorted(lines):
+            match = _HISTORY_PHRASES.search(text.strip())
+            if match is None:
+                continue
+            findings.append(
+                self.finding(file=f.relative_path, line=line, phrase=match.group(0).strip())
+            )
+        return findings
+
+
+# ---------------------------------------------------------------
 # Exported rule instances
 # ---------------------------------------------------------------
 
@@ -531,4 +667,5 @@ DISPENSABLE_RULES = (
     Comments(),
     DataClassSmell(),
     TemporalIdentifier(),
+    HistoryNarratingComment(),
 )

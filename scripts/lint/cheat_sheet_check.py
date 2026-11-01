@@ -5,12 +5,12 @@
 """Checkout-correct wrapper for ``gaudi cheat-sheet --check``.
 
 Why this wrapper exists (gaudi#266):
-  The hook used to be ``entry: gaudi cheat-sheet --check -o docs/gaudi-rules.md``
-  with ``language: system``, which resolves ``gaudi`` from ``PATH``. On a machine
+  A hook declared as ``entry: gaudi cheat-sheet --check -o docs/gaudi-rules.md``
+  with ``language: system`` resolves ``gaudi`` from ``PATH``. On a machine
   carrying a ``uv tool`` install (``~/.local/bin/gaudi``) that binary's shebang
-  names *its own* interpreter, so the drift guard regenerated the cheat-sheet
+  names *its own* interpreter, so the drift guard regenerates the cheat-sheet
   from whichever tree that installation holds — never the checkout being
-  committed. In a worktree that reported drift which did not exist; in the other
+  committed. In a worktree that reports drift which does not exist; in the other
   direction it passes while the committed artifact is stale.
 
 How this is checkout-correct by construction:

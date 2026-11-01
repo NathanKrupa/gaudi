@@ -63,6 +63,7 @@
 - **ERR-003 ErrorSwallowing** — Logging an error without re-raising hides failures. Log and re-raise, or handle the error explicitly.
 - **ERR-004 ExceptPass** — Log, handle, or re-raise the exception. `pass` makes failures invisible.
 - **ERR-006 ExceptionInInit** — Move side effects out of __init__ into a classmethod factory, or restrict __init__ to ValueError/TypeError on bad arguments.
+- **ERR-007 ChainedEmptyDefaultGet** — Index the required key (x[k]) so a missing key raises, or check for it and handle the absence explicitly. Keep .get() only for keys that are genuinely optional, and give it a default the caller can tell apart.
 - **FAPI-ARCH-001 FastAPINoResponseModel** [fastapi] — Add response_model parameter to endpoints for automatic validation, serialization, and OpenAPI documentation.
 - **FLASK-STRUCT-001 FlaskNoAppFactory** [flask] — Use create_app() factory function instead of module-level Flask(). Factories enable testing, multiple configs, and blueprint registration.
 - **IDX-001 MissingStringIndex** — Add db_index=True to '{column}' or include it in a composite index.
@@ -96,6 +97,7 @@
 - **SMELL-019 InsiderTrading** — Ask objects to modify themselves instead of reaching into their internals.
 - **SMELL-020 LargeClass** — Large classes have too many responsibilities. Extract related methods into separate classes.
 - **SMELL-023 RefusedBequest** — If a subclass doesn't want parent behavior, prefer composition over inheritance.
+- **SMELL-026 HistoryNarratingComment** — Rewrite the comment in the present tense: what the code does and why. Move the history to the commit message or the issue it cites.
 - **STAB-001 UnboundedResultSet** — Add .limit(), slicing [:n], or pagination to ORM queries. Unbounded result sets grow with data and eventually exhaust memory.
 - **STAB-003 RetryWithoutBackoff** — Add exponential backoff to retry logic. Retries without backoff create thundering herds that amplify failures.
 - **STAB-004 UnboundedCache** — Set a maxsize on @lru_cache or replace @cache with @lru_cache(maxsize=N). Unbounded caches grow until they exhaust memory.

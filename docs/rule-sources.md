@@ -45,6 +45,7 @@ Future source keys (not yet mined):
 
 24 rules map directly to Fowler's smell catalog in *Refactoring* (2nd ed.), Chapter 3.
 SMELL-025 extends the same naming principles to identifiers via Ousterhout Ch. 14.
+SMELL-026 extends Fowler's Comments smell to comments that narrate change history (Martin, *Clean Code* Ch. 4 — Journal Comments).
 
 | Code      | Class Name           | Fowler Smell                           | Chapter/Section |
 |-----------|----------------------|----------------------------------------|-----------------|
@@ -73,6 +74,7 @@ SMELL-025 extends the same naming principles to identifiers via Ousterhout Ch. 1
 | SMELL-023 | RefusedBequest       | Refused Bequest                        | Ch. 3           |
 | SMELL-024 | Comments             | Comments                               | Ch. 3           |
 | SMELL-025 | TemporalIdentifier   | *(extended)* Temporal markers in identifiers | OUSTRHOUT Ch. 14 |
+| SMELL-026 | HistoryNarratingComment | *(extended)* Comments that narrate change history | MARTIN Ch. 4 |
 
 ### Architecture 90 Rules -- Source: ARCH90
 
@@ -95,6 +97,7 @@ SMELL-025 extends the same naming principles to identifiers via Ousterhout Ch. 1
 | ERR-004    | ExceptPass              | `except: pass` silently swallows errors     | Nygard  |
 | ERR-005    | InconsistentExceptions  | Module raises 4+ unrelated exception types  | Nygard  |
 | ERR-006    | ExceptionInInit         | Don't raise non-validation errors in __init__ | Nygard  |
+| ERR-007    | ChainedEmptyDefaultGet  | `.get(k, {}).get(...)` hides a missing key  | Nygard  |
 | LOG-001    | UnstructuredLogging     | Lazy %-formatting in logger calls           | Day 5   |
 | LOG-002    | SensitiveDataInLog      | OWASP: never log credentials/PII            | OWASP   |
 | LOG-003    | InconsistentLoggerName  | Use getLogger(__name__) for hierarchy       | FWDOCS  |
