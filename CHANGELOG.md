@@ -7,13 +7,16 @@ All notable changes to this project will be documented in this file.
 ## [0.4.0] — unreleased
 
 Calibration of the warn-tier rules an estate ratchet is about to count per rule
-(`gaudi count -c <code>`). Counts were measured on two production codebases
-(here "repo A", a Django app, and "repo B", a data pipeline) before and after:
+(`gaudi count -c <code>`), and two new rules. Counts were measured on two
+production codebases (here "repo A", a Django app, and "repo B", a data
+pipeline) before and after:
 
 | rule | repo A | repo B |
 | --- | --- | --- |
 | DOM-002 WrongLayerPlacement | 0 → 13 | 0 → 0 (no view modules) |
 | SMELL-002 DuplicatedCode | 19 → 45 | 15 → 84 |
+| SMELL-026 HistoryNarratingComment (new) | 36 | 51 |
+| ERR-007 ChainedEmptyDefaultGet (new) | 6 | 23 |
 
 ### Migration
 
@@ -51,6 +54,19 @@ Calibration of the warn-tier rules an estate ratchet is about to count per rule
 
 ### Added
 
+- **SMELL-026 HistoryNarratingComment** (warn) — a comment or docstring that
+  narrates change history: a pronoun followed by "used to", "used to be",
+  "since #<n>", "before #<n>", a sentence opening with "Previously," or
+  "Originally,", "we no longer", "no longer needed", "the old implementation",
+  "formerly", "was refactored". Precision over recall: a bare issue citation,
+  "the key used to look up", "a previously fetched page", "rows that no longer
+  match" and "rows written before #<n>" (data provenance) do not fire. Test
+  files are skipped.
+- **ERR-007 ChainedEmptyDefaultGet** (warn) — `x.get(k, {}).get(...)`, and its
+  `dict()`, `default={}` and `(x.get(k) or {})` forms, which make a missing or
+  misspelled key read as empty data instead of failing. One finding per chain.
+  A default with content, a chain ending in a non-empty string default, and
+  test files do not fire.
 - `ast_helpers.is_test_path`, `build_parent_map` and `is_route_decorator`,
   shared by the rules that each carried a copy (two of the copies were found
   by the recalibrated SMELL-002).

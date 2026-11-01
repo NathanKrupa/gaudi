@@ -98,7 +98,8 @@ def _read_dependencies(project_path: Path) -> set[str]:
         try:
             with open(pyproject, "rb") as f:
                 data = tomllib.load(f)
-            for dep in data.get("project", {}).get("dependencies", []):
+            # A pyproject.toml without a [project] table declares no dependencies.
+            for dep in data.get("project", {}).get("dependencies", []):  # noqa: ERR-007
                 name = dep.split(">=")[0].split("<=")[0].split("==")[0].split("[")[0].strip()
                 deps.add(name.lower())
         except Exception:

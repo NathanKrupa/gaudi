@@ -240,7 +240,8 @@ def collect_console_scripts() -> list[ToolEntry]:
     with open(toml_path, "rb") as f:
         data = tomllib.load(f)
 
-    scripts = data.get("project", {}).get("scripts", {})
+    # A pyproject.toml without a [project] table declares no console scripts.
+    scripts = data.get("project", {}).get("scripts", {})  # noqa: ERR-007
     entries = []
     for cmd_name, entry_point in scripts.items():
         module_path = entry_point.split(":")[0]

@@ -11,4 +11,8 @@ exclude = [
     # dict keys and SKU literals. STRUCT-021 (magic strings) treats this as
     # noise; the file is test data, not production code.
     "tests/philosophy/seed_data.py",
+    # .claude/ holds the estate's canonical Claude Code hooks, deployed
+    # byte-identical from OverSteward and edited only there, plus local
+    # session worktrees that are whole copies of this tree.
+    ".claude/**",
 ]
