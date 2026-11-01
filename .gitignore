@@ -25,3 +25,9 @@ htmlcov/
 .claude/worktrees/
 .claude/settings.local.json
 CLAUDE.md
+
+# Adversarial-review captures (input, round ledger, verdicts) written into a session checkout.
+.review-input*.md
+.review-rounds
+.review-round-*.json
+.review-verdict-*.md
