@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.4.1] — 2026-11-02
+
 ### Fixed
 
 - **SMELL-007 DivergentChange no longer flags a class built from private
