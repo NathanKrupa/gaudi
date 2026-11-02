@@ -16,6 +16,33 @@
     },
     "pass_injected_deps.py": {
       "expected_findings": []
+    },
+    "pass_private_call_chain.py": {
+      "expected_findings": []
+    },
+    "fail_public_facade_over_disjoint_groups.py": {
+      "expected_findings": [
+        {
+          "severity": "warn",
+          "line": 9,
+          "message_contains": "ProfileAndInvoice"
+        }
+      ]
+    },
+    "pass_uncalled_private_helper.py": {
+      "expected_findings": []
+    },
+    "pass_name_mangled_call_chain.py": {
+      "expected_findings": []
+    },
+    "fail_dunder_call_does_not_join.py": {
+      "expected_findings": [
+        {
+          "severity": "warn",
+          "line": 9,
+          "message_contains": "ProfileWithInvoice"
+        }
+      ]
     }
   }
 }

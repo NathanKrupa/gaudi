@@ -59,6 +59,31 @@ def _init_injected_attrs(cls: ast.ClassDef) -> set[str]:
     return set()
 
 
+def _is_private_method(name: str) -> bool:
+    """A ``_name`` or name-mangled ``__name`` helper; never a ``__dunder__`` hook."""
+    is_dunder = name.startswith("__") and name.endswith("__")
+    return name.startswith("_") and not is_dunder
+
+
+def _link_private_helpers(
+    methods: list[ast.FunctionDef],
+    attr_sets: list[set[str]],
+) -> list[set[str]]:
+    """Join each private helper to the methods that call it.
+
+    A ``self._step()`` call puts ``_step`` in the caller's set; adding
+    ``_step`` to the helper's own set makes caller and callee share it, so a
+    pipeline of extracted private helpers reads as one group (gaudi#281).
+    A public method is its own entry point, so calling one joins nothing, and
+    a private method no other method names gains nothing it could be joined by.
+    """
+    referenced = set().union(*attr_sets) if attr_sets else set()
+    return [
+        s | {m.name} if _is_private_method(m.name) and m.name in referenced else s
+        for m, s in zip(methods, attr_sets)
+    ]
+
+
 class DivergentChange(Rule):
     """SMELL-007: Class methods touch disjoint attribute sets.
 
@@ -88,7 +113,9 @@ class DivergentChange(Rule):
                     continue
                 injected = _init_injected_attrs(node)
                 non_init = [m for m in methods if m.name != "__init__"]
-                attr_sets = [_method_attr_set(m) - injected for m in non_init]
+                attr_sets = _link_private_helpers(
+                    non_init, [_method_attr_set(m) - injected for m in non_init]
+                )
                 # Remove empty sets
                 attr_sets = [s for s in attr_sets if s]
                 if len(attr_sets) < 2:
