@@ -10,9 +10,10 @@ All notable changes to this project will be documented in this file.
   helpers** (gaudi#281). A `self._step()` call put `_step` in the caller's
   attribute set, but nothing put it in the helper's own, so caller and callee
   never shared anything. A pipeline of extracted private methods therefore read
-  as one disjoint group per link. A private method that some other method calls
-  now joins its caller's group. A call to a public method joins nothing: a
-  public method fronting two unrelated attribute groups is still flagged. The
+  as one disjoint group per link. A private method (`_name` or name-mangled
+  `__name`) that some other method calls now joins its caller's group. A call
+  to a public method or a `__dunder__` hook joins nothing: a public method
+  fronting two unrelated attribute groups is still flagged. The
   change can only clear findings, never add one. Measured on three production
   codebases:
 

@@ -60,7 +60,9 @@ def _init_injected_attrs(cls: ast.ClassDef) -> set[str]:
 
 
 def _is_private_method(name: str) -> bool:
-    return name.startswith("_") and not name.startswith("__")
+    """A ``_name`` or name-mangled ``__name`` helper; never a ``__dunder__`` hook."""
+    is_dunder = name.startswith("__") and name.endswith("__")
+    return name.startswith("_") and not is_dunder
 
 
 def _link_private_helpers(
