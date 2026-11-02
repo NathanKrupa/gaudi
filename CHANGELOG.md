@@ -4,6 +4,28 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Fixed
+
+- **SMELL-007 DivergentChange no longer flags a class built from private
+  helpers** (gaudi#281). A `self._step()` call put `_step` in the caller's
+  attribute set, but nothing put it in the helper's own, so caller and callee
+  never shared anything. A pipeline of extracted private methods therefore read
+  as one disjoint group per link. A private method that some other method calls
+  now joins its caller's group. A call to a public method joins nothing: a
+  public method fronting two unrelated attribute groups is still flagged. The
+  change can only clear findings, never add one. Measured on three production
+  codebases:
+
+  | codebase | SMELL-007 before | after |
+  | --- | --- | --- |
+  | repo A (Django app) | 78 | 37 |
+  | repo B (data pipeline) | 117 | 72 |
+  | repo C (control plane) | 18 | 10 |
+  | gaudi itself | 8 | 7 |
+
+  A ratchet baseline for SMELL-007 taken on an earlier version reads lower on
+  this one. Re-take it, or the drop is reported as debt paid.
+
 ## [0.4.0] — 2026-10-31
 
 Calibration of the warn-tier rules an estate ratchet is about to count per rule
