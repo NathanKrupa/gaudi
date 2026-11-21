@@ -69,19 +69,56 @@ else
     pp='$PWD'
     pp_display="$wt"
 fi
-{
-    printf 'export PYTHONPATH="%s"\n' "$pp"
-    # PYTHONPATH isolates THIS worktree's imports and does nothing for the
-    # PRIMARY checkout, which is the half that actually breaks: `uv run` syncs
-    # the project environment before running anything, and that sync rebinds the
-    # SHARED venv's editable install to whichever tree invoked it. One `uv run`
-    # here leaves the primary — and every sibling worktree on this symlink —
-    # importing this branch's source. UV_NO_SYNC turns the sync off, so ordinary
-    # work never has to reach for the guard's override.
+# A repository that commits its own .envrc keeps it byte-for-byte (OS#608):
+# overwriting it shows up as a modified tracked file, which a `git commit -a`
+# ships and which makes `git worktree remove` — and so the doctor's teardown —
+# refuse. Ask git rather than infer from the name, with the same
+# `ls-files --error-unmatch` question worktree_doctor.is_tracked asks. Only
+# exit 1, git's "did not match", licenses the write; any other exit means git
+# could not answer, and an unanswered question reads as tracked, because a
+# skipped write costs one export and a clobber costs the repository's own file.
+envrc_status=0
+git -C "$wt" ls-files --error-unmatch -- .envrc >/dev/null 2>&1 || envrc_status=$?
+envrc_tracked=1
+if [ "$envrc_status" -eq 1 ]; then
+    envrc_tracked=0
+fi
+if [ "$envrc_tracked" -eq 0 ]; then
+    {
+        printf 'export PYTHONPATH="%s"\n' "$pp"
+        # PYTHONPATH isolates THIS worktree's imports and does nothing for the
+        # PRIMARY checkout, which is the half that actually breaks: `uv run`
+        # syncs the project environment before running anything, and that sync
+        # rebinds the SHARED venv's editable install to whichever tree invoked
+        # it. One `uv run` here leaves the primary — and every sibling worktree
+        # on this symlink — importing this branch's source. UV_NO_SYNC turns the
+        # sync off, so ordinary work never has to reach for the guard's override.
+        if [ -L "$wt/.venv" ]; then
+            printf 'export UV_NO_SYNC=1\n'
+        fi
+    } >"$wt/.envrc"
+fi
+
+# What the .envrc would have carried, resolved for a human's shell, when the
+# repository's own .envrc was left alone.
+if [ "$envrc_tracked" -eq 0 ]; then
+    envrc_note="  (direnv users: a .envrc was written — run 'direnv allow'.)"
+    uv_no_sync_source="The .envrc above
+   exports UV_NO_SYNC=1; without direnv, export it yourself.)"
+else
+    envrc_note="  (this repo tracks its own .envrc, so it was left as committed and nothing
+   was written for direnv — export these yourself in the shell you work from:
+
+      export PYTHONPATH=\"$pp_display\""
     if [ -L "$wt/.venv" ]; then
-        printf 'export UV_NO_SYNC=1\n'
+        envrc_note="$envrc_note
+      export UV_NO_SYNC=1"
     fi
-} >"$wt/.envrc"
+    envrc_note="$envrc_note
+  )"
+    uv_no_sync_source="Export
+   UV_NO_SYNC=1 yourself, as shown above.)"
+fi
 
 # The banner is one heredoc, so the shared-venv paragraph is built here and
 # expanded empty when this worktree owns its venv outright.
@@ -89,8 +126,7 @@ shared_venv_note=""
 if [ -L "$wt/.venv" ]; then
     shared_venv_note="  (shared .venv: this worktree borrows another tree's environment. Bare
    'uv run' would re-sync it and rebind it here, so the guard_shared_venv hook
-   refuses it — prefer .venv/bin/<tool>, which never syncs. The .envrc above
-   exports UV_NO_SYNC=1; without direnv, export it yourself.)"
+   refuses it — prefer .venv/bin/<tool>, which never syncs. $uv_no_sync_source"
 fi
 
 cat <<EOF
@@ -109,7 +145,7 @@ cat <<EOF
 
       python scripts/dev/check_worktree_imports.py <your-package>
 
-  (direnv users: a .envrc was written — run 'direnv allow'.)
+$envrc_note
 $shared_venv_note
 
   When done: open a PR from '$branch', then tear down THROUGH the doctor —
