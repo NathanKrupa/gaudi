@@ -33,13 +33,18 @@ WordPress application-password shape (``xxxx xxxx xxxx xxxx``), which no default
 rule covers. Both this script and that config are canonical in OverSteward's
 ``shared/scripts/dev/`` and byte-copied estate-wide.
 
-Fail-open vs fail-closed: if docker/gitleaks is unavailable the gate **warns and
-skips** by default (local gates are primary, CI is the watchdog — matching the
-estate's pre-launch posture). Set ``SECRET_SCAN_REQUIRED=1`` (CI does) to
-**fail closed** instead, so the watchdog cannot be silently no-op'd.
+Fail-open vs fail-closed: an unavailable docker/gitleaks is **could not look**,
+not clean, and exits 2. It used to exit 0 — indistinguishable from a scan that
+ran and found nothing, so a commit on a machine without docker was certified by
+a scanner that never started (OS#384, the incident named in OS#327's table).
+Set ``SECRET_SCAN_ALLOW_UNAVAILABLE=1`` to accept that gap deliberately on a
+machine that genuinely has no docker; ``SECRET_SCAN_REQUIRED=1`` (CI sets it)
+overrides that flag, because an escape hatch that can switch off the watchdog is
+not an escape hatch.
 
-Exit codes: ``0`` clean or skipped, ``1`` findings, ``2`` required-but-unavailable
-or the scan ran but could not see the diff (partial scan — always fail-closed).
+Exit codes: ``0`` clean (or an explicitly-accepted skip, which says NOT SCANNED),
+``1`` findings, ``2`` could not look — unavailable backend, or the scan ran but
+could not see the diff (partial scan — always fail-closed).
 """
 
 from __future__ import annotations
@@ -227,12 +232,29 @@ def main(argv: list[str] | None = None) -> int:
     staged = args.rev_range is None  # default mode is staged
 
     required = os.environ.get("SECRET_SCAN_REQUIRED") == "1"
+    # The permissive posture is opt-in and cannot override CI's fail-closed: an
+    # escape hatch that can switch off the watchdog is not an escape hatch.
+    allow_unavailable = (
+        os.environ.get("SECRET_SCAN_ALLOW_UNAVAILABLE") == "1" and not required
+    )
     if not docker_available():
-        if required:
-            print("secret-scan: docker/gitleaks unavailable and SECRET_SCAN_REQUIRED=1 — failing closed.", file=sys.stderr)
-            return 2
-        print("secret-scan: docker/gitleaks unavailable — skipping (CI is the watchdog).", file=sys.stderr)
-        return 0
+        if allow_unavailable:
+            # Still not exit-code-identical to a clean run in what it *says*:
+            # the banner names the outcome the committer is accepting.
+            print(
+                "secret-scan: NOT SCANNED — docker/gitleaks unavailable and "
+                "SECRET_SCAN_ALLOW_UNAVAILABLE=1. Nothing was checked for secrets; "
+                "CI is the only remaining watchdog."
+            )
+            return 0
+        print(
+            "secret-scan: COULD NOT LOOK — docker/gitleaks unavailable, so nothing was "
+            "scanned. This is not a clean result (OS#384).\n"
+            "  On a machine that genuinely has no docker, set "
+            "SECRET_SCAN_ALLOW_UNAVAILABLE=1 to accept the gap deliberately.",
+            file=sys.stderr,
+        )
+        return 2
 
     repo = Path(args.repo).resolve()
     try:
